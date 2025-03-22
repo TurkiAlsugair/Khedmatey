@@ -1,15 +1,26 @@
-import { Body, Controller, Post} from '@nestjs/common';
-import { AuthCustomerService } from './auth-customer.service';
-import { CreateCustomerDto } from 'src/auth/auth-customer/dtos/create-customer.dto';
+import { Body, Controller, Post } from "@nestjs/common";
+import { AuthCustomerService } from "./auth-customer.service";
+import { CreateCustomerDto } from "src/auth/auth-customer/dtos/create-customer.dto";
 
-@Controller('auth-customer')
+@Controller("auth/customer")
 export class AuthCustomerController {
+  constructor(private authCustomerService: AuthCustomerService) {}
 
-    constructor(private authCustomerService: AuthCustomerService){}
-
-    @Post('signup')
-    signup(@Body() createCustomerDto: CreateCustomerDto){
-        // return this.authCustomerService.createCustomer(createCustomerDto)
-        console.log("recieved")
+  @Post("signup/verifyOtp")
+  async signup(@Body() createCustomerDto: CreateCustomerDto) {
+    try {
+      const result =
+        await this.authCustomerService.signupCustomer(createCustomerDto);
+      return {
+        message: "Customer created successfully ",
+        data: {
+          accessToken: result.token,
+          refreshToken: null,
+          user: result.newCustomer,
+        },
+      };
+    } catch (err) {
+      throw err;
     }
+  }
 }

@@ -19,19 +19,29 @@ model Customer {
   username String 
 
   phoneNumber String @unique
+
+  role String
 }
 
 model ServiceProvider{
   id Int @default(autoincrement()) @id
+
   username String
+
   phoneNumber String @unique
+
   email String @unique
+
   cities City[] // Implicit Many-to-Many with City
+
+  role String
 }
 
 model City {
   id   Int    @id @default(autoincrement())
+
   name String @unique
+  
   providers ServiceProvider[]  /// Implicit Many-to-Many with Service Provider
 }
 

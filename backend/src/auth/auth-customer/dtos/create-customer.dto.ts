@@ -1,12 +1,16 @@
-import { IsNotEmpty, IsString } from "class-validator";
+import { IsNotEmpty, IsPhoneNumber, IsString } from "class-validator";
 
 export class CreateCustomerDto {
-    
-    @IsString()
-    @IsNotEmpty()
-    username: string;
+  @IsString()
+  @IsNotEmpty()
+  username: string;
 
-    @IsString()
-    @IsNotEmpty()
-    phoneNumber: string;
+  @IsString()
+  @IsNotEmpty()
+  @IsPhoneNumber()
+  phoneNumber: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otpCode: string;
 }
