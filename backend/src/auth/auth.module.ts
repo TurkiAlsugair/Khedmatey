@@ -7,15 +7,20 @@ import { JwtModule } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 import { LocalStrategy } from "./strategies/local.strategy";
 import { JwtStrategy } from "./strategies/jwt.strategy";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 
 @Module({
   imports: [
     DatabaseModule,
     TwilioModule,
     PassportModule,
-    JwtModule.register({
-      secret: "ahyebF10hdbQd689Ljfd",
-      signOptions: { expiresIn: "1h" },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: "1h" },
+      }),
     }),
   ],
   providers: [AuthService, LocalStrategy, JwtStrategy],

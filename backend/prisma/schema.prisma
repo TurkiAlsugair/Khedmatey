@@ -13,6 +13,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  CUSTOMER
+  SERVICE_PROVIDER
+  WORKER
+}
+
 model Customer {
   id Int @default(autoincrement()) @id
 
@@ -20,6 +26,7 @@ model Customer {
 
   phoneNumber String @unique
 
+  // role Role @default(value: CUSTOMER)
   role String
 }
 
@@ -33,8 +40,6 @@ model ServiceProvider{
   email String @unique
 
   cities City[] // Implicit Many-to-Many with City
-
-  role String
 }
 
 model City {

@@ -22,9 +22,12 @@ export class AuthCustomerService {
       throw new UnauthorizedException("Phone number is already registered");
     }
 
-    const isValid = await this.twilio.verifyOtp(phoneNumber, otpCode);
-    if (!isValid) {
-      throw new UnauthorizedException("Wrong OTP");
+    try{
+      await this.twilio.verifyOtp(phoneNumber, otpCode);
+    }
+    //error is thrown from the twilio service meaning invalid otp or something else went wrong
+    catch(err){
+      throw err
     }
 
     const role = "customer";

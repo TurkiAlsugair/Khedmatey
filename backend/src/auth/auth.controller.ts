@@ -36,7 +36,7 @@ export class AuthController {
 
   @Post("/signin/verifyOTP")
   @UseGuards(LocalGuard)
-  signIne(@Req() req: Request) {
+  signIn(@Req() req: Request) {
     return req.user;
   }
 }

@@ -6,11 +6,11 @@ import { CreateCustomerDto } from "src/auth/auth-customer/dtos/create-customer.d
 export class AuthCustomerController {
   constructor(private authCustomerService: AuthCustomerService) {}
 
-  @Post("signup/verifyOtp")
+  @Post("signup")
   async signup(@Body() createCustomerDto: CreateCustomerDto) {
-    try {
-      const result =
-        await this.authCustomerService.signupCustomer(createCustomerDto);
+    try 
+    {
+      const result = await this.authCustomerService.signupCustomer(createCustomerDto);
       return {
         message: "Customer created successfully ",
         data: {
@@ -19,7 +19,8 @@ export class AuthCustomerController {
           user: result.newCustomer,
         },
       };
-    } catch (err) {
+    } 
+    catch (err) {
       throw err;
     }
   }

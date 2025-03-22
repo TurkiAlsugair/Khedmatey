@@ -56,10 +56,7 @@ export class TwilioService {
     } 
     catch (err) 
     {
-      throw new BadRequestException({
-        message: 'Failed to verify OTP',
-        error: {},
-      });
+      throw err
     }
   }
 }
