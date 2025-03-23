@@ -15,9 +15,9 @@ export class DatabaseService extends PrismaClient implements OnModuleInit {
     try {
       await this.$executeRawUnsafe(`
             CREATE OR REPLACE VIEW UserView AS 
-            SELECT id, username, phoneNumber, 'customer' AS role FROM Customer 
+            SELECT id, username, phoneNumber, 'CUSTOMER' AS role FROM Customer 
             UNION ALL 
-            SELECT id, username, phoneNumber, 'serviceProvider' AS role FROM ServiceProvider;
+            SELECT id, username, phoneNumber, 'SERVICE_PROVIDER' AS role FROM ServiceProvider;
         `);
 
       console.log("UserView created or updated successfully");

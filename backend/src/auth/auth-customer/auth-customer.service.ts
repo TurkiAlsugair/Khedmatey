@@ -1,5 +1,5 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { ConflictException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { Role } from "@prisma/client";
 import { DatabaseService } from "src/database/database.service";
 import { CreateCustomerDto } from "./dtos/create-customer.dto";
 import { TwilioService } from "src/twilio/twilio.service";
@@ -19,7 +19,7 @@ export class AuthCustomerService {
     });
 
     if (existingCustomer) {
-      throw new UnauthorizedException("Phone number is already registered");
+      throw new ConflictException("Phone number is already registered");
     }
 
     try{
@@ -30,7 +30,7 @@ export class AuthCustomerService {
       throw err
     }
 
-    const role = "customer";
+    const role = Role.CUSTOMER
     const newCustomer = await this.prisma.customer.create({
       data: { phoneNumber, username, role },
     });

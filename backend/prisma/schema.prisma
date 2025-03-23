@@ -26,8 +26,7 @@ model Customer {
 
   phoneNumber String @unique
 
-  // role Role @default(value: CUSTOMER)
-  role String
+  role Role @default(value: CUSTOMER)
 }
 
 model ServiceProvider{

@@ -36,7 +36,8 @@ export class TwilioService {
       'TWILIO_VERIFICATION_SERVICE_SID',
     );
 
-    try {
+    try 
+    {
       const response = await this.twilioClient.verify.v2
         .services(serviceSid)
         .verificationChecks.create({ to: phoneNumber, code });

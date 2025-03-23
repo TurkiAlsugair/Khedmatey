@@ -27,8 +27,7 @@ export class AuthService {
     return this.jwt.sign(payload);
   }
 
-  async signIn(userPhoneNumber: string, code: string) {
-    console.log("here signin");
+  async signin(userPhoneNumber: string, code: string) {
     const user = (await this.prisma.$queryRaw`
         SELECT * FROM UserView WHERE phoneNumber = ${userPhoneNumber} LIMIT 1`) as any[];
 
@@ -36,7 +35,7 @@ export class AuthService {
       throw new UnauthorizedException("User not found");
     }
 
-    const isVerified = this.twilio.verifyOtp(userPhoneNumber, code);
+    const isVerified = await this.twilio.verifyOtp(userPhoneNumber, code);
 
     if (!isVerified) {
       throw new UnauthorizedException("Wrong OTP");
