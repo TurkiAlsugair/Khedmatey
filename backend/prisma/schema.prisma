@@ -38,6 +38,8 @@ model ServiceProvider{
 
   email String @unique
 
+  role Role @default(value: SERVICE_PROVIDER)
+
   cities City[] // Implicit Many-to-Many with City
 }
 
