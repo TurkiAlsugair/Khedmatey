@@ -38,14 +38,22 @@ model ServiceProvider{
 
   email String @unique
 
+  role Role @default(value: SERVICE_PROVIDER)
+
   cities City[] // Implicit Many-to-Many with City
+}
+
+enum CityName {
+  Riyadh
+  Jeddah
+  Dammam
 }
 
 model City {
   id   Int    @id @default(autoincrement())
 
-  name String @unique
-  
+  name CityName
+
   providers ServiceProvider[]  /// Implicit Many-to-Many with Service Provider
 }
 

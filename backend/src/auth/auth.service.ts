@@ -1,4 +1,4 @@
-import { Injectable, Post, UnauthorizedException } from "@nestjs/common";
+import { Injectable, Post, UnauthorizedException, BadRequestException } from "@nestjs/common";
 import { DatabaseService } from "src/database/database.service";
 import { TwilioService } from "src/twilio/twilio.service";
 import { JwtService } from "@nestjs/jwt";
@@ -35,11 +35,11 @@ export class AuthService {
       throw new UnauthorizedException("User not found");
     }
 
-    const isVerified = await this.twilio.verifyOtp(userPhoneNumber, code);
-
-    if (!isVerified) {
-      throw new UnauthorizedException("Wrong OTP");
-    }
+    try {
+              await this.twilio.verifyOtp(userPhoneNumber, code);
+              } catch (err) {
+                throw new BadRequestException("Wrong OTP");
+              }
 
     const newUser = user[0];
 

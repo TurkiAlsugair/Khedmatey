@@ -1,4 +1,5 @@
-import { ConflictException, Injectable, UnauthorizedException } from "@nestjs/common";
+import {
+  ConflictException, Injectable, UnauthorizedException, BadRequestException} from "@nestjs/common";
 import { Role } from "@prisma/client";
 import { DatabaseService } from "src/database/database.service";
 import { CreateCustomerDto } from "./dtos/create-customer.dto";
@@ -14,23 +15,20 @@ export class AuthCustomerService {
   ) {}
 
   async signupCustomer({ phoneNumber, username, otpCode }: CreateCustomerDto) {
-    const existingCustomer = await this.prisma.customer.findUnique({
-      where: { phoneNumber },
-    });
+    const existingCustomer = (await this.prisma.$queryRaw`
+      SELECT * FROM UserView WHERE phoneNumber = ${phoneNumber} LIMIT 1`) as any[];
 
-    if (existingCustomer) {
+    if (existingCustomer.length != 0 ) {
       throw new ConflictException("Phone number is already registered");
     }
 
-    try{
+    try {
       await this.twilio.verifyOtp(phoneNumber, otpCode);
-    }
-    //error is thrown from the twilio service meaning invalid otp or something else went wrong
-    catch(err){
-      throw err
+    } catch (err) {
+        throw new BadRequestException("Wrong OTP");
     }
 
-    const role = Role.CUSTOMER
+    const role = Role.CUSTOMER;
     const newCustomer = await this.prisma.customer.create({
       data: { phoneNumber, username, role },
     });

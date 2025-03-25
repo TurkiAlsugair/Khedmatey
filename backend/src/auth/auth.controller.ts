@@ -5,7 +5,7 @@ import { BaseResponseDto } from "src/dtos/base-reposnse.dto";
 import { LocalGuard } from "./guards/local.guard";
 import { Request } from "express";
 import { JwtAuthGuard } from "./guards/jwt.guard";
-import { signinDto } from "./dtos/signin.dto";
+import { signinDto } from "./dtos/signIn.dto";
 
 @Controller("auth")
 export class AuthController {
@@ -35,11 +35,9 @@ export class AuthController {
 
   @Post("/signin")
   async signIn(@Body() body: signinDto): Promise<BaseResponseDto> {
-    
-    const {phoneNumber, otpCode} = body
+    const { phoneNumber, otpCode } = body;
 
-    try 
-    {
+    try {
       const result = await this.authService.signin(phoneNumber, otpCode);
       return {
         message: "Customer created successfully ",
@@ -49,8 +47,7 @@ export class AuthController {
           user: result.newUser,
         },
       };
-    } 
-    catch (err) {
+    } catch (err) {
       throw err;
     }
   }

@@ -12,17 +12,18 @@ export class DatabaseService extends PrismaClient implements OnModuleInit {
       console.error(err);
     }
 
-    try {
-      await this.$executeRawUnsafe(`
-            CREATE OR REPLACE VIEW UserView AS 
-            SELECT id, username, phoneNumber, 'CUSTOMER' AS role FROM Customer 
-            UNION ALL 
-            SELECT id, username, phoneNumber, 'SERVICE_PROVIDER' AS role FROM ServiceProvider;
-        `);
+    // try {
+    //   // This to create UserView
+    //   await this.$executeRawUnsafe(`
+    //         CREATE OR REPLACE VIEW UserView AS 
+    //         SELECT id, username, phoneNumber, 'customer' AS role FROM Customer 
+    //         UNION ALL 
+    //         SELECT id, username, phoneNumber, 'serviceProvider' AS role FROM ServiceProvider;
+    //     `);
 
-      console.log("UserView created or updated successfully");
-    } catch (err) {
-      console.error("Problem when creating UserView");
-    }
+    //   console.log("UserView created or updated successfully");
+    // } catch (err) {
+    //   console.error("Problem when creating UserView");
+    // }
   }
 }
