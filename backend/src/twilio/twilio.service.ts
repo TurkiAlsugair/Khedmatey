@@ -41,14 +41,13 @@ export class TwilioService {
       const response = await this.twilioClient.verify.v2
         .services(serviceSid)
         .verificationChecks.create({ to: phoneNumber, code });
-  
+      
+      
       //check if verification was successful
       if (response.valid) {
         return response
       }
-
-      else 
-      {
+      else{
         throw new BadRequestException({
           message: 'Invalid OTP code or expired',
           error: 'Verification Failed',

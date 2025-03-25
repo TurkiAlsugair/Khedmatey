@@ -6,6 +6,7 @@ import {
   ArrayNotEmpty,
   IsPhoneNumber,
 } from "class-validator";
+import { CityName } from "@prisma/client";
 
 export class CreateServiceProviderDto {
   @IsString()
@@ -23,7 +24,7 @@ export class CreateServiceProviderDto {
   @IsArray()
   @ArrayNotEmpty()
   @IsString({ each: true })
-  cities: string[];
+  cities: CityName[];
 
   @IsString()
   @IsNotEmpty()
