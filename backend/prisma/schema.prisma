@@ -40,7 +40,9 @@ model ServiceProvider{
 
   role Role @default(value: SERVICE_PROVIDER)
 
-  cities City[] // Implicit Many-to-Many with City
+  cities City[]
+
+  services Service[]
 }
 
 enum CityName {
@@ -50,11 +52,39 @@ enum CityName {
 }
 
 model City {
-  id   Int    @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
   name CityName
 
-  providers ServiceProvider[]  /// Implicit Many-to-Many with Service Provider
+  providers ServiceProvider[]
+}
+
+enum CategoryName {
+  Cleaning
+  Plumbing
+  Electrical
+  Painting
+  Other
 }
 
 
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     CategoryName    @unique
+  services Service[]
+}
+
+model Service {
+  id Int @id @default(autoincrement())
+
+  name String 
+
+  customCategory   String?          //used only when category is "Other", or will be removed if 'other' it self will be used as a category
+  categoryId       Int
+  category         Category         @relation(fields: [categoryId], references: [id])
+
+  Price String
+
+  ServiceProvider ServiceProvider @relation(fields: [ServiceProviderId], references: [id])
+  ServiceProviderId Int
+}
