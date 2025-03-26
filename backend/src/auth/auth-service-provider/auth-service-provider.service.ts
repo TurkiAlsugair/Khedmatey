@@ -30,12 +30,12 @@ export class AuthServiceProviderService {
     }
       
     //verify otp
-    try {
-      await this.twilio.verifyOtp(phoneNumber, otpCode);
-    } 
-    catch (err) {
-      throw err;
-    }
+    // try {
+    //   await this.twilio.verifyOtp(phoneNumber, otpCode);
+    // } 
+    // catch (err) {
+    //   throw err;
+    // }
   
     //find matching city rows and check for any invalid city inputs
     let matchedCities

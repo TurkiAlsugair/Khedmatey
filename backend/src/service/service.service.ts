@@ -1,26 +1,45 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { DatabaseService } from "src/database/database.service";
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 
 @Injectable()
 export class ServiceService {
-  create(createServiceDto: CreateServiceDto) {
-    return 'This action adds a new service';
-  }
+  constructor(private prisma: DatabaseService) {}
+  
+  async create(dto: CreateServiceDto, serviceProviderId: number) {
+    const { name, price, categoryId, customCategory } = dto;
 
-  findAll() {
-    return `This action returns all service`;
-  }
+    //validate category exists
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+    });
 
-  findOne(id: number) {
-    return `This action returns a #${id} service`;
-  }
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
 
-  update(id: number, updateServiceDto: UpdateServiceDto) {
-    return `This action updates a #${id} service`;
-  }
+    //this is only for now until how 'other' category will be handled is decided
+    //if category is "Other", customCategory is required
+    if (category.name === 'Other' && !customCategory) {
+      throw new BadRequestException('customCategory is required for category "Other"');
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} service`;
+    //create service
+    const newService = await this.prisma.service.create({
+      data: {
+        name,
+        price,
+        categoryId,
+        customCategory,
+        serviceProviderId,
+      },
+      include: { //include the category info 
+        category: true,
+      },
+    });
+
+    return newService;
   }
+  
 }

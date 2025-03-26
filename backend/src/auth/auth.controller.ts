@@ -2,7 +2,6 @@ import { Body, Controller, Post, Get, Req, UseGuards } from "@nestjs/common";
 import { sendOtpDto } from "./dtos/send-otp.dto";
 import { AuthService } from "./auth.service";
 import { BaseResponseDto } from "src/dtos/base-reposnse.dto";
-import { LocalGuard } from "./guards/local.guard";
 import { Request } from "express";
 import { JwtAuthGuard } from "./guards/jwt.guard";
 import { signinDto } from "./dtos/signIn.dto";
@@ -40,7 +39,7 @@ export class AuthController {
     try {
       const result = await this.authService.signin(phoneNumber, otpCode);
       return {
-        message: "Customer created successfully ",
+        message: "Signed in successfully ",
         data: {
           accessToken: result.token,
           refreshToken: null,
