@@ -1,12 +1,11 @@
-import {
-  ConflictException, Injectable,NotFoundException, BadRequestException} from "@nestjs/common";
+import { ConflictException, Injectable,NotFoundException, BadRequestException } from "@nestjs/common";
 import { Role } from "@prisma/client";
 import { DatabaseService } from "src/database/database.service";
 import { CreateCustomerDto } from "./dtos/create-customer.dto";
 import { TwilioService } from "src/twilio/twilio.service";
 import { AuthService } from "../auth.service";
 import { UpdateCustomerDto } from "./dtos/update-customer.dto";
-import { FindUserDto } from "./dtos/find-user.dto";
+import { FindUserDto } from "../dtos/find-user.dto";
 
 
 @Injectable()
@@ -18,8 +17,7 @@ export class AuthCustomerService {
   ) {}
 
   async signupCustomer({ phoneNumber, username, otpCode }: CreateCustomerDto) {
-    const existingCustomer = (await this.prisma.$queryRaw`
-      SELECT * FROM UserView WHERE phoneNumber = ${phoneNumber} LIMIT 1`) as any[];
+    const existingCustomer = await this.authService.findUser({ phoneNumber });
 
     if (existingCustomer.length != 0 ) {
       throw new ConflictException("Phone number is already registered");
@@ -40,34 +38,33 @@ export class AuthCustomerService {
     return { token, newCustomer };
   }
 
-  async findUser ({phoneNumber}: FindUserDto){
-
-    // Find if the customer is registered
-    const customer = await this.prisma.customer.findUnique({
-      where: {phoneNumber}
-    })
-
-    if (!customer)
-      throw new NotFoundException(`Customer with phone ${phoneNumber} not found`)
-
-    return customer
-
-  }
-
   async updateCustomer( {phoneNumber, username}: UpdateCustomerDto ){
 
     // Find if the customer is registered
-    let updateCustomer = await this.findUser( {phoneNumber} )
+    const updateCustomer = await this.authService.findUser({ phoneNumber });
 
     if (!updateCustomer)
       throw new NotFoundException(`Customer with phone ${phoneNumber} not found`)
 
     // if the customer is registered, then update the information
-    updateCustomer = await this.prisma.customer.update({
+      await this.prisma.customer.update({
 
       where: {phoneNumber},
       data: {username}
-    })
+    });
   }
 
+  async deleteCustomer({ phoneNumber }: FindUserDto) {
+  
+    const user = await this.authService.findUser({ phoneNumber });
+    
+    if (user.length === 0) 
+      throw new NotFoundException(`User with phone ${phoneNumber} not found`);
+  
+    await this.prisma.customer.delete({
+      where: { phoneNumber },
+    });
+  
+    return { message: 'Customer deleted successfully' };
+  }
 }

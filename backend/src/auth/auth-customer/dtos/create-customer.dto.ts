@@ -14,3 +14,6 @@ export class CreateCustomerDto {
   @IsNotEmpty()
   otpCode: string;
 }
+
+
+

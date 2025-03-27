@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Patch, Post, Req, UseGuards } from "@nestjs/common";
 import { AuthCustomerService } from "./auth-customer.service";
 import { CreateCustomerDto } from "src/auth/auth-customer/dtos/create-customer.dto";
 import { Request } from "express";
@@ -9,6 +9,7 @@ import { RolesGuard } from "../guards/roles.guard";
 import { BaseResponseDto } from "src/dtos/base-reposnse.dto";
 import { UpdateCustomerDto } from "./dtos/update-customer.dto";
 import { OwnerGuard } from "../guards/owner.guard";
+import { FindUserDto } from "../dtos/find-user.dto";
 
 @Controller("auth/customer")
 export class AuthCustomerController {
@@ -34,8 +35,7 @@ export class AuthCustomerController {
   }
 
   @Roles(Role.CUSTOMER) //set metadata
-  @UseGuards(RolesGuard)
-  @UseGuards(JwtAuthGuard, OwnerGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, OwnerGuard)
   @Patch("/account")
   async updateCustomer(@Body() updateDto: UpdateCustomerDto, @Req() req: Request): Promise<BaseResponseDto> {
 
@@ -53,11 +53,32 @@ export class AuthCustomerController {
     }
   }
 
+
+  @Roles(Role.CUSTOMER) //set metadata
+  @UseGuards(JwtAuthGuard, RolesGuard, OwnerGuard)
+  @Delete("/account")
+  async deleteCustomer(@Body() {phoneNumber}: FindUserDto): Promise<BaseResponseDto>{
+    
+    try{
+
+      const result = await this.authCustomerService.deleteCustomer({phoneNumber})
+      return{
+        message: "Customer deleted successfully ",
+        data: phoneNumber
+      }
+
+    }catch(err){
+      throw err
+    }
+  }
+
+
   @Roles(Role.CUSTOMER) //set metadata
   @UseGuards(RolesGuard)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, OwnerGuard )
   @Get("status")
   status(@Req() req: Request) {
     return req.user;
   }
+
 }
