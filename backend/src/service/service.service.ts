@@ -19,10 +19,10 @@ export class ServiceService {
       throw new NotFoundException('Category not found');
     }
 
-    //this is only for now until how 'other' category will be handled is decided
+    //this is only for now until how the 'other' category will be handled is decided
     //if category is "Other", customCategory is required
     if (category.name === 'Other' && !customCategory) {
-      throw new BadRequestException('customCategory is required for category "Other"');
+      throw new BadRequestException("customCategory is required for the category 'Other' ");
     }
 
     //create service

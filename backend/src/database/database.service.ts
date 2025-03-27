@@ -16,7 +16,7 @@ export class DatabaseService extends PrismaClient implements OnModuleInit {
     //   // This to create UserView
     //   await this.$executeRawUnsafe(`
     //         CREATE OR REPLACE VIEW UserView AS 
-    //         SELECT id, username, phoneNumber, 'customer' AS role FROM Customer 
+    //         SELECT id, username, phoneNumber, 'CUSTOMER' AS role FROM Customer 
     //         UNION ALL 
     //         SELECT id, username, phoneNumber, 'serviceProvider' AS role FROM ServiceProvider;
     //     `);

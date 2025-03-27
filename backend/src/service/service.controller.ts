@@ -20,10 +20,8 @@ export class ServiceController {
   @Post()
   async createService(@Body() dto: any, @CurrentUser() user: GenerateTokenDto): Promise<BaseResponseDto> {
     const serviceProviderId = user.id
-    console.log(serviceProviderId)
     try {
-      // const newService = await this.serviceService.create(dto);
-      const newService = ""
+      const newService = await this.serviceService.create(dto, serviceProviderId);
       return {
         message: 'Service created successfully',
         data: newService,
