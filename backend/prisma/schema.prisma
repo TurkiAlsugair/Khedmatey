@@ -56,5 +56,3 @@ model City {
 
   providers ServiceProvider[]  /// Implicit Many-to-Many with Service Provider
 }
-
-

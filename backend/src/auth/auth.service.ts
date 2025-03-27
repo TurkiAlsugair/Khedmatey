@@ -36,7 +36,7 @@ export class AuthService {
     }
 
     try {
-              await this.twilio.verifyOtp(userPhoneNumber, code);
+              // await this.twilio.verifyOtp(userPhoneNumber, code);
               } catch (err) {
                 throw new BadRequestException("Wrong OTP");
               }

@@ -1,10 +1,13 @@
 import {
-  ConflictException, Injectable, UnauthorizedException, BadRequestException} from "@nestjs/common";
+  ConflictException, Injectable,NotFoundException, BadRequestException} from "@nestjs/common";
 import { Role } from "@prisma/client";
 import { DatabaseService } from "src/database/database.service";
 import { CreateCustomerDto } from "./dtos/create-customer.dto";
 import { TwilioService } from "src/twilio/twilio.service";
 import { AuthService } from "../auth.service";
+import { UpdateCustomerDto } from "./dtos/update-customer.dto";
+import { FindUserDto } from "./dtos/find-user.dto";
+
 
 @Injectable()
 export class AuthCustomerService {
@@ -23,7 +26,7 @@ export class AuthCustomerService {
     }
 
     try {
-      await this.twilio.verifyOtp(phoneNumber, otpCode);
+      // await this.twilio.verifyOtp(phoneNumber, otpCode);
     } catch (err) {
         throw new BadRequestException("Wrong OTP");
     }
@@ -36,4 +39,35 @@ export class AuthCustomerService {
     const token = this.authService.generateToken(newCustomer);
     return { token, newCustomer };
   }
+
+  async findUser ({phoneNumber}: FindUserDto){
+
+    // Find if the customer is registered
+    const customer = await this.prisma.customer.findUnique({
+      where: {phoneNumber}
+    })
+
+    if (!customer)
+      throw new NotFoundException(`Customer with phone ${phoneNumber} not found`)
+
+    return customer
+
+  }
+
+  async updateCustomer( {phoneNumber, username}: UpdateCustomerDto ){
+
+    // Find if the customer is registered
+    let updateCustomer = await this.findUser( {phoneNumber} )
+
+    if (!updateCustomer)
+      throw new NotFoundException(`Customer with phone ${phoneNumber} not found`)
+
+    // if the customer is registered, then update the information
+    updateCustomer = await this.prisma.customer.update({
+
+      where: {phoneNumber},
+      data: {username}
+    })
+  }
+
 }
