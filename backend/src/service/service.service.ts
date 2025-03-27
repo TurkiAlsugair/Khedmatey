@@ -41,5 +41,35 @@ export class ServiceService {
 
     return newService;
   }
+
+  async delete(serviceId: number, serviceProviderId: number) {
+
+    //check if serviceId is a number
+    if (isNaN(serviceId)) {
+      throw new BadRequestException('Invalid service ID');
+    }
+
+    //get service info
+    const service = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+    });
+    
+    //check if the service exists
+    if (!service) {
+      throw new NotFoundException('Service not found');
+    }
+  
+    //check if service belongs to the provided service provider
+    if (service.serviceProviderId !== serviceProviderId) {
+      throw new BadRequestException('You do not have permission to delete this service');
+    }
+  
+    const deletedService = await this.prisma.service.delete({
+      where: { id: serviceId },
+    });
+
+    return deletedService
+  }
+  
   
 }
