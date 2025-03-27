@@ -4,7 +4,7 @@ SELECT
     username, 
     phoneNumber, 
     NULL AS email,
-    'customer' AS role 
+    'CUSTOMER' AS role 
 FROM Customer
 
 UNION ALL
@@ -14,5 +14,5 @@ SELECT
     username, 
     phoneNumber, 
     email, 
-    'serviceProvider' AS role 
+    'SERVICE_PROVIDER' AS role 
 FROM ServiceProvider;
