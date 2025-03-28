@@ -1,7 +1,7 @@
 import { IsString, IsNotEmpty, IsEmail, IsArray, ArrayNotEmpty, IsPhoneNumber } from "class-validator";
 import { CityName } from "@prisma/client";
 
-export class CreateServiceProviderDto {
+export class UpdateServiceProviderDto {
   @IsString()
   @IsNotEmpty()
   username: string;
@@ -18,8 +18,4 @@ export class CreateServiceProviderDto {
   @ArrayNotEmpty()
   @IsString({ each: true })
   cities: CityName[];
-
-  @IsString()
-  @IsNotEmpty()
-  otpCode: string;
 }

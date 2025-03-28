@@ -1,10 +1,10 @@
-import {
-  Injectable, BadRequestException, ConflictException, NotFoundException} from "@nestjs/common";
+import { Injectable, BadRequestException, ConflictException, NotFoundException } from "@nestjs/common";
 import { DatabaseService } from "src/database/database.service";
 import { TwilioService } from "src/twilio/twilio.service";
 import { CreateServiceProviderDto } from "./dtos/create-serviceprovider.dto";
 import { CityName, Role } from "@prisma/client";
 import { AuthService } from "../auth.service";
+import { UpdateServiceProviderDto } from "./dtos/update-serviceprovider.dto";
 
 @Injectable()
 export class AuthServiceProviderService {
@@ -12,8 +12,7 @@ export class AuthServiceProviderService {
 
   async signupServiceProvider({ phoneNumber, otpCode, username, email, cities }: CreateServiceProviderDto) {
 
-    const existingPhoneNumber = (await this.prisma.$queryRaw`
-        SELECT * FROM UserView WHERE phoneNumber = ${phoneNumber} LIMIT 1`) as any[];
+    const existingPhoneNumber = await this.authService.findUser({phoneNumber});
 
     //check for phone number
     if(existingPhoneNumber.length != 0) {
@@ -31,7 +30,7 @@ export class AuthServiceProviderService {
       
     //verify otp
     try {
-      await this.twilio.verifyOtp(phoneNumber, otpCode);
+      // await this.twilio.verifyOtp(phoneNumber, otpCode);
     } 
     catch (err) {
       throw err;
@@ -63,5 +62,55 @@ export class AuthServiceProviderService {
     const token = this.authService.generateToken( { id: newServiceProvider.id ,username, phoneNumber, role} ) 
 
     return {token, newServiceProvider, cities};
+  }
+
+
+  async updateServiceProviderInfo( { phoneNumber ,username, email, cities }: UpdateServiceProviderDto ) {
+
+     // Find if the Service Provider is registered
+     const serviceProvider = await this.authService.findUser({ phoneNumber });
+
+     if ( serviceProvider.length === 0)
+       throw new NotFoundException(`Service Provider with phone ${phoneNumber} not found`)
+
+  
+    if (cities && cities.length > 0) {
+
+      // Make the first letter of the city capital and the rest are small e.g. Riyadh
+      const normalizedCities = cities.map( city => city.charAt(0).toUpperCase() + city.slice(1).toLowerCase() ) as CityName[];
+
+      //find matching city rows and check for any invalid city inputs
+    let matchedCities
+    try{
+      matchedCities = await this.prisma.city.findMany({
+        where: { name: { in: normalizedCities } },
+      });
+    }
+    catch(err){
+      throw new BadRequestException(
+        `one of the cities is not supported`
+      );
+    }
+  
+    // Update the Service Provider
+    const updatedServiceProvider = await this.prisma.serviceProvider.update({
+      where: { phoneNumber },
+      data: {
+        ...(username && { username }),
+        ...(email && { email }),
+        ...(matchedCities.length > 0 && {
+          cities: {
+            set: matchedCities.map(city => ({ id: city.id })),
+          },
+        }),
+      },
+      include: {
+        cities: true, // include cities in the response if you want
+      },
+    });
+  
+    return updatedServiceProvider;
+  }
+  
   }
 }

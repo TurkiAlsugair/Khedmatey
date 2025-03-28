@@ -43,7 +43,7 @@ export class AuthCustomerService {
     // Find if the customer is registered
     const updateCustomer = await this.authService.findUser({ phoneNumber });
 
-    if (!updateCustomer)
+    if ( updateCustomer.length === 0)
       throw new NotFoundException(`Customer with phone ${phoneNumber} not found`)
 
     // if the customer is registered, then update the information
