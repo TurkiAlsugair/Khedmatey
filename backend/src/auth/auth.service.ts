@@ -31,7 +31,7 @@ export class AuthService {
   async signin(userPhoneNumber: string, code: string) {
     const user = await this.findUser({phoneNumber: userPhoneNumber})
 
-    if (user.length === 0) {
+    if (!user) {
       throw new NotFoundException("User not found");
     }
 
@@ -41,7 +41,7 @@ export class AuthService {
                 throw new BadRequestException("Wrong OTP");
               }
 
-    const newUser = user[0];
+    const newUser = user;
 
     const token = this.generateToken(newUser);
     return { token, newUser };
@@ -51,9 +51,9 @@ export class AuthService {
 
     // Find if the customer is registered
     // Here user is an array of one obj if user is found or empty array if not
-    const user = (await this.prisma.$queryRaw`
+    const [user] = (await this.prisma.$queryRaw`
       SELECT * FROM UserView WHERE phoneNumber = ${phoneNumber} LIMIT 1`) as any[]; 
-    return  user;
+    return  user || null;
 
   }
 }

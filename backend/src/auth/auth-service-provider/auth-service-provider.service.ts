@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, ConflictException, NotFoundException } from "@nestjs/common";
+import { Injectable, BadRequestException, ConflictException, NotFoundException, ForbiddenException } from "@nestjs/common";
 import { DatabaseService } from "src/database/database.service";
 import { TwilioService } from "src/twilio/twilio.service";
 import { CreateServiceProviderDto } from "./dtos/create-serviceprovider.dto";
@@ -15,7 +15,7 @@ export class AuthServiceProviderService {
     const existingPhoneNumber = await this.authService.findUser({phoneNumber});
 
     //check for phone number
-    if(existingPhoneNumber.length != 0) {
+    if(existingPhoneNumber) {
         throw new ConflictException("Phone number is already registered");
     }
 
@@ -70,10 +70,13 @@ export class AuthServiceProviderService {
      // Find if the Service Provider is registered
      const serviceProvider = await this.authService.findUser({ phoneNumber });
 
-     if ( serviceProvider.length === 0)
-       throw new NotFoundException(`Service Provider with phone ${phoneNumber} not found`)
+     if (!serviceProvider)
+        throw new NotFoundException(`Service Provider with phone ${phoneNumber} not found`)
 
-  
+     if (serviceProvider.role !== Role.SERVICE_PROVIDER)
+           throw new ForbiddenException(`This phone number is not a service provider`);
+
+     // Check if there are cities in the body
     if (cities && cities.length > 0) {
 
       // Make the first letter of the city capital and the rest are small e.g. Riyadh
@@ -103,9 +106,6 @@ export class AuthServiceProviderService {
             set: matchedCities.map(city => ({ id: city.id })),
           },
         }),
-      },
-      include: {
-        cities: true, // include cities in the response if you want
       },
     });
   
