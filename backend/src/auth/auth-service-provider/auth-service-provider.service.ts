@@ -74,15 +74,12 @@ export class AuthServiceProviderService {
         throw new NotFoundException(`Service Provider with phone ${phoneNumber} not found`)
 
      if (serviceProvider.role !== Role.SERVICE_PROVIDER)
-           throw new ForbiddenException(`This phone number is not a service provider`);
+        throw new ForbiddenException(`This phone number is not a service provider`);
 
-     // Check if there are cities in the body
-    if (cities && cities.length > 0) {
+    // Make the first letter of the city capital and the rest are small e.g. Riyadh
+    const normalizedCities = cities.map( city => city.charAt(0).toUpperCase() + city.slice(1).toLowerCase() ) as CityName[];
 
-      // Make the first letter of the city capital and the rest are small e.g. Riyadh
-      const normalizedCities = cities.map( city => city.charAt(0).toUpperCase() + city.slice(1).toLowerCase() ) as CityName[];
-
-      //find matching city rows and check for any invalid city inputs
+    //find matching city rows and check for any invalid city inputs
     let matchedCities
     try{
       matchedCities = await this.prisma.city.findMany({
@@ -94,7 +91,7 @@ export class AuthServiceProviderService {
         `one of the cities is not supported`
       );
     }
-  
+
     // Update the Service Provider
     const updatedServiceProvider = await this.prisma.serviceProvider.update({
       where: { phoneNumber },
@@ -108,9 +105,7 @@ export class AuthServiceProviderService {
         }),
       },
     });
-  
+
     return updatedServiceProvider;
-  }
-  
   }
 }
