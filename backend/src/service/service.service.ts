@@ -12,6 +12,20 @@ export class ServiceService {
   async create(dto: CreateServiceDto, serviceProviderId: number) {
     const { name, price, categoryId, customCategory } = dto;
 
+    // search the service provider know it status 
+    const serviceProvider = await this.prisma.serviceProvider.findUnique({
+      where: { id: serviceProviderId },
+    });
+    
+    if (!serviceProvider) {
+      throw new NotFoundException('Service provider not found');
+    }
+    
+    // Check if the provider is ACCEPTED
+    if (serviceProvider.status !== 'ACCEPTED') {
+      throw new BadRequestException('Only ACCEPTED service providers can create services');
+    }
+
     //validate category exists
     const category = await this.prisma.category.findUnique({
       where: { id: categoryId },
@@ -73,7 +87,7 @@ export class ServiceService {
     return deletedService
   }
   
-  async update(serviceId: number, dto: UpdateServiceDto, serviceProviderId: number) {
+  async update(serviceId: number, dto: UpdateServiceDto, serviceProviderId: number) {    
 
     //check if serviceId is a number
     if (isNaN(serviceId)) {
@@ -88,6 +102,11 @@ export class ServiceService {
     //check if the service exists
     if (!service) {
       throw new NotFoundException('Service not found');
+    }
+
+    // Only allow updating ACCEPTED services
+    if (service.status !== 'ACCEPTED') {
+      throw new BadRequestException('Only ACCEPTED services can be updated');
     }
   
     //check ownership

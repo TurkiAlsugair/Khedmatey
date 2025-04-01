@@ -17,6 +17,7 @@ enum Role {
   CUSTOMER
   SERVICE_PROVIDER
   WORKER
+  ADMIN
 }
 
 model Customer {
@@ -43,6 +44,9 @@ model ServiceProvider{
   cities City[]
 
   services Service[]
+
+  status      Status  @default(PENDING)
+
 }
 
 enum CityName {
@@ -87,4 +91,20 @@ model Service {
 
   serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id])
   serviceProviderId Int
+
+  status      Status  @default(PENDING)
+
+}
+
+enum Status {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+model Admin {
+  id          Int     @id @default(autoincrement())
+  username    String
+  phoneNumber String @unique
+  role        Role    @default(value: ADMIN)
 }

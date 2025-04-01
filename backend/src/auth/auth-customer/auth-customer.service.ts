@@ -10,11 +10,7 @@ import { FindUserDto } from "../dtos/find-user.dto";
 
 @Injectable()
 export class AuthCustomerService {
-  constructor(
-    private prisma: DatabaseService,
-    private twilio: TwilioService,
-    private authService: AuthService
-  ) {}
+  constructor( private prisma: DatabaseService, private twilio: TwilioService, private authService: AuthService ) {}
 
   async signupCustomer({ phoneNumber, username, otpCode }: CreateCustomerDto) {
     const existingCustomer = await this.authService.findUser({ phoneNumber });
@@ -30,6 +26,7 @@ export class AuthCustomerService {
     }
 
     const role = Role.CUSTOMER;
+    
     const newCustomer = await this.prisma.customer.create({
       data: { phoneNumber, username, role },
     });
