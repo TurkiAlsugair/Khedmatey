@@ -41,6 +41,8 @@ model ServiceProvider{
 
   role Role @default(value: SERVICE_PROVIDER)
 
+  workers Worker[]
+
   cities City[]
 
   services Service[]
@@ -92,6 +94,37 @@ model Service {
   serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id])
   serviceProviderId Int
 
+
+  Request Request[]
+}
+
+model Worker {
+  id Int @id @default(autoincrement())
+  
+  username String       
+  
+  phoneNumber String @unique
+
+  role Role @default(value: WORKER)
+
+  serviceProvider  ServiceProvider  @relation(fields: [serviceProviderId], references: [id])
+  serviceProviderId Int
+
+  requests Request[]    
+}
+
+
+model Request {
+  id Int @id @default(autoincrement())
+
+  status String
+
+  service     Service    @relation(fields: [serviceId], references: [id])
+  serviceId   Int
+
+  workers Worker[]
+}
+
   status      Status  @default(PENDING)
 
 }
@@ -108,3 +141,4 @@ model Admin {
   phoneNumber String @unique
   role        Role    @default(value: ADMIN)
 }
+

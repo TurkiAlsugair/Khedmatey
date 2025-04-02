@@ -9,20 +9,32 @@ FROM Customer
 
 UNION ALL
 
-SELECT
-  id,
-  username,
-  phoneNumber,
-  email,
-  'SERVICE_PROVIDER' AS role
+
+SELECT 
+    id, 
+    username, 
+    phoneNumber, 
+    email, 
+    'SERVICE_PROVIDER' AS role 
+
 FROM ServiceProvider
 
 UNION ALL
+
+
+SELECT 
+    id,
+    username,        
+    phoneNumber,
+    NULL AS email,
+    'WORKER' AS role
+FROM Worker
 
 SELECT
   id,
   username,
   phoneNumber,
   NULL AS email,
-  'ADMIN' AS role
-FROM Admin;
+  'ADMIN' AS role;
+
+
