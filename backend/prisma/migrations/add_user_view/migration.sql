@@ -15,4 +15,14 @@ SELECT
     phoneNumber, 
     email, 
     'SERVICE_PROVIDER' AS role 
-FROM ServiceProvider;
+FROM ServiceProvider
+
+UNION ALL
+
+SELECT 
+    id,
+    username,        
+    phoneNumber,
+    NULL AS email,
+    'WORKER' AS role
+FROM Worker;

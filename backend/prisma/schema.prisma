@@ -96,9 +96,11 @@ model Service {
 model Worker {
   id Int @id @default(autoincrement())
   
-  usernamae String       
+  username String       
   
-  phoneNumber      String           @unique
+  phoneNumber String @unique
+
+  role Role @default(value: WORKER)
 
   serviceProvider  ServiceProvider  @relation(fields: [serviceProviderId], references: [id])
   serviceProviderId Int

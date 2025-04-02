@@ -29,9 +29,8 @@ export class AuthCustomerService {
         throw new BadRequestException("Wrong OTP");
     }
 
-    const role = Role.CUSTOMER;
     const newCustomer = await this.prisma.customer.create({
-      data: { phoneNumber, username, role },
+      data: { phoneNumber, username}, //role column defaults to CUSTOMER
     });
 
     const token = this.authService.generateToken(newCustomer);
