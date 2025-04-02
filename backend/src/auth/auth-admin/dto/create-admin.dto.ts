@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsPhoneNumber, IsString } from "class-validator";
 
-export class CreateCustomerDto {
+export class CreateAdminDto {
   @IsString()
   @IsNotEmpty()
   username: string;
@@ -14,6 +14,3 @@ export class CreateCustomerDto {
   @IsNotEmpty()
   otpCode: string;
 }
-
-
-

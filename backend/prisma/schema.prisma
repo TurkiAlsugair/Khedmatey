@@ -17,6 +17,7 @@ enum Role {
   CUSTOMER
   SERVICE_PROVIDER
   WORKER
+  ADMIN
 }
 
 model Customer {
@@ -40,7 +41,14 @@ model ServiceProvider{
 
   role Role @default(value: SERVICE_PROVIDER)
 
-  cities City[] // Implicit Many-to-Many with City
+  workers Worker[]
+
+  cities City[]
+
+  services Service[]
+
+  status  Status  @default(PENDING)
+
 }
 
 enum CityName {
@@ -50,11 +58,86 @@ enum CityName {
 }
 
 model City {
-  id   Int    @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
   name CityName
 
-  providers ServiceProvider[]  /// Implicit Many-to-Many with Service Provider
+  providers ServiceProvider[]
 }
 
+enum CategoryName {
+  Cleaning
+  Plumbing
+  Electrical
+  Painting
+  Other
+}
+
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     CategoryName    @unique
+  services Service[]
+}
+
+model Service {
+  id Int @id @default(autoincrement())
+
+  name String 
+
+  customCategory   String?          //used only when category is "Other", or will be removed if 'other' it self will be used as a category
+  categoryId       Int
+  category         Category         @relation(fields: [categoryId], references: [id])
+
+  price String
+
+  status  Status  @default(PENDING)
+
+  serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id])
+  serviceProviderId Int
+
+
+  Request Request[]
+}
+
+model Worker {
+  id Int @id @default(autoincrement())
+  
+  username String       
+  
+  phoneNumber String @unique
+
+  role Role @default(value: WORKER)
+
+  serviceProvider  ServiceProvider  @relation(fields: [serviceProviderId], references: [id])
+  serviceProviderId Int
+
+  requests Request[]    
+}
+
+
+model Request {
+  id Int @id @default(autoincrement())
+
+  service     Service    @relation(fields: [serviceId], references: [id])
+  serviceId   Int
+
+  workers Worker[]
+
+  status  Status  @default(PENDING)
+}
+
+enum Status {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+
+model Admin {
+  id          Int     @id @default(autoincrement())
+  username    String
+  phoneNumber String @unique
+  role        Role    @default(value: ADMIN)
+}
 

@@ -1,8 +1,9 @@
-import { Injectable, Post, UnauthorizedException, BadRequestException } from "@nestjs/common";
+import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
 import { DatabaseService } from "src/database/database.service";
 import { TwilioService } from "src/twilio/twilio.service";
 import { JwtService } from "@nestjs/jwt";
 import { GenerateTokenDto } from "./dtos/generate-token.dto";
+import { FindUserDto } from "./dtos/find-user.dto";
 
 @Injectable()
 export class AuthService {
@@ -28,22 +29,32 @@ export class AuthService {
   }
 
   async signin(userPhoneNumber: string, code: string) {
-    const user = (await this.prisma.$queryRaw`
-        SELECT * FROM UserView WHERE phoneNumber = ${userPhoneNumber} LIMIT 1`) as any[];
+    const user = await this.findUser({phoneNumber: userPhoneNumber})
 
-    if (!user || user.length === 0) {
-      throw new UnauthorizedException("User not found");
+    if (!user) {
+      throw new NotFoundException("User not found");
     }
 
-    try {
-              await this.twilio.verifyOtp(userPhoneNumber, code);
-              } catch (err) {
-                throw new BadRequestException("Wrong OTP");
-              }
+    //verify otp
+    // try {
+    //   await this.twilio.verifyOtp(userPhoneNumber, code);
+    //   } catch (err) {
+    //     throw new BadRequestException("Wrong OTP");
+    //   }
 
-    const newUser = user[0];
+    const newUser = user;
 
     const token = this.generateToken(newUser);
     return { token, newUser };
+  }
+
+  async findUser ({phoneNumber}: FindUserDto){
+
+    // Find if the customer is registered
+    // Here user is an array of one obj if user is found or empty array if not
+    const [user] = (await this.prisma.$queryRaw`
+      SELECT * FROM UserView WHERE phoneNumber = ${phoneNumber} LIMIT 1`) as any[]; 
+    return  user || null;
+
   }
 }

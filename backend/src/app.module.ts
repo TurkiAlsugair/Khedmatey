@@ -6,9 +6,23 @@ import { AuthModule } from './auth/auth.module';
 import { CustomerModule } from './customer/customer.module';
 import { AuthCustomerModule } from './auth/auth-customer/auth-customer.module';
 import { AuthServiceProviderModule } from './auth/auth-service-provider/auth-service-provider.module';
+import { ServiceModule } from './service/service.module';
+import { ServiceProviderModule } from './service-provider/service-provider.module';
+import { AdminModule } from './auth/auth-admin/admin.module';
+
+
 
 @Module({
-  imports: [ConfigModule.forRoot({isGlobal:true}), AuthModule, CustomerModule, AuthCustomerModule, AuthServiceProviderModule],
+  imports: [
+    ConfigModule.forRoot({isGlobal:true}), 
+    AuthModule, 
+    CustomerModule, 
+    AuthCustomerModule, 
+    AuthServiceProviderModule, 
+    ServiceModule, 
+    ServiceProviderModule,
+    ServiceModule,
+    AdminModule],
   controllers: [AppController],
   providers: [AppService],
 })

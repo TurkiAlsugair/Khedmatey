@@ -1,19 +1,15 @@
-import { IsNotEmpty, IsPhoneNumber, IsString } from "class-validator";
+import { IsString, IsNotEmpty, IsPhoneNumber } from "class-validator";
 
-export class CreateCustomerDto {
+export class CreateWorkerDto {
   @IsString()
   @IsNotEmpty()
   username: string;
 
-  @IsString()
-  @IsNotEmpty()
   @IsPhoneNumber()
+  @IsNotEmpty()
   phoneNumber: string;
 
   @IsString()
   @IsNotEmpty()
   otpCode: string;
 }
-
-
-
