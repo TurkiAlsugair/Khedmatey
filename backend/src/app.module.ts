@@ -9,6 +9,8 @@ import { AuthServiceProviderModule } from './auth/auth-service-provider/auth-ser
 import { ServiceModule } from './service/service.module';
 import { ServiceProviderModule } from './service-provider/service-provider.module';
 
+
+
 @Module({
   imports: [
     ConfigModule.forRoot({isGlobal:true}), 
@@ -17,7 +19,9 @@ import { ServiceProviderModule } from './service-provider/service-provider.modul
     AuthCustomerModule, 
     AuthServiceProviderModule, 
     ServiceModule, 
-    ServiceProviderModule],
+    ServiceProviderModule,
+    ServiceModule,
+    AdminModule],
   controllers: [AppController],
   providers: [AppService],
 })

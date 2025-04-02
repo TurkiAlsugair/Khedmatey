@@ -31,7 +31,7 @@ export class AuthServiceProviderController {
     }
   }
 
-  @Roles(Role.SERVICE_PROVIDER) //set metadata
+    @Roles(Role.SERVICE_PROVIDER) //set metadata
     @UseGuards(JwtAuthGuard, RolesGuard, OwnerGuard)
     @Patch("/account")
     async updateCustomer(@Body() updateDto: UpdateServiceProviderDto, @Req() req: Request): Promise<BaseResponseDto> {
