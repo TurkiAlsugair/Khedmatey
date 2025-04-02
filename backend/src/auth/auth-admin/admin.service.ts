@@ -86,6 +86,6 @@ async signupAdmin({ phoneNumber, username, otpCode }: CreateAdminDto) {
     });
 
     return { message: `Service status updated to '${status}' successfully.` };
-}
+  }
 
 }

@@ -8,6 +8,7 @@ import { AuthCustomerModule } from './auth/auth-customer/auth-customer.module';
 import { AuthServiceProviderModule } from './auth/auth-service-provider/auth-service-provider.module';
 import { ServiceModule } from './service/service.module';
 import { ServiceProviderModule } from './service-provider/service-provider.module';
+import { AdminModule } from './auth/auth-admin/admin.module';
 
 
 

@@ -9,7 +9,6 @@ FROM Customer
 
 UNION ALL
 
-
 SELECT 
     id, 
     username, 
@@ -21,7 +20,6 @@ FROM ServiceProvider
 
 UNION ALL
 
-
 SELECT 
     id,
     username,        
@@ -30,11 +28,14 @@ SELECT
     'WORKER' AS role
 FROM Worker
 
+UNION ALL
+
 SELECT
   id,
   username,
   phoneNumber,
   NULL AS email,
-  'ADMIN' AS role;
+  'ADMIN' AS role
+From Admin
 
 
