@@ -3,7 +3,11 @@ import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 export class CreateServiceDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  nameAR: string;
+
+  @IsString()
+  @IsNotEmpty()
+  nameEN: string;
 
   @IsString()
   @IsNotEmpty()
@@ -11,8 +15,4 @@ export class CreateServiceDto {
 
   @IsInt()
   categoryId: number;
-
-  @IsString()
-  @IsOptional()
-  customCategory?: string;
 }
