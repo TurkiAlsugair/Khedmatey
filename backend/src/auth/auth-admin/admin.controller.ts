@@ -1,4 +1,4 @@
-import { Controller, Patch, UseGuards, Param, Body, ParseIntPipe, Post } from "@nestjs/common";
+import { Controller, Patch, UseGuards, Param, Body, ParseIntPipe, Post, Get } from "@nestjs/common";
 import { Role } from "@prisma/client";
 import { Roles } from "src/auth/decorators/roles.decorator";
 import { JwtAuthGuard } from "src/auth/guards/jwt.guard";
@@ -33,8 +33,8 @@ export class AdminController {
 
   @Roles(Role.ADMIN) // Set meta data
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Patch("serviceProviders/:spId/status")
-  async updateStatus(
+  @Patch("service-providers/:spId/status")
+  async updateProviderStatus(
     @Param("spId", ParseIntPipe) id: number,
     @Body() data: UpdateStatusDto ): Promise<BaseResponseDto> {
     try {
@@ -48,7 +48,7 @@ export class AdminController {
     }
   }
 
-  @Patch("serviceProviders/:spId/services/:sId/status")
+  @Patch("service-providers/:spId/services/:sId/status")
   @Roles(Role.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   async updateServiceStatus(
@@ -65,4 +65,21 @@ export class AdminController {
       throw err;
     }
   }
+
+  @Get('service-providers/status/pending')
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async getPendingProviders(): Promise<BaseResponseDto> {
+    try {
+      const providers = await this.adminService.getPendingProviders();
+
+      return {
+        message: 'Pending service providers fetched successfully.',
+        data: providers,
+      };
+    } catch (err) {
+      throw err
+    }
+  }
+
 }

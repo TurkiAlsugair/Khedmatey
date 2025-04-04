@@ -88,4 +88,22 @@ async signupAdmin({ phoneNumber, username, otpCode }: CreateAdminDto) {
     return { message: `Service status updated to '${status}' successfully.` };
 }
 
+async getPendingProviders() {
+  const pendingProviders = await this.prisma.serviceProvider.findMany({
+    where: { status: Status.PENDING },
+    select: {
+      id: true,
+      username: true,
+      phoneNumber: true,
+      email: true,
+      cities: {
+        select: {
+          name: true, // CReturn only the city name
+        },
+      },
+    },
+  });
+
+  return pendingProviders;
+}
 }
