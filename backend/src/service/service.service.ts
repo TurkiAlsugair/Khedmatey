@@ -21,10 +21,10 @@ export class ServiceService {
       throw new NotFoundException('Service provider not found');
     }
     
-    // Check if the provider is ACCEPTED
-    if (serviceProvider.status !== 'ACCEPTED') {
-      throw new BadRequestException('Only ACCEPTED service providers can create services');
-    }
+    // // Check if the provider is ACCEPTED
+    // if (serviceProvider.status !== 'ACCEPTED') {
+    //   throw new BadRequestException('Only ACCEPTED service providers can create services');
+    // }
 
     //validate category exists
     const category = await this.prisma.category.findUnique({
@@ -133,4 +133,32 @@ export class ServiceService {
     return updatedService;
   }
   
+  async getAllServicesForProvider(spId: number) {
+
+    //check if a number is provided
+    if (isNaN(spId)) {
+      throw new BadRequestException('Invalid service provider ID');
+    }
+
+    //check if provider exists
+    const serviceProvider = await this.prisma.serviceProvider.findUnique({
+      where: { id: spId },
+    });
+    if (!serviceProvider) {
+      throw new NotFoundException('Service provider not found');
+    }
+
+    //query services for the sp
+    const services = await this.prisma.service.findMany({
+      where: {
+        serviceProviderId: spId,
+      },
+      include: {
+        category: true,
+      },
+    });
+
+    return services;
+  }
+
 }

@@ -78,9 +78,16 @@ export class ServiceController {
     }
   }
   
-  @Get()
-  findAll() {
-    // return this.serviceService.findAll();
+  @UseGuards(JwtAuthGuard)//only require a valid token regardless of role
+  @Get(':spId')
+  async getSPServices(@Param('spId') spId: string): Promise<BaseResponseDto> {
+    const providerId = parseInt(spId);
+    const services = await this.serviceService.getAllServicesForProvider(providerId);
+
+    return {
+      message: 'List of services for the specified service provider',
+      data: services,
+    };
   }
 
 }
