@@ -1,0 +1,142 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  SERVICE_PROVIDER
+  WORKER
+  ADMIN
+}
+
+model Customer {
+  id Int @default(autoincrement()) @id
+
+  username String 
+
+  phoneNumber String @unique
+
+  role Role @default(value: CUSTOMER)
+}
+
+model ServiceProvider{
+  id Int @default(autoincrement()) @id
+
+  username String
+
+  phoneNumber String @unique
+
+  email String @unique
+
+  role Role @default(value: SERVICE_PROVIDER)
+
+  workers Worker[]
+
+  cities City[]
+
+  services Service[]
+
+  status  Status  @default(PENDING)
+
+}
+
+enum CityName {
+  Riyadh
+  Jeddah
+  Dammam
+}
+
+model City {
+  id Int @id @default(autoincrement())
+
+  name CityName
+
+  providers ServiceProvider[]
+}
+
+enum CategoryName {
+  Cleaning
+  Plumbing
+  Electrical
+  Painting
+  Other
+}
+
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     CategoryName    @unique
+  services Service[]
+}
+
+model Service {
+  id Int @id @default(autoincrement())
+
+  nameAR String 
+  nameEN String
+  
+  categoryId       Int
+  category         Category         @relation(fields: [categoryId], references: [id])
+
+  price String
+
+  status  Status  @default(PENDING)
+
+  serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id])
+  serviceProviderId Int
+
+
+  Request Request[]
+}
+
+model Worker {
+  id Int @id @default(autoincrement())
+  
+  username String       
+  
+  phoneNumber String @unique
+
+  role Role @default(value: WORKER)
+
+  serviceProvider  ServiceProvider  @relation(fields: [serviceProviderId], references: [id])
+  serviceProviderId Int
+
+  requests Request[]    
+}
+
+
+model Request {
+  id Int @id @default(autoincrement())
+
+  service     Service    @relation(fields: [serviceId], references: [id])
+  serviceId   Int
+
+  workers Worker[]
+
+  status  Status  @default(PENDING)
+}
+
+enum Status {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+model Admin {
+  id          Int     @id @default(autoincrement())
+  username    String
+  phoneNumber String @unique
+  role        Role    @default(value: ADMIN)
+}
+
