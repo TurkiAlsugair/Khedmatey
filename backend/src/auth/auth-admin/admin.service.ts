@@ -123,7 +123,7 @@ async signupAdmin({ phoneNumber, username, otpCode }: CreateAdminDto) {
           },
         },
       },
-      // Select the fields you want to return
+      
       select: {
         id: true,
         username: true,
