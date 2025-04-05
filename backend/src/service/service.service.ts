@@ -161,4 +161,14 @@ export class ServiceService {
     return services;
   }
 
+  async getAllServices() {
+    const services = await this.prisma.service.findMany({
+      include: {
+        category: true,
+      },
+    });
+  
+    return services;
+  }
+
 }

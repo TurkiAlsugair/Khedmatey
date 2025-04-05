@@ -90,4 +90,14 @@ export class ServiceController {
     };
   }
 
+  @UseGuards(JwtAuthGuard)//only require a valid token regardless of role
+  @Get()
+  async getAllServices(): Promise<BaseResponseDto> {
+    const services = await this.serviceService.getAllServices();
+
+    return {
+      message: 'List of all services',
+      data: services,
+    };
+  }
 }
