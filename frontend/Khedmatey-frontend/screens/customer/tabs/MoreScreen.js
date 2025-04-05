@@ -8,12 +8,18 @@ import { Colors } from "../../../constants/styles";
 import Option from "../../../components/MoreScreen/Option";
 import { useContext } from "react";
 import { AuthContext } from "../../../context/AuthContext";
+import i18n from "../../../locales/i18n";
 
 export default function MoreScreen({ navigation }) {
   const { userInfo, logout } = useContext(AuthContext);
+  const isArabic = i18n.language === "ar";
 
+  const logoutAlertTitle = isArabic ? "تأكيد تسجيل الخروج" : "Confirm Logout";
+  const logoutAlertText = isArabic
+    ? "هل انت متأكد من انك تريد تسجيل الخروج ؟"
+    : "Are you sure you want to log out ?";
   const handleLogout = () => {
-    Alert.alert("Confirm Logout", "Are you sure you want to log out?", [
+    Alert.alert(logoutAlertTitle, logoutAlertText, [
       {
         text: "Cancel",
         style: "cancel",

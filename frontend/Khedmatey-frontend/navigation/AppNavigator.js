@@ -8,9 +8,11 @@ import ServiceProviderNavigator from "./serviceProvider/ServiceProviderNavigator
 import WorkerNavigator from "./WorkerNavigator";
 import AdminNavigator from "./admin/AdminNavigator";
 import SplashScreen from "../screens/SplashScreen";
+import i18n from "../locales/i18n";
 
 export default function AppNavigator() {
   const { userRole, loading } = useContext(AuthContext);
+  const isArabic = i18n.language === "ar";
 
   // Show while AsyncStorage loads
   if (loading) return <SplashScreen />;
@@ -18,16 +20,16 @@ export default function AppNavigator() {
   return (
     <NavigationContainer>
       {userRole === "customer" ? (
-        <CustomerNavigator />
+        <CustomerNavigator isArabic={isArabic} />
       ) : userRole === "serviceProvider" ? (
-        <ServiceProviderNavigator />
+        <ServiceProviderNavigator isArabic={isArabic} />
       ) : userRole === "worker" ? (
-        <WorkerNavigator />
+        <WorkerNavigator isArabic={isArabic} />
       ) : userRole === "admin" ? (
-        <AdminNavigator />
+        <AdminNavigator isArabic={isArabic} />
       ) : (
         // Default: Show login/signup
-        <AuthNavigator />
+        <AuthNavigator isArabic={isArabic} />
       )}
     </NavigationContainer>
   );

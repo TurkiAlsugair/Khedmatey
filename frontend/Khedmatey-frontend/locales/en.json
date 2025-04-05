@@ -1,5 +1,21 @@
 {
   "welcome": "Welcome to Khedmatey",
   "loginTitle": "Login to your account",
-  "signup": "Sign Up"
+  "signup": "Sign Up",
+  "login": "Login",
+  "phoneNumber": "Phone number",
+  "OR": "OR",
+  "Don't have": "Don't have an account ?",
+  "signupTitle": "Create your account",
+  "username": "Username",
+  "usernamePlaceholder": "Enter your username",
+  "You have": " You have an account ?",
+  "Register as sp": "Register as a Service Provider",
+  "SP registration title": "Service Provider Registration",
+  "companyName": "Company Name",
+  "companyNamePlaceholder": "Enter your company's name",
+  "email": "Email",
+  "selectCities": "Select Cities",
+  "selectCitiesPlaceholder": "Choose your cities",
+  "register": "Register"
 }

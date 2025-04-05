@@ -8,13 +8,19 @@ import LoginScreen from "../screens/auth/LoginScreen";
 import SignupCustomerScreen from "../screens/auth/SignupCustomerScreen";
 import SignupServiceProviderScreen from "../screens/auth/SignupServiceProvider";
 import { SafeAreaView, StyleSheet, Platform } from "react-native";
+import i18n from "../locales/i18n";
 
 const Stack = createStackNavigator();
 
-export default function AuthNavigator() {
+export default function AuthNavigator({ isArabic }) {
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+          animation: isArabic ? "slide_from_left" : "slide_from_right",
+        }}
+      >
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="SignupCustomer" component={SignupCustomerScreen} />
         <Stack.Screen

@@ -13,6 +13,7 @@ import OtpModal from "../../components/Modals/OtpModal";
 import { AuthContext } from "../../context/AuthContext";
 import { Colors } from "../../constants/styles";
 import IconButton from "../../components/UI/IconButton";
+import i18n from "../../locales/i18n";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
 
@@ -27,6 +28,8 @@ export default function SignupCustomerScreen({ navigation }) {
 
   const [backendError, setBackendError] = useState(""); // Generic backend error
   const [otpVisible, setOtpVisible] = useState(false);
+
+  const isArabic = i18n.language === "ar";
 
   // Validation functions (only called on submit)
   const validateUsername = (input) => {
@@ -77,15 +80,17 @@ export default function SignupCustomerScreen({ navigation }) {
   return (
     <View style={styles.mainContainer}>
       <View style={styles.logoCont}>
-        <Text style={styles.title}>Logo !!</Text>
+        <Text>Logo !!</Text>
       </View>
       <View style={styles.cont1}>
-        <Text style={styles.title}>Create your account</Text>
+        <Text style={[styles.title, { textAlign: isArabic && "right" }]}>
+          {t("signupTitle")}
+        </Text>
 
         <View style={styles.formCont}>
           <Input
-            label="Username"
-            placeholder="Enter your username"
+            label={t("username")}
+            placeholder={t("usernamePlaceholder")}
             keyboardType="default"
             onUpdateValue={(value) => handleInputChange("username", value)}
             value={formState.username.value}
@@ -97,7 +102,7 @@ export default function SignupCustomerScreen({ navigation }) {
             }
           />
           <Input
-            label="Enter your phone number"
+            label={t("phoneNumber")}
             placeholder="05XXXXXXXX"
             keyboardType="phone-pad"
             onUpdateValue={(value) => handleInputChange("phoneNumber", value)}
@@ -118,24 +123,24 @@ export default function SignupCustomerScreen({ navigation }) {
           <Text style={styles.backendError}>{backendError}</Text>
         ) : null}
 
-        <Button onPress={handleSignup}>Sign-up</Button>
+        <Button onPress={handleSignup}>{t("signup")}</Button>
 
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <View style={{ flex: 1, height: 2, backgroundColor: "#6F6F6F" }} />
           <View>
-            <Text style={{ width: 50, textAlign: "center" }}>OR</Text>
+            <Text style={{ width: 50, textAlign: "center" }}>{t("OR")}</Text>
           </View>
           <View style={{ flex: 1, height: 2, backgroundColor: "#6F6F6F" }} />
         </View>
 
         <View style={styles.loginCont}>
           <Text style={{ color: "#6F6F6F", fontSize: wp(4.5) }}>
-            You have an account ?{" "}
+            {t("You have")}{" "}
             <Text
               style={{ color: Colors.primary, fontWeight: "bold" }}
               onPress={() => navigation.navigate("Login")}
             >
-              Login
+              {t("login")}
             </Text>
           </Text>
         </View>
@@ -148,7 +153,7 @@ export default function SignupCustomerScreen({ navigation }) {
             backgroundColor: "#478a37",
           }}
         >
-          Register as a Service Provider
+          {t("Register as sp")}
         </Button>
       </View>
 
