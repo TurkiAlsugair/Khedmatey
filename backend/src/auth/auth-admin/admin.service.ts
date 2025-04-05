@@ -71,12 +71,12 @@ async signupAdmin({ phoneNumber, username, otpCode }: CreateAdminDto) {
   });
 
     if (!service) {
-      throw new NotFoundException(`Service not found for this provider`);
+      throw new NotFoundException("Service not found for this provider");
     }
 
     // Avoid unnecessary update
     if (service.status === status) {
-      throw new BadRequestException(`Service is already '${status}'`);
+      throw new BadRequestException(`Service is already ${status}`);
     }
 
     // Update status
@@ -85,25 +85,61 @@ async signupAdmin({ phoneNumber, username, otpCode }: CreateAdminDto) {
       data: { status },
     });
 
-    return { message: `Service status updated to '${status}' successfully.` };
+    return { message: `Service status updated to ${status} successfully.` };
   }
 
-async getPendingProviders() {
-  const pendingProviders = await this.prisma.serviceProvider.findMany({
-    where: { status: Status.PENDING },
-    select: {
-      id: true,
-      username: true,
-      phoneNumber: true,
-      email: true,
-      cities: {
-        select: {
-          name: true, // CReturn only the city name
+  async getPendingProviders() {
+    const pendingProviders = await this.prisma.serviceProvider.findMany({
+      where: { status: Status.PENDING },
+      select: {
+        id: true,
+        username: true,
+        phoneNumber: true,
+        email: true,
+        cities: {
+          select: {
+            name: true, // Return only the city name
+          },
         },
       },
-    },
-  });
+    });
+  
+    return pendingProviders;
+  }
 
-  return pendingProviders;
-}
+  // return pending services and its service provider
+  async getProvidersPendingServices() {
+    const pendingServices = await this.prisma.serviceProvider.findMany({
+      
+      where: {
+        status: Status.ACCEPTED, // return only accepted service providers
+        services: {
+          some: { // Only fetch service providers who have at least one pending service
+            status: Status.PENDING, // filters providers with at least 1 pending service
+          },
+        },
+      },
+      // Select the fields you want to return
+      select: {
+        id: true,
+        username: true,
+        phoneNumber: true,
+        email: true,
+        services: {
+          // Only fetch services with status = 'PENDING'
+          where: { status: Status.PENDING },
+          // Only pick specific fields from each service
+          select: {
+            id: true,
+            categoryId: true,
+            nameEN: true,
+            nameAR: true,
+            price: true,
+          },
+        },
+      },
+    });
+
+    return pendingServices;
+  }
 }

@@ -31,6 +31,7 @@ export class AdminController {
     }
   }
 
+  // change the state of a service provider
   @Roles(Role.ADMIN) // Set meta data
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch("service-providers/:spId/status")
@@ -48,6 +49,7 @@ export class AdminController {
     }
   }
 
+  // change the state of a service
   @Patch("service-providers/:spId/services/:sId/status")
   @Roles(Role.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -66,19 +68,51 @@ export class AdminController {
     }
   }
 
+  // get pending service providers
   @Get('service-providers/status/pending')
   @Roles(Role.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   async getPendingProviders(): Promise<BaseResponseDto> {
     try {
-      const providers = await this.adminService.getPendingProviders();
+      const result = await this.adminService.getPendingProviders();
+
+      if (result.length === 0) {
+        return {
+          message: 'No pending service providers found.',
+          data: [],
+        };
+      }  
 
       return {
         message: 'Pending service providers fetched successfully.',
-        data: providers,
+        data: result,
       };
     } catch (err) {
       throw err
+    }
+  }
+
+  // get Fetch providers with pending services
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('service-providers/services/status/pending')
+  async getServiceProvidersWithPendingServices(): Promise<BaseResponseDto> {
+    try {
+      const result = await this.adminService.getProvidersPendingServices();
+
+      if (result.length === 0) {
+        return {
+          message: 'No pending services found.',
+          data: [],
+        };
+      }  
+
+      return {
+        message: 'Service providers with pending services fetched successfully.',
+        data: result,
+      };
+    } catch (err) {
+      throw err;
     }
   }
 
