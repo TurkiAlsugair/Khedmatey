@@ -1,5 +1,21 @@
 {
   "welcome": "مرحبًا بك في خدمتي",
   "loginTitle": "تسجيل الدخول لحسابك",
-  "signup": "إنشاء حساب"
+  "signup": "إنشاء حساب",
+  "login": "تسجيل الدخول",
+  "phoneNumber": "رقم الجوال",
+  "OR": "أو",
+  "Don't have": "ليس لديك حساب ؟",
+  "signupTitle": "انشاء حساب",
+  "username": "اسم المستخدم",
+  "usernamePlaceholder": "اكتب اسم المستخدم",
+  "You have": " لديك حساب ؟",
+  "Register as sp": "التسجيل كمزود خدمة",
+  "SP registration title": "التسجيل كمزود خدمة",
+  "companyName": "اسم مزود الخدمة",
+  "companyNamePlaceholder": "اكتب اسم مزود الخدمة هنا",
+  "email": "البريد الالكتروني",
+  "selectCities": "المدن",
+  "selectCitiesPlaceholder": "اختر المدن التي تتواجد فيها",
+  "register": "التسجيل"
 }

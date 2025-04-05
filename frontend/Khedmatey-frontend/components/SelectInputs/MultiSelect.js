@@ -6,6 +6,7 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
+import i18n from "../../locales/i18n";
 
 const MultiSelectInput = ({
   label,
@@ -19,25 +20,41 @@ const MultiSelectInput = ({
   const renderSelectedItem = (item, unSelect) => (
     <TouchableOpacity onPress={() => unSelect && unSelect(item)}>
       <View style={styles.selectedStyle}>
-        <Text style={styles.textSelectedStyle}>{item.label}</Text>
+        <Text style={[styles.textSelectedStyle]}>{item.label}</Text>
         <Ionicons color="black" name="close" size={17} />
       </View>
     </TouchableOpacity>
   );
 
+  const isArabic = i18n.language === "ar";
+
   return (
     <View style={{ marginBottom: 10 }}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label && (
+        <Text style={[styles.label, { textAlign: isArabic && "right" }]}>
+          {label}
+        </Text>
+      )}
 
       <MultiSelect
         mode="modal"
         // maxHeight={hp(22.1)}
-        containerStyle={{ maxHeight: hp(46) }}
+        // containerStyle={{ maxHeight: hp(46) }}
         activeColor="rgba(128, 198, 57, 0.47)"
-        style={[styles.dropdown, isInvalid && styles.invalidDropdown]}
-        placeholderStyle={styles.placeholderStyle}
+        style={[
+          styles.dropdown,
+          isInvalid && styles.invalidDropdown,
+          { textAlign: isArabic && "right" },
+        ]}
+        placeholderStyle={[
+          styles.placeholderStyle,
+          { textAlign: isArabic && "right" },
+        ]}
         selectedTextStyle={styles.selectedTextStyle}
-        inputSearchStyle={styles.inputSearchStyle}
+        inputSearchStyle={[
+          styles.inputSearchStyle,
+          { textAlign: isArabic && "right" },
+        ]}
         iconStyle={styles.iconStyle}
         data={data}
         labelField="label"
@@ -45,7 +62,7 @@ const MultiSelectInput = ({
         placeholder={placeholder}
         value={value}
         search
-        searchPlaceholder="Search..."
+        searchPlaceholder={isArabic ? "البحث..." : "Search..."}
         onChange={onChange}
         renderSelectedItem={renderSelectedItem}
       />

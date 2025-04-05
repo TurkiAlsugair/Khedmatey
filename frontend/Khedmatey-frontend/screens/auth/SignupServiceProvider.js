@@ -15,6 +15,7 @@ import { AuthContext } from "../../context/AuthContext";
 import { Colors } from "../../constants/styles";
 import IconButton from "../../components/UI/IconButton";
 import { cities } from "../../constants/data";
+import i18n from "../../locales/i18n";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
 
@@ -22,6 +23,8 @@ const citiesList = cities;
 
 export default function SignupServiceProviderScreen({ navigation }) {
   const { t } = useTranslation();
+  const isArabic = i18n.language === "ar";
+
   const { login } = useContext(AuthContext);
   const [formState, setFormState] = useState({
     username: { value: "", isValid: true },
@@ -78,36 +81,38 @@ export default function SignupServiceProviderScreen({ navigation }) {
 
   return (
     <View style={styles.mainCont}>
-      <View style={styles.backButtonCont}>
+      <View
+        style={[styles.backButtonCont, { alignSelf: isArabic && "flex-end" }]}
+      >
         <IconButton
           color={"black"}
           size={30}
-          icon={"arrow-back"}
+          icon={isArabic ? "arrow-forward" : "arrow-back"}
           onPress={() => navigation.goBack()}
         />
       </View>
 
       <View style={styles.contentContainer}>
-        <Text style={styles.title}>Service Provider Registration</Text>
+        <Text style={[styles.title, { textAlign: isArabic && "right" }]}>
+          {t("SP registration title")}
+        </Text>
 
         {/* Inputs */}
         <View style={styles.formCont}>
           <Input
-            label="Company Name"
-            placeholder="Enter your company's username"
+            label={t("companyName")}
+            placeholder={t("companyNamePlaceholder")}
             keyboardType="default"
             onUpdateValue={(value) => handleInputChange("username", value)}
             value={formState.username.value}
             labelFontSize={wp(3.8)}
             labelColor="#6F6F6F"
             isInvalid={!formState.username.isValid}
-            errorMessage={
-              !formState.username.isValid ? "Name cannot be empty" : ""
-            }
+            errorMessage={"Name cannot be empty"}
           />
 
           <Input
-            label="Email"
+            label={t("email")}
             placeholder="email@x.com"
             keyboardType="email-address"
             onUpdateValue={(value) => handleInputChange("email", value)}
@@ -115,13 +120,11 @@ export default function SignupServiceProviderScreen({ navigation }) {
             labelFontSize={wp(3.8)}
             labelColor="#6F6F6F"
             isInvalid={!formState.email.isValid}
-            errorMessage={
-              !formState.email.isValid ? "Invalid email address" : ""
-            }
+            errorMessage={"Invalid email address"}
           />
 
           <Input
-            label="Phone Number"
+            label={t("phoneNumber")}
             placeholder="05XXXXXXXX"
             keyboardType="phone-pad"
             onUpdateValue={(value) => handleInputChange("phoneNumber", value)}
@@ -129,15 +132,11 @@ export default function SignupServiceProviderScreen({ navigation }) {
             labelFontSize={wp(3.8)}
             labelColor="#6F6F6F"
             isInvalid={!formState.phoneNumber.isValid}
-            errorMessage={
-              !formState.phoneNumber.isValid
-                ? "Invalid phone format (05XXXXXXXX)"
-                : ""
-            }
+            errorMessage={"Invalid phone format (05XXXXXXXX)"}
           />
           <MultiSelectInput
-            label="Select Cities"
-            placeholder="Choose your cities"
+            label={t("selectCities")}
+            placeholder={t("selectCitiesPlaceholder")}
             data={citiesList}
             value={formState.cities.value}
             onChange={(selected) =>
@@ -157,7 +156,7 @@ export default function SignupServiceProviderScreen({ navigation }) {
         ) : null}
 
         {/* Register Button */}
-        <Button onPress={handleSignup}>Register</Button>
+        <Button onPress={handleSignup}>{t("register")}</Button>
 
         {/* OTP Modal */}
         <OtpModal

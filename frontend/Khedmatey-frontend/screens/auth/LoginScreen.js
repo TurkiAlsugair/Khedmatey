@@ -12,6 +12,7 @@ import Button from "../../components/UI/Button";
 import { Colors } from "../../constants/styles";
 import OtpModal from "../../components/Modals/OtpModal";
 import { AuthContext } from "../../context/AuthContext";
+import i18n from "../../locales/i18n";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
 
@@ -23,6 +24,8 @@ export default function LoginScreen({ navigation }) {
   });
   const [backendError, setBackendError] = useState(""); // Generic backend error
   const [otpVisible, setOtpVisible] = useState(false);
+
+  const isArabic = i18n.language === "ar";
 
   const handleInputChange = (value) => {
     setFormState({ phoneNumber: { value, isValid: true } });
@@ -53,7 +56,6 @@ export default function LoginScreen({ navigation }) {
 
       setOtpVisible(true);
     } catch (error) {
-      console.log("ppppp");
       setBackendError(error.response?.data?.message || "Something went wrong.");
     }
   };
@@ -61,13 +63,15 @@ export default function LoginScreen({ navigation }) {
   return (
     <View style={styles.mainContainer}>
       <View style={styles.logoCont}>
-        <Text style={styles.title}>Logo !!</Text>
+        <Text>Logo !!</Text>
       </View>
       <View style={styles.contentCont}>
-        <Text style={styles.title}>{t("loginTitle")}</Text>
+        <Text style={[styles.title, { textAlign: isArabic && "right" }]}>
+          {t("loginTitle")}
+        </Text>
 
         <Input
-          label="Enter your phone number"
+          label={t("phoneNumber")}
           placeholder="05XXXXXXXX"
           keyboardType="phone-pad"
           onUpdateValue={handleInputChange}
@@ -77,7 +81,9 @@ export default function LoginScreen({ navigation }) {
           isInvalid={!formState.phoneNumber.isValid} // Red border only on submit
           errorMessage={
             !formState.phoneNumber.isValid
-              ? "Invalid phone format (05XXXXXXXX)"
+              ? isArabic
+                ? "(05XXXXXXXX) الرقم يجب ان يكون بصيغة "
+                : "Invalid phone format (05XXXXXXXX)"
               : ""
           }
         />
@@ -87,24 +93,27 @@ export default function LoginScreen({ navigation }) {
           <Text style={styles.backendError}>{backendError}</Text>
         ) : null}
 
-        <Button onPress={handleSendOtp}>Login</Button>
+        <Button onPress={handleSendOtp}> {t("login")}</Button>
 
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <View style={{ flex: 1, height: 2, backgroundColor: "#6F6F6F" }} />
           <View>
-            <Text style={{ width: 50, textAlign: "center" }}>OR</Text>
+            <Text style={{ width: 50, textAlign: "center" }}>{t("OR")}</Text>
           </View>
           <View style={{ flex: 1, height: 2, backgroundColor: "#6F6F6F" }} />
         </View>
 
         <View style={styles.signupCont}>
           <Text style={{ color: "#6F6F6F", fontSize: wp(4.5) }}>
-            Don't have an account?{" "}
+            {t("Don't have")}{" "}
             <Text
-              style={{ color: Colors.primary, fontWeight: "bold" }}
+              style={{
+                color: Colors.primary,
+                fontWeight: "bold",
+              }}
               onPress={() => navigation.navigate("SignupCustomer")}
             >
-              Sign-up
+              {t("signup")}
             </Text>
           </Text>
         </View>

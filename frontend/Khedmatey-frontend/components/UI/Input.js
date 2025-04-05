@@ -5,6 +5,7 @@ import {
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
 import { Colors } from "../../constants/styles";
+import i18n from "../../locales/i18n";
 
 function Input({
   label,
@@ -20,11 +21,17 @@ function Input({
   isReadOnly = false,
 }) {
   const [isFocused, setIsFocused] = useState(false);
+  const isArabic = i18n.language === "ar";
 
   return (
     <View style={styles.inputContainer}>
       <Text
-        style={[styles.label, { fontSize: labelFontSize, color: labelColor }]}
+        style={[
+          styles.label,
+          { fontSize: labelFontSize, color: labelColor },
+          ,
+          { textAlign: isArabic && "right" },
+        ]}
       >
         {label}
       </Text>
@@ -34,6 +41,7 @@ function Input({
           isFocused && styles.focusedInput,
           isInvalid && styles.invalidInput,
           isReadOnly && styles.readOnly,
+          { textAlign: isArabic && "right" },
         ]}
         placeholder={placeholder}
         placeholderTextColor={placeholderTextColor}
@@ -44,7 +52,11 @@ function Input({
         onBlur={() => setIsFocused(false)}
         readOnly={isReadOnly}
       />
-      {isInvalid && <Text style={styles.errorText}>{errorMessage}</Text>}
+      {isInvalid && (
+        <Text style={[styles.errorText, { textAlign: isArabic && "right" }]}>
+          {errorMessage}
+        </Text>
+      )}
     </View>
   );
 }

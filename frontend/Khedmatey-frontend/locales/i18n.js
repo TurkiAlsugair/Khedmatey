@@ -5,6 +5,8 @@ import { getLocales } from "expo-localization";
 import en from "./en.json";
 import ar from "./ar.json";
 
+import { I18nManager } from "react-native";
+
 // Detect system language
 const systemLanguage = getLocales()[0]?.languageCode === "ar" ? "ar" : "en";
 
@@ -24,7 +26,7 @@ const initializeI18n = async () => {
       ar: { translation: ar },
     },
     fallbackLng: "en", // Default language
-    lng: "en", // Set the initial language from storage (till now it will be hardcoded, it should be the lng )
+    lng: lng, // Set the initial language from storage
     interpolation: { escapeValue: false },
   });
 };
@@ -36,5 +38,6 @@ export const changeLanguage = async (lang) => {
 };
 
 initializeI18n();
+changeLanguage("ar"); // for testing
 
 export default i18n;
