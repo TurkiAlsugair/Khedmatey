@@ -12,9 +12,8 @@ export class AuthServiceProviderService {
 
   async signupServiceProvider({ phoneNumber, otpCode, username, email, cities }: CreateServiceProviderDto) {
 
+    //check if phonenumber exists
     const existingPhoneNumber = await this.authService.findUser({phoneNumber});
-
-    //check for phone number
     if(existingPhoneNumber) {
         throw new ConflictException("Phone number is already registered");
     }
@@ -50,16 +49,15 @@ export class AuthServiceProviderService {
     }
 
     //create service provider
-    const role = Role.SERVICE_PROVIDER;
     const newServiceProvider = await this.prisma.serviceProvider.create({
-      data: { username, email, phoneNumber, role,
+      data: { username, email, phoneNumber, //role column defaults to SERVICE_PROVIDER
         cities: {
           connect: matchedCities.map((city) => ({ id: city.id })),
         },
       },
     });
 
-    const token = this.authService.generateToken( { id: newServiceProvider.id ,username, phoneNumber, role} ) 
+    const token = this.authService.generateToken(newServiceProvider) 
 
     return {token, newServiceProvider, cities};
   }

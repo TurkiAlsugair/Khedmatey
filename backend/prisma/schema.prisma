@@ -41,11 +41,13 @@ model ServiceProvider{
 
   role Role @default(value: SERVICE_PROVIDER)
 
+  workers Worker[]
+
   cities City[]
 
   services Service[]
 
-  status      Status  @default(PENDING)
+  status  Status  @default(PENDING)
 
 }
 
@@ -81,19 +83,48 @@ model Category {
 model Service {
   id Int @id @default(autoincrement())
 
-  name String 
-
-  customCategory   String?          //used only when category is "Other", or will be removed if 'other' it self will be used as a category
+  nameAR String 
+  nameEN String
+  
   categoryId       Int
   category         Category         @relation(fields: [categoryId], references: [id])
 
   price String
 
+  status  Status  @default(PENDING)
+
   serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id])
   serviceProviderId Int
 
-  status      Status  @default(PENDING)
 
+  Request Request[]
+}
+
+model Worker {
+  id Int @id @default(autoincrement())
+  
+  username String       
+  
+  phoneNumber String @unique
+
+  role Role @default(value: WORKER)
+
+  serviceProvider  ServiceProvider  @relation(fields: [serviceProviderId], references: [id])
+  serviceProviderId Int
+
+  requests Request[]    
+}
+
+
+model Request {
+  id Int @id @default(autoincrement())
+
+  service     Service    @relation(fields: [serviceId], references: [id])
+  serviceId   Int
+
+  workers Worker[]
+
+  status  Status  @default(PENDING)
 }
 
 enum Status {
@@ -108,3 +139,4 @@ model Admin {
   phoneNumber String @unique
   role        Role    @default(value: ADMIN)
 }
+

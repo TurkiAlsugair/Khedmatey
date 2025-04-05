@@ -3,7 +3,11 @@ import { IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-va
 export class UpdateServiceDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  nameAR: string;
+
+  @IsString()
+  @IsNotEmpty()
+  nameEN: string;
 
   @IsString()
   @IsNotEmpty()
@@ -11,8 +15,4 @@ export class UpdateServiceDto {
 
   @IsInt()
   categoryId: number;
-
-  @IsString()
-  @IsOptional()
-  customCategory?: string;
 }

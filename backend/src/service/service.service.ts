@@ -10,7 +10,7 @@ export class ServiceService {
   constructor(private prisma: DatabaseService) {}
   
   async create(dto: CreateServiceDto, serviceProviderId: number) {
-    const { name, price, categoryId, customCategory } = dto;
+    const { nameAR, nameEN, price, categoryId } = dto;
 
     // search the service provider know it status 
     const serviceProvider = await this.prisma.serviceProvider.findUnique({
@@ -35,19 +35,14 @@ export class ServiceService {
       throw new NotFoundException('Category not found');
     }
 
-    //this is only for now until how the 'other' category will be handled is decided
-    //if category is "Other", customCategory is required
-    if (category.name === 'Other' && !customCategory) {
-      throw new BadRequestException("customCategory is required for the category 'Other' ");
-    }
 
     //create service
     const newService = await this.prisma.service.create({
       data: {
-        name,
+        nameAR,
+        nameEN,
         price,
         categoryId,
-        customCategory,
         serviceProviderId,
       },
       include: { //include the category info 
@@ -122,12 +117,6 @@ export class ServiceService {
     //validate provided category exists
     if (!category) {
       throw new NotFoundException('Category not found');
-    }
-  
-    //this is only for now until how the 'other' category will be handled is decided
-    //if category is "Other", customCategory is required
-    if (category.name === 'Other' && !dto.customCategory) {
-      throw new BadRequestException("customCategory is required for the category 'Other' ");
     }
     
     //update service info

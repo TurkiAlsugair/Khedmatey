@@ -86,7 +86,7 @@ async signupAdmin({ phoneNumber, username, otpCode }: CreateAdminDto) {
     });
 
     return { message: `Service status updated to '${status}' successfully.` };
-}
+  }
 
 async getPendingProviders() {
   const pendingProviders = await this.prisma.serviceProvider.findMany({

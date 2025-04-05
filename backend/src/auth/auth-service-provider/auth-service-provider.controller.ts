@@ -10,7 +10,7 @@ import { Request } from "express";
 import { OwnerGuard } from '../guards/owner.guard';
 import { UpdateServiceProviderDto } from './dtos/update-serviceprovider.dto';
 
-@Controller('auth/serviceProvider')
+@Controller('auth/service-provider')
 export class AuthServiceProviderController {
     constructor(private service: AuthServiceProviderService) {}
 
