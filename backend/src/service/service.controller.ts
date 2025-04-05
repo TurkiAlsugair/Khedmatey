@@ -81,23 +81,36 @@ export class ServiceController {
   @UseGuards(JwtAuthGuard)//only require a valid token regardless of role
   @Get(':spId')
   async getSPServices(@Param('spId') spId: string): Promise<BaseResponseDto> {
-    const providerId = parseInt(spId);
-    const services = await this.serviceService.getAllServicesForProvider(providerId);
-
-    return {
-      message: 'List of services for the specified service provider',
-      data: services,
-    };
+    
+    try
+    {
+      const providerId = parseInt(spId);
+      const services = await this.serviceService.getAllServicesForProvider(providerId);
+  
+      return {
+        message: 'List of services for the specified service provider',
+        data: services,
+      };
+    }
+    catch(err){
+      throw err
+    }
   }
 
   @UseGuards(JwtAuthGuard)//only require a valid token regardless of role
   @Get()
   async getAllServices(): Promise<BaseResponseDto> {
-    const services = await this.serviceService.getAllServices();
-
-    return {
-      message: 'List of all services',
-      data: services,
-    };
+    try
+    {
+      const services = await this.serviceService.getAllServices();
+  
+      return {
+        message: 'List of all services',
+        data: services,
+      };
+    }
+    catch(err){
+      throw err
+    }
   }
 }

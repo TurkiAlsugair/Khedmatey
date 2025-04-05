@@ -60,7 +60,7 @@ enum CityName {
 model City {
   id Int @id @default(autoincrement())
 
-  name CityName
+  name CityName @unique //unique is used so that findUnique function of prisma client can be used
 
   providers ServiceProvider[]
 }

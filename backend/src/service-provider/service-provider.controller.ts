@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ServiceProviderService } from './service-provider.service';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
@@ -28,6 +28,23 @@ export class ServiceProviderController {
       };
     } catch (err) {
       throw err;
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':cityName')
+  async getProvidersByCity(@Param('cityName') cityName: string,): Promise<BaseResponseDto> { //city name will be converted to enum inside the service
+    try
+    {
+      const providers = await this.serviceProviderService.findProvidersByCity(cityName);
+
+      return {
+        message: `List of providers in city: ${cityName}`,
+        data: providers,
+      };
+    }
+    catch(err){
+      throw err
     }
   }
 
