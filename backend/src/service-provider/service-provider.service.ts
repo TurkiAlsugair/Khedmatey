@@ -43,10 +43,10 @@ export class ServiceProviderService {
 
     async findProvidersByCity(cityNameStr: string) {
       
-      //validate city name by the enum
+      //validate and get the city name by the enum
       const cityEnum = await this.parseCity(cityNameStr)
       
-      //find the city:
+      //get the city:
       const city = await this.prisma.city.findUnique({
         where: {
           name: cityEnum,
@@ -56,7 +56,7 @@ export class ServiceProviderService {
         },
       });
   
-      //this check is needed even though it is already checked using parseCity. but it used so that city.providers works
+      //this check is needed even though it is already checked using parseCity because it is used so that city.providers works
       if (!city) {
         throw new NotFoundException(`City '${cityNameStr}' not found`);
       }

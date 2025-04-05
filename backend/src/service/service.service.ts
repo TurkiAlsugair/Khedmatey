@@ -3,7 +3,7 @@ import { DatabaseService } from "src/database/database.service";
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { cleanObject } from 'src/utils/cleanObject';
-import { Prisma } from '@prisma/client';
+import { CityName, Prisma } from '@prisma/client';
 
 @Injectable()
 export class ServiceService {
@@ -171,4 +171,45 @@ export class ServiceService {
     return services;
   }
 
+  async getServicesByCity(cityNameStr: string) {
+
+    //validate and get the city name by the enum
+    const cityEnum = await this.parseCity(cityNameStr)
+
+    //query all services from providers who serve this city
+    const services = await this.prisma.service.findMany({
+      where: {
+        serviceProvider: {
+          cities: {
+            some: {
+              name: cityEnum, 
+            },
+          },
+        },
+      },
+      include: {
+        category: true,
+        serviceProvider: {
+          select: {
+            id: true,
+            username: true,
+            phoneNumber: true,
+            email: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    return services;
+  }
+
+  //helper
+  async parseCity(cityNameStr: string) {
+    //calidate that the string is a valid enum value
+    if (!Object.values(CityName).includes(cityNameStr as CityName)) {
+      throw new BadRequestException(`Invalid city: ${cityNameStr}`);
+    }
+    return cityNameStr as CityName;
+  }
 }

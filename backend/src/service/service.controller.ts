@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Req, UseGuards, Delete, Param, Patch} from '@nestjs/common';
+import { Controller, Get, Post, Body, Req, UseGuards, Delete, Param, Patch, Query} from '@nestjs/common';
 import { ServiceService } from './service.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { BaseResponseDto } from 'src/dtos/base-reposnse.dto';
@@ -19,10 +19,10 @@ export class ServiceController {
   @Post()
   async createService(@Body() dto: CreateServiceDto, @CurrentUser() user: GenerateTokenDto): Promise<BaseResponseDto> 
   {
-    const serviceProviderId = user.id
+    const servicespId = user.id
     try 
     {
-      const newService = await this.serviceService.create(dto, serviceProviderId);
+      const newService = await this.serviceService.create(dto, servicespId);
       return {
         message: 'Service created successfully',
         data: newService,
@@ -39,11 +39,11 @@ export class ServiceController {
   async deleteService(@Param('id') id: string, @CurrentUser() user: GenerateTokenDto): Promise<BaseResponseDto> 
   {
     const serviceId = parseInt(id);
-    const serviceProviderId = user.id;
+    const servicespId = user.id;
 
     try
     {
-      const result = await this.serviceService.delete(serviceId, serviceProviderId);
+      const result = await this.serviceService.delete(serviceId, servicespId);
 
       return {
         message: 'Service deleted successfully',
@@ -61,11 +61,11 @@ export class ServiceController {
   async updateService(@Param('id') id: string, @Body() dto: UpdateServiceDto, @CurrentUser() user: GenerateTokenDto): Promise<BaseResponseDto> 
   {
     const serviceId = parseInt(id);
-    const serviceProviderId = user.id;
+    const servicespId = user.id;
 
     try
     {
-      const updated = await this.serviceService.update(serviceId, dto, serviceProviderId);
+      const updated = await this.serviceService.update(serviceId, dto, servicespId);
   
       return {
         message: 'Service updated successfully',
@@ -77,40 +77,44 @@ export class ServiceController {
       throw err
     }
   }
-  
-  @UseGuards(JwtAuthGuard)//only require a valid token regardless of role
-  @Get(':spId')
-  async getSPServices(@Param('spId') spId: string): Promise<BaseResponseDto> {
-    
-    try
-    {
-      const providerId = parseInt(spId);
-      const services = await this.serviceService.getAllServicesForProvider(providerId);
-  
-      return {
-        message: 'List of services for the specified service provider',
-        data: services,
-      };
-    }
-    catch(err){
-      throw err
-    }
-  }
 
   @UseGuards(JwtAuthGuard)//only require a valid token regardless of role
   @Get()
-  async getAllServices(): Promise<BaseResponseDto> {
-    try
-    {
+  async getAllServices(@Query('spId') spIdString?: string, @Query('city') cityName?: string,
+  ): Promise<BaseResponseDto> {
+
+    //if query params are provided, services are filtered by them
+    //otherwise, return all services
+    try {
+
+      //filter by service provider
+      if (spIdString) {
+        const spId = parseInt(spIdString);
+        const services = await this.serviceService.getAllServicesForProvider(spId);
+        return {
+          message: `List of services for provider with ID=${spId}`,
+          data: services,
+        };
+      }
+
+      //filter by city
+      if (cityName) {
+        const services = await this.serviceService.getServicesByCity(cityName);
+        return {
+          message: `List of services in city: ${cityName}`,
+          data: services,
+        };
+      }
+
+      //if no query params, return all services
       const services = await this.serviceService.getAllServices();
-  
       return {
         message: 'List of all services',
         data: services,
       };
-    }
-    catch(err){
-      throw err
+    } catch (err) {
+      throw err;
     }
   }
+
 }
