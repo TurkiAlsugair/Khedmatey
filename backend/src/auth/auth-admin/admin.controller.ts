@@ -84,7 +84,7 @@ export class AdminController {
       }  
 
       return {
-        message: 'Pending service providers fetched successfully.',
+        message: 'Pending service providers.',
         data: result,
       };
     } catch (err) {
@@ -108,7 +108,7 @@ export class AdminController {
       }  
 
       return {
-        message: 'Service providers with pending services fetched successfully.',
+        message: 'Service providers who have pending services.',
         data: result,
       };
     } catch (err) {

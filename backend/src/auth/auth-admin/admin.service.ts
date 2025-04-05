@@ -104,7 +104,11 @@ async signupAdmin({ phoneNumber, username, otpCode }: CreateAdminDto) {
       },
     });
   
-    return pendingProviders;
+   // Transform `cities` to be an array of strings
+  return pendingProviders.map(provider => ({
+    ...provider,
+    cities: provider.cities.map(city => city.name),
+  }));
   }
 
   // return pending services and its service provider
@@ -140,6 +144,19 @@ async signupAdmin({ phoneNumber, username, otpCode }: CreateAdminDto) {
       },
     });
 
-    return pendingServices;
+      // Transform result to match required output
+      return pendingServices.map(provider => ({
+        id: provider.id,
+        username: provider.username,
+        phoneNumber: provider.phoneNumber,
+        email: provider.email,
+        pendingServices: provider.services.map(service => ({
+          serviceId: String(service.id),
+          categoryId: String(service.categoryId),
+          nameEN: service.nameEN,
+          nameAR: service.nameAR,
+          price: service.price,
+        })),
+      }));
+      }
   }
-}
