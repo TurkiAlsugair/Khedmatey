@@ -38,6 +38,6 @@ export const changeLanguage = async (lang) => {
 };
 
 initializeI18n();
-changeLanguage("ar"); // for testing
+changeLanguage("en"); // for testing
 
 export default i18n;
