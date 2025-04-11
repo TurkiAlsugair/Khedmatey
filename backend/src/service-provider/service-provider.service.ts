@@ -19,6 +19,31 @@ export class ServiceProviderService {
           throw new ConflictException('Worker with this phone number already exists');
         }
 
+        //check service provider
+        const provider = await this.prisma.serviceProvider.findUnique({
+          where: { id: serviceProviderId },
+          include: { cities: true },
+        });
+        if (!provider) {
+          throw new NotFoundException(`Service provider #${serviceProviderId} not found`);
+        }
+
+        //find the city by name
+        const city = await this.prisma.city.findUnique({
+          where: { name: dto.city as CityName }, 
+        });
+        if (!city) {
+          throw new NotFoundException(`City '${dto.city}' not found`);
+        }
+
+        //ensure the city is one of the provider's supported cities
+        const providerCityIds = provider.cities.map((c) => c.id);
+        if (!providerCityIds.includes(city.id)) {
+          throw new BadRequestException(
+            `City '${city.name}' is not supported by provider #${serviceProviderId}`
+          );
+        }
+
         //verify otp
         // try {
         //   await this.twilio.verifyOtp(phoneNumber, otpCode);
@@ -29,16 +54,26 @@ export class ServiceProviderService {
       
         //create worker
         const worker = await this.prisma.worker.create({
-          data: {
+          data: 
+          {
             username: dto.username,
             phoneNumber: dto.phoneNumber,
             serviceProvider: {
               connect: { id: serviceProviderId },
             },
+            city: { 
+              connect: { id: city.id } 
+            },
           },
         });
-      
-        return worker;
+
+        //destruct the city id and return the city name instead
+        const { cityId, ...rest } = worker;
+
+        return {
+          ...rest,
+          city: city.name,
+        };
     }
 
     async findProvidersByCity(cityNameStr: string) {

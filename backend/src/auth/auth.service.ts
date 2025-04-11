@@ -42,10 +42,8 @@ export class AuthService {
     //     throw new BadRequestException("Wrong OTP");
     //   }
 
-    const newUser = user;
-
-    const token = this.generateToken(newUser);
-    return { token, newUser };
+    const token = this.generateToken(user);
+    return { token, user };
   }
 
   async findUser ({phoneNumber}: FindUserDto){
