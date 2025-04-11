@@ -3,7 +3,7 @@ import { DatabaseService } from "src/database/database.service";
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { cleanObject } from 'src/utils/cleanObject';
-import { Prisma } from '@prisma/client';
+import { CityName, Prisma } from '@prisma/client';
 
 @Injectable()
 export class ServiceService {
@@ -21,10 +21,10 @@ export class ServiceService {
       throw new NotFoundException('Service provider not found');
     }
     
-    // Check if the provider is ACCEPTED
-    if (serviceProvider.status !== 'ACCEPTED') {
-      throw new BadRequestException('Only ACCEPTED service providers can create services');
-    }
+    // // Check if the provider is ACCEPTED
+    // if (serviceProvider.status !== 'ACCEPTED') {
+    //   throw new BadRequestException('Only ACCEPTED service providers can create services');
+    // }
 
     //validate category exists
     const category = await this.prisma.category.findUnique({
@@ -133,4 +133,83 @@ export class ServiceService {
     return updatedService;
   }
   
+  async getAllServicesForProvider(spId: number) {
+
+    //check if a number is provided
+    if (isNaN(spId)) {
+      throw new BadRequestException('Invalid service provider ID');
+    }
+
+    //check if provider exists
+    const serviceProvider = await this.prisma.serviceProvider.findUnique({
+      where: { id: spId },
+    });
+    if (!serviceProvider) {
+      throw new NotFoundException('Service provider not found');
+    }
+
+    //query services for the sp
+    const services = await this.prisma.service.findMany({
+      where: {
+        serviceProviderId: spId,
+      },
+      include: {
+        category: true,
+      },
+    });
+
+    return services;
+  }
+
+  async getAllServices() {
+    const services = await this.prisma.service.findMany({
+      include: {
+        category: true,
+      },
+    });
+  
+    return services;
+  }
+
+  async getServicesByCity(cityNameStr: string) {
+
+    //validate and get the city name by the enum
+    const cityEnum = await this.parseCity(cityNameStr)
+
+    //query all services from providers who serve this city
+    const services = await this.prisma.service.findMany({
+      where: {
+        serviceProvider: {
+          cities: {
+            some: {
+              name: cityEnum, 
+            },
+          },
+        },
+      },
+      include: {
+        category: true,
+        serviceProvider: {
+          select: {
+            id: true,
+            username: true,
+            phoneNumber: true,
+            email: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    return services;
+  }
+
+  //helper
+  async parseCity(cityNameStr: string) {
+    //calidate that the string is a valid enum value
+    if (!Object.values(CityName).includes(cityNameStr as CityName)) {
+      throw new BadRequestException(`Invalid city: ${cityNameStr}`);
+    }
+    return cityNameStr as CityName;
+  }
 }
