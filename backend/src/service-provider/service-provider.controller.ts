@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ServiceProviderService } from './service-provider.service';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
@@ -33,7 +33,7 @@ export class ServiceProviderController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':cityName')
-  async getProvidersByCity(@Param('cityName') cityName: string,): Promise<BaseResponseDto> { //city name will be converted to enum inside the service
+  async getProvidersByCity(@Param('cityName') cityName: string): Promise<BaseResponseDto> { //city name will be converted to enum inside the service
     try
     {
       const providers = await this.serviceProviderService.findProvidersByCity(cityName);
@@ -48,4 +48,29 @@ export class ServiceProviderController {
     }
   }
 
+  @UseGuards(JwtAuthGuard) // or remove if you want public access
+  @Get()
+  async getProviders(@Query('city') cityName?: string): Promise<BaseResponseDto> {
+    try {
+      //if 'city' query param is provided, filter by city
+      if (cityName) {
+        const providers = await this.serviceProviderService.findProvidersByCity(cityName);
+
+        return {
+          message: `List of providers in city: ${cityName}`,
+          data: providers,
+        };
+      }
+
+      //otherwise, return all providers
+      const providers = await this.serviceProviderService.findAllProviders();
+      return {
+        message: 'List of all service providers',
+        data: providers,
+      };
+    } catch (err) {
+      throw err;
+    }
+  }
+  
 }

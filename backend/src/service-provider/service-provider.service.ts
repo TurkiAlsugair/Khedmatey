@@ -52,7 +52,11 @@ export class ServiceProviderService {
           name: cityEnum,
         },
         include: {
-          providers: true,
+          providers: {
+            include: {
+              cities: true,
+            },
+          },
         },
       });
   
@@ -63,6 +67,14 @@ export class ServiceProviderService {
   
       //return the providers array
       return city.providers;
+    }
+
+    async findAllProviders() {
+      return this.prisma.serviceProvider.findMany({
+        include: {
+          cities: true,
+        },
+      });
     }
 
     //helper
