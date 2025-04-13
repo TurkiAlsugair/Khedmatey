@@ -1,3 +1,4 @@
+import { CityName } from "@prisma/client";
 import { IsString, IsNotEmpty, IsPhoneNumber } from "class-validator";
 
 export class CreateWorkerDto {
@@ -12,4 +13,8 @@ export class CreateWorkerDto {
   @IsString()
   @IsNotEmpty()
   otpCode: string;
+
+  @IsString()
+  @IsNotEmpty()
+  city: CityName;
 }

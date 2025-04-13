@@ -31,23 +31,6 @@ export class ServiceProviderController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get(':cityName')
-  async getProvidersByCity(@Param('cityName') cityName: string): Promise<BaseResponseDto> { //city name will be converted to enum inside the service
-    try
-    {
-      const providers = await this.serviceProviderService.findProvidersByCity(cityName);
-
-      return {
-        message: `List of providers in city: ${cityName}`,
-        data: providers,
-      };
-    }
-    catch(err){
-      throw err
-    }
-  }
-
   @UseGuards(JwtAuthGuard) // or remove if you want public access
   @Get()
   async getProviders(@Query('city') cityName?: string): Promise<BaseResponseDto> {
