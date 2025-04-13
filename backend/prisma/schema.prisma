@@ -49,6 +49,8 @@ model ServiceProvider{
 
   status  Status  @default(PENDING)
 
+  //schedule of the service provider
+  ProviderDay ProviderDay[]
 }
 
 enum CityName {
@@ -93,13 +95,16 @@ model Service {
 
   price String
 
+  requiredNbOfWorkers   Int @default(1)
+
   status  Status  @default(PENDING)
 
   serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id])
   serviceProviderId Int
 
-
   Request Request[]
+
+  ProviderDayService ProviderDayService[]
 }
 
 model Worker {
@@ -114,23 +119,29 @@ model Worker {
   serviceProvider  ServiceProvider  @relation(fields: [serviceProviderId], references: [id])
   serviceProviderId Int
 
-  requests Request[]
-
   //city the worker works in
   city        City    @relation(fields: [cityId], references: [id])
   cityId      Int    
+
+  //schedule of the worker, which links to the requests the worker worked on 
+  ProviderDayWorker ProviderDayWorker[]
 }
 
 
 model Request {
   id Int @id @default(autoincrement())
 
-  service     Service    @relation(fields: [serviceId], references: [id])
-  serviceId   Int
-
-  workers Worker[]
+  serviceId       Int
+  service         Service          @relation(fields: [serviceId], references: [id])
 
   status  Status  @default(PENDING)
+
+  //the day the request was scheduled on
+  providerDayId   Int
+  providerDay     ProviderDay      @relation(fields: [providerDayId], references: [id])
+
+  //the entity of the schedule of the worker
+  dailyWorkers    ProviderDayWorker[] @relation("DailyWorkerOnRequest")
 }
 
 enum Status {
@@ -144,5 +155,60 @@ model Admin {
   username    String
   phoneNumber String @unique
   role        Role    @default(value: ADMIN)
+}
+
+
+//SCHEDULING MODELS 
+
+//A day of a provider, all other scheduling models link back to this model 
+model ProviderDay {
+  id                   Int                     @id @default(autoincrement())
+  date                 DateTime
+  isClosed             Boolean                 @default(false)
+  totalRequestsCount   Int                     @default(0)
+
+  //link to provider
+  serviceProviderId    Int
+  serviceProvider      ServiceProvider         @relation(fields: [serviceProviderId], references: [id])
+
+  //workers on this day
+  providerDayWorkers   ProviderDayWorker[]
+
+  //services made on this day
+  providerDayServices  ProviderDayService[]
+
+  //requests scheduled on this day
+  requests Request[]
+}
+
+//For each service on a day, track if it's closed, how many workers needed, etc.
+model ProviderDayService {
+  id              Int    @id @default(autoincrement())
+  isClosed        Boolean @default(false)
+
+  //link to original day
+  providerDayId   Int
+  providerDay     ProviderDay @relation(fields: [providerDayId], references: [id])
+
+  //the specific service
+  serviceId       Int
+  service         Service     @relation(fields: [serviceId], references: [id])
+}
+
+model ProviderDayWorker {
+  id               Int    @id @default(autoincrement())
+  nbOfAssignedRequests Int    @default(0)
+  capacity         Int    @default(2)
+
+  //link to original day
+  providerDayId    Int
+  providerDay      ProviderDay @relation(fields: [providerDayId], references: [id])
+
+  //link to the worker
+  workerId         Int
+  worker           Worker       @relation(fields: [workerId], references: [id])
+
+  //requests the worker works on at this day
+  requests Request[] @relation("DailyWorkerOnRequest")
 }
 
