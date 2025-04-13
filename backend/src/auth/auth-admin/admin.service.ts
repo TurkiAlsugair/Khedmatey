@@ -68,15 +68,15 @@ async signupAdmin({ phoneNumber, username, otpCode }: CreateAdminDto) {
   // Check if the service exists and belongs to the service provider
     const service = await this.prisma.service.findUnique({
       where: { id: sId, serviceProviderId: spId },
-  });
+    });
 
     if (!service) {
-      throw new NotFoundException(`Service not found for this provider`);
+      throw new NotFoundException("Service not found for this provider");
     }
 
     // Avoid unnecessary update
     if (service.status === status) {
-      throw new BadRequestException(`Service is already '${status}'`);
+      throw new BadRequestException(`Service is already ${status}`);
     }
 
     // Update status
@@ -85,7 +85,78 @@ async signupAdmin({ phoneNumber, username, otpCode }: CreateAdminDto) {
       data: { status },
     });
 
-    return { message: `Service status updated to '${status}' successfully.` };
+    return { message: `Service status updated to ${status} successfully.` };
   }
 
-}
+  async getPendingProviders() {
+    const pendingProviders = await this.prisma.serviceProvider.findMany({
+      where: { status: Status.PENDING },
+      select: {
+        id: true,
+        username: true,
+        phoneNumber: true,
+        email: true,
+        cities: {
+          select: {
+            name: true, // Return only the city name
+          },
+        },
+      },
+    });
+  
+   // Transform `cities` to be an array of strings
+  return pendingProviders.map(provider => ({
+    ...provider,
+    cities: provider.cities.map(city => city.name),
+  }));
+  }
+
+  // return pending services and its service provider
+  async getProvidersPendingServices() {
+    const pendingServices = await this.prisma.serviceProvider.findMany({
+      
+      where: {
+        status: Status.ACCEPTED, // return only accepted service providers
+        services: {
+          some: { //only fetch service providers who have at least one pending service
+            status: Status.PENDING, // filters providers with at least 1 pending service
+          },
+        },
+      },
+      
+      select: {
+        id: true,
+        username: true,
+        phoneNumber: true,
+        email: true,
+        services: {
+          // Only fetch services with status = 'PENDING'
+          where: { status: Status.PENDING },
+          // Only pick specific fields from each service
+          select: {
+            id: true,
+            categoryId: true,
+            nameEN: true,
+            nameAR: true,
+            price: true,
+          },
+        },
+      },
+    });
+
+      // Transform result to match required output
+      return pendingServices.map(provider => ({
+        id: provider.id,
+        username: provider.username,
+        phoneNumber: provider.phoneNumber,
+        email: provider.email,
+        pendingServices: provider.services.map(service => ({
+          serviceId: String(service.id),
+          categoryId: String(service.categoryId),
+          nameEN: service.nameEN,
+          nameAR: service.nameAR,
+          price: service.price,
+        })),
+      }));
+      }
+  }

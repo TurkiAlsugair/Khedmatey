@@ -1,4 +1,4 @@
-import { Controller, Patch, UseGuards, Param, Body, ParseIntPipe, Post } from "@nestjs/common";
+import { Controller, Patch, UseGuards, Param, Body, ParseIntPipe, Post, Get } from "@nestjs/common";
 import { Role } from "@prisma/client";
 import { Roles } from "src/auth/decorators/roles.decorator";
 import { JwtAuthGuard } from "src/auth/guards/jwt.guard";
@@ -31,10 +31,11 @@ export class AdminController {
     }
   }
 
+  // change the state of a service provider
   @Roles(Role.ADMIN) // Set meta data
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Patch("serviceProviders/:spId/status")
-  async updateStatus(
+  @Patch("service-providers/:spId/status")
+  async updateProviderStatus(
     @Param("spId", ParseIntPipe) id: number,
     @Body() data: UpdateStatusDto ): Promise<BaseResponseDto> {
     try {
@@ -48,7 +49,8 @@ export class AdminController {
     }
   }
 
-  @Patch("serviceProviders/:spId/services/:sId/status")
+  // change the state of a service
+  @Patch("service-providers/:spId/services/:sId/status")
   @Roles(Role.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   async updateServiceStatus(
@@ -65,4 +67,53 @@ export class AdminController {
       throw err;
     }
   }
+
+  // get pending service providers
+  @Get('service-providers/status/pending')
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async getPendingProviders(): Promise<BaseResponseDto> {
+    try {
+      const result = await this.adminService.getPendingProviders();
+
+      if (result.length === 0) {
+        return {
+          message: 'No pending service providers found.',
+          data: [],
+        };
+      }  
+
+      return {
+        message: 'Pending service providers.',
+        data: result,
+      };
+    } catch (err) {
+      throw err
+    }
+  }
+
+  // get Fetch providers with pending services
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('service-providers/services/status/pending')
+  async getServiceProvidersWithPendingServices(): Promise<BaseResponseDto> {
+    try {
+      const result = await this.adminService.getProvidersPendingServices();
+
+      if (result.length === 0) {
+        return {
+          message: 'No pending services found.',
+          data: [],
+        };
+      }  
+
+      return {
+        message: 'Service providers who have pending services.',
+        data: result,
+      };
+    } catch (err) {
+      throw err;
+    }
+  }
+
 }

@@ -60,9 +60,11 @@ enum CityName {
 model City {
   id Int @id @default(autoincrement())
 
-  name CityName
+  name CityName @unique //unique is used so that findUnique function of prisma client can be used
 
   providers ServiceProvider[]
+
+  workers   Worker[] //workers that work in this city
 }
 
 enum CategoryName {
@@ -112,7 +114,11 @@ model Worker {
   serviceProvider  ServiceProvider  @relation(fields: [serviceProviderId], references: [id])
   serviceProviderId Int
 
-  requests Request[]    
+  requests Request[]
+
+  //city the worker works in
+  city        City    @relation(fields: [cityId], references: [id])
+  cityId      Int    
 }
 
 
