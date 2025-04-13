@@ -25,12 +25,14 @@ export class ServiceProviderService {
           include: { cities: true },
         });
         if (!provider) {
-          throw new NotFoundException(`Service provider #${serviceProviderId} not found`);
+          throw new NotFoundException(`Service provider not found`);
         }
+
+        const cityName = await this.parseCity(dto.city)
 
         //find the city by name
         const city = await this.prisma.city.findUnique({
-          where: { name: dto.city as CityName }, 
+          where: { name: cityName }, 
         });
         if (!city) {
           throw new NotFoundException(`City '${dto.city}' not found`);
@@ -40,7 +42,7 @@ export class ServiceProviderService {
         const providerCityIds = provider.cities.map((c) => c.id);
         if (!providerCityIds.includes(city.id)) {
           throw new BadRequestException(
-            `City '${city.name}' is not supported by provider #${serviceProviderId}`
+            `City '${city.name}' is not supported by worker's service provider `
           );
         }
 

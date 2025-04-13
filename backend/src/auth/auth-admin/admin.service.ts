@@ -68,7 +68,7 @@ async signupAdmin({ phoneNumber, username, otpCode }: CreateAdminDto) {
   // Check if the service exists and belongs to the service provider
     const service = await this.prisma.service.findUnique({
       where: { id: sId, serviceProviderId: spId },
-  });
+    });
 
     if (!service) {
       throw new NotFoundException("Service not found for this provider");
@@ -118,7 +118,7 @@ async signupAdmin({ phoneNumber, username, otpCode }: CreateAdminDto) {
       where: {
         status: Status.ACCEPTED, // return only accepted service providers
         services: {
-          some: { // Only fetch service providers who have at least one pending service
+          some: { //only fetch service providers who have at least one pending service
             status: Status.PENDING, // filters providers with at least 1 pending service
           },
         },
