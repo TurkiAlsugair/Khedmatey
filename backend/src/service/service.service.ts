@@ -3,7 +3,7 @@ import { DatabaseService } from "src/database/database.service";
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { cleanObject } from 'src/utils/cleanObject';
-import { CityName, Prisma } from '@prisma/client';
+import { CityName, Prisma, Status } from '@prisma/client';
 
 @Injectable()
 export class ServiceService {
@@ -144,6 +144,7 @@ export class ServiceService {
     const serviceProvider = await this.prisma.serviceProvider.findUnique({
       where: { id: spId },
     });
+
     if (!serviceProvider) {
       throw new NotFoundException('Service provider not found');
     }
@@ -152,8 +153,19 @@ export class ServiceService {
     const services = await this.prisma.service.findMany({
       where: {
         serviceProviderId: spId,
+        status: Status.ACCEPTED
       },
       include: {
+        serviceProvider: {
+          select:
+          {
+            id: true,
+            username: true,
+            phoneNumber: true,
+            email: true,
+            status: true,
+          }
+        },
         category: true,
       },
     });
@@ -162,8 +174,22 @@ export class ServiceService {
   }
 
   async getAllServices() {
+
     const services = await this.prisma.service.findMany({
+      where: {
+        status: Status.ACCEPTED
+      },
       include: {
+        serviceProvider: {
+          select:
+          {
+            id: true,
+            username: true,
+            phoneNumber: true,
+            email: true,
+            status: true,
+          }
+        },
         category: true,
       },
     });
@@ -186,6 +212,7 @@ export class ServiceService {
             },
           },
         },
+        status: Status.ACCEPTED
       },
       include: {
         category: true,

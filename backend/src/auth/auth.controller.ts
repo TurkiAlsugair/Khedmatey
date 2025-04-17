@@ -43,7 +43,7 @@ export class AuthController {
         data: {
           accessToken: result.token,
           refreshToken: null,
-          user: result.newUser,
+          user: result.user,
         },
       };
     } catch (err) {
