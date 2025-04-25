@@ -28,6 +28,8 @@ model Customer {
   phoneNumber String @unique
 
   role Role @default(value: CUSTOMER)
+
+  Request Request[]
 }
 
 model ServiceProvider{
@@ -131,8 +133,16 @@ model Worker {
 model Request {
   id Int @id @default(autoincrement())
 
+  customerId      Int
+  customer        Customer         @relation(fields: [customerId], references: [id])
+
   serviceId       Int
   service         Service          @relation(fields: [serviceId], references: [id])
+
+  locationId  Int
+  location    Location @relation(fields: [locationId], references: [id])
+
+  notes           String?
 
   status  Status  @default(PENDING)
 
@@ -142,6 +152,17 @@ model Request {
 
   //the entity of the schedule of the worker
   dailyWorkers    ProviderDayWorker[] @relation("DailyWorkerOnRequest")
+}
+
+model Location {
+  id           Int     @id @default(autoincrement())
+  city         String
+  fullAddress  String  @unique
+  miniAddress  String
+  lat          Float
+  lng          Float
+
+  requests     Request[] 
 }
 
 enum Status {
@@ -164,7 +185,8 @@ model Admin {
 model ProviderDay {
   id                   Int                     @id @default(autoincrement())
   date                 DateTime
-  isClosed             Boolean                 @default(false)
+  isClosed             Boolean                 @default(false) //closed manually
+  isBusy               Boolean                 @default(false) //closed by not enouph workers
   totalRequestsCount   Int                     @default(0)
 
   //link to provider
@@ -179,9 +201,12 @@ model ProviderDay {
 
   //requests scheduled on this day
   requests Request[]
+
+  //compound unique constraint to ensure date + serviceProviderId is unique such that no there is no duplicate days
+  @@unique([date, serviceProviderId])
 }
 
-//For each service on a day, track if it's closed, how many workers needed, etc.
+//For each service on a day
 model ProviderDayService {
   id              Int    @id @default(autoincrement())
   isClosed        Boolean @default(false)
@@ -191,8 +216,11 @@ model ProviderDayService {
   providerDay     ProviderDay @relation(fields: [providerDayId], references: [id])
 
   //the specific service
-  serviceId       Int
+  serviceId       Int         
   service         Service     @relation(fields: [serviceId], references: [id])
+
+  //compound unique constraint to ensure date + servuce is unique such that no there is no duplicate days for the same service
+  @@unique([serviceId, providerDayId]) 
 }
 
 model ProviderDayWorker {
@@ -210,5 +238,8 @@ model ProviderDayWorker {
 
   //requests the worker works on at this day
   requests Request[] @relation("DailyWorkerOnRequest")
+
+  //compound unique constraint to ensure date + worker is unique such that no there is no duplicate days for the worker
+  @@unique([workerId, providerDayId]) 
 }
 

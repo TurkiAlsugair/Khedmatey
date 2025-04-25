@@ -4,6 +4,7 @@ import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { cleanObject } from 'src/utils/cleanObject';
 import { CityName, Prisma, Status } from '@prisma/client';
+import { addDays, eachDayOfInterval, format } from 'date-fns';
 
 @Injectable()
 export class ServiceService {
@@ -229,6 +230,72 @@ export class ServiceService {
     });
 
     return services;
+  }
+
+  /**
+   * Returns an array of ISO‑dates (yyyy-MM-dd) over the next 30 days
+   * on which the given service is unavailable because:
+   * - providerDay.isClosed (manually blocked)
+   * - providerDay.isBusy   (no worker capacity)
+   * - providerDayService.isClosed (service‑specific closure)
+   */
+  async getServiceSchedule(serviceId: number): Promise<string[]> {
+
+    //find the service to get its provider
+    const service = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+      select: { serviceProviderId: true },
+    });
+    if (!service) {
+      throw new NotFoundException('Service not found');
+    }
+    const providerId = service.serviceProviderId;
+
+    //compute date range [today … today+29]
+    const today = new Date();
+    const end   = addDays(today, 29);
+
+    //fetch all ProviderDay rows in the date range, plus the services specific schedule
+    const rows = await this.prisma.providerDay.findMany({
+      where: {
+        serviceProviderId: providerId,
+        date: { gte: today, lte: end },
+      },
+      include: {
+        providerDayServices: {
+          where: { serviceId: serviceId },
+          select: { isClosed: true },
+        },
+      },
+    });
+
+    //build lookup map: key = date.toDateString(), value = true if any closed/busy
+    //no differenciation between closed and busy, cuz only one array is returned
+    const unavailableMap = new Map<string, true>();
+    for (const r of rows) {
+      const key = r.date.toDateString();
+      
+      //fist check if unavailable from service provider side, then check the service side
+      if (r.isClosed || r.isBusy) {
+        unavailableMap.set(key, true);
+        continue;
+      }
+      //legth is checked because if no request happens on that day for the service, no row would exist.
+      if (r.providerDayServices.length > 0 && r.providerDayServices[0].isClosed) {
+        unavailableMap.set(key, true);
+      }
+    }
+
+    //walk each day in the interval and collect ISO strings for unavailable ones
+    const busyDates: string[] = [];
+    eachDayOfInterval({ start: today, end }).forEach((d) => {
+      const key = d.toDateString();
+      if (unavailableMap.has(key)) {
+        busyDates.push(format(d, 'yyyy-MM-dd'));
+      }
+    });
+
+    return busyDates;
   }
 
   //helper

@@ -3,6 +3,7 @@ import { DatabaseService } from 'src/database/database.service';
 import { TwilioService } from 'src/twilio/twilio.service';
 import { CreateWorkerDto } from './dtos/create-worker.dto'
 import { CityName, Status } from '@prisma/client';
+import { addDays, eachDayOfInterval, format } from 'date-fns';
 
 
 @Injectable()
@@ -121,6 +122,57 @@ export class ServiceProviderService {
           cities: true
         },
       });
+    }
+
+    async getNext30DaysSchedule(providerId: number) {
+
+      if (isNaN(providerId)) {
+        throw new BadRequestException('Invalid provider ID');
+      }
+
+      //check if provider exists
+      const provider = await this.prisma.serviceProvider.findUnique({
+        where: { id: providerId },
+      });
+      if (!provider) {
+        throw new NotFoundException(`Service provider not found`);
+      }
+
+
+      //get today and next 30 days(inclusive)
+      const today = new Date();
+      const end = addDays(today, 29);
+  
+      // fetch only rows that actually exist in DB
+      const rows = await this.prisma.providerDay.findMany({
+        where: {
+          serviceProviderId: providerId,
+          date: { gte: today, lte: end },
+        },
+        select: { date: true, isClosed: true, isBusy: true },
+      });
+  
+      // quick maps for O(1) lookup, value of true is arbitrary cuz we only care about existence
+      const closedMap = new Map(
+        rows.filter(r => r.isClosed).map(r => [r.date.toDateString(), true]),
+      );
+      const busyMap = new Map(
+        rows.filter(r => r.isBusy).map(r => [r.date.toDateString(), true]),
+      );
+  
+      const blockedDates: string[] = [];
+      const busyDates: string[]    = [];
+  
+      // iterate through full 30‑day range and check each date against the maps
+      eachDayOfInterval({ start: today, end }).forEach(d => {
+        const key = d.toDateString();              
+        const iso = format(d, 'yyyy-MM-dd');       
+  
+        if (closedMap.has(key)) blockedDates.push(iso);
+        else if (busyMap.has(key)) busyDates.push(iso);
+      });
+  
+      return { blockedDates, busyDates };
     }
 
     //helper

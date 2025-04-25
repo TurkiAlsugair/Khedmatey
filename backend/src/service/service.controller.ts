@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Req, UseGuards, Delete, Param, Patch, Query} from '@nestjs/common';
+import { Controller, Get, Post, Body, Req, UseGuards, Delete, Param, Patch, Query, ParseIntPipe} from '@nestjs/common';
 import { ServiceService } from './service.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { BaseResponseDto } from 'src/dtos/base-reposnse.dto';
@@ -17,12 +17,12 @@ export class ServiceController {
   @Roles(Role.SERVICE_PROVIDER)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
-  async createService(@Body() dto: CreateServiceDto, @CurrentUser() user: GenerateTokenDto): Promise<BaseResponseDto> 
+  async createService(@Body() createServiceDto: CreateServiceDto, @CurrentUser() user: GenerateTokenDto): Promise<BaseResponseDto> 
   {
     const servicespId = user.id
     try 
     {
-      const newService = await this.serviceService.create(dto, servicespId);
+      const newService = await this.serviceService.create(createServiceDto, servicespId);
       return {
         message: 'Service created successfully',
         data: newService,
@@ -80,8 +80,7 @@ export class ServiceController {
 
   @UseGuards(JwtAuthGuard)//only require a valid token regardless of role
   @Get()
-  async getAllServices(@Query('spId') spIdString?: string, @Query('city') cityName?: string,
-  ): Promise<BaseResponseDto> {
+  async getAllServices(@Query('spId') spIdString?: string, @Query('city') cityName?: string,): Promise<BaseResponseDto> {
 
     //if query params are provided, services are filtered by them
     //otherwise, return all services
@@ -115,6 +114,16 @@ export class ServiceController {
     } catch (err) {
       throw err;
     }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':serviceId/schedule')
+  async getServiceSchedule(@Param('serviceId', ParseIntPipe) serviceId: number,): Promise<BaseResponseDto> {
+    const busyDates = await this.serviceService.getServiceSchedule(serviceId);
+    return {
+      message: 'Service schedule fetched',
+      data: { busyDates },
+    };
   }
 
 }

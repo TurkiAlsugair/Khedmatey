@@ -9,6 +9,7 @@ import { AuthServiceProviderModule } from './auth/auth-service-provider/auth-ser
 import { ServiceModule } from './service/service.module';
 import { ServiceProviderModule } from './service-provider/service-provider.module';
 import { AdminModule } from './auth/auth-admin/admin.module';
+import { RequestModule } from './request/request.module';
 
 
 
@@ -22,7 +23,8 @@ import { AdminModule } from './auth/auth-admin/admin.module';
     ServiceModule, 
     ServiceProviderModule,
     ServiceModule,
-    AdminModule],
+    AdminModule,
+    RequestModule],
   controllers: [AppController],
   providers: [AppService],
 })

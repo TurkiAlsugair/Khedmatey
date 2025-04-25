@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
 import { ServiceProviderService } from './service-provider.service';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
@@ -52,6 +52,22 @@ export class ServiceProviderController {
         data: providers,
       };
     } catch (err) {
+      throw err;
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/schedule')
+  async getSchedule(@Param('id', ParseIntPipe) providerId: number): Promise<BaseResponseDto> {
+    try
+    {
+      const schedule = await this.serviceProviderService.getNext30DaysSchedule(providerId);
+      return {
+        message: 'List of blocked dates and busy dates', 
+        data: schedule, 
+      };
+    }
+    catch (err) {
       throw err;
     }
   }
