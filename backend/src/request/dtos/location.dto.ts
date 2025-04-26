@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
     IsString,
     IsNotEmpty,
@@ -14,9 +15,11 @@ import {
     @IsString()
     fullAddress!: string;
   
+    @Type(() => Number)
     @IsLatitude()
     lat!: number;
   
+    @Type(() => Number)
     @IsLongitude()
     lng!: number;
   
