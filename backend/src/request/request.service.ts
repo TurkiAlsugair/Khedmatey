@@ -3,10 +3,13 @@ import { CreateRequestDto } from './dtos/create-request.dto';
 import { DatabaseService } from 'src/database/database.service';
 import { CityName } from '@prisma/client';
 import { Status } from '@prisma/client';
-import { isBefore, isAfter, addDays, format, parse, startOfDay } from 'date-fns';
+import { isBefore, isAfter, addDays, format, startOfDay } from 'date-fns';
 
 @Injectable()
 export class RequestService {
+    static isValidDDMMYYYYFormat(date: string) {
+      throw new Error('Method not implemented.');
+    }
 
     constructor(private prisma: DatabaseService) {}
 
@@ -36,22 +39,8 @@ export class RequestService {
         //get provider
         const providerId = service.serviceProviderId;
 
-        //validate date is in correct format
-        const validDate = this.isValidDDMMYYYYFormat(date)
-        if(!validDate){
-          throw new BadRequestException('Wrong date format');
-        }
-
-        //valdiate date's time is after current time and not after 30 days
-        const requestDate = this.toDDMMYYYY(date).date //returns date object
-        if(isBefore(requestDate, startOfDay(new Date()))) { //compare from start of day so that booking in the same day works
-          throw new BadRequestException('Cannot create requests in the past');
-        }
-        if(isAfter(requestDate, addDays(new Date(), 30))) {
-          throw new BadRequestException('Too far in the future');
-        }
-
-        //extract city from given location
+        //validate date
+        const requestDate = this.validateDate(date)
 
         //validate location is within provider's cities
         const providerCities = await this.prisma.city.findMany({
@@ -261,6 +250,26 @@ export class RequestService {
           return newRequest;
         });
 
+    }
+
+    //validates date and returns date as date object
+    validateDate(date: string) {
+      //validate date is in correct format
+      const validDate = this.isValidDDMMYYYYFormat(date)
+      if(!validDate){
+        throw new BadRequestException(`Wrong date format for the date: ${date}, should be: DD/MM/YYYY`);
+      }
+
+      //valdiate date's time is after current time and not after 30 days
+      const requestDate = this.toDDMMYYYY(date).date //returns date object
+      if(isBefore(requestDate, startOfDay(new Date()))) { //compare from start of day so that booking in the same day works
+        throw new BadRequestException(`Cant edit schedule or make request in the past: ${date}`);
+      }
+      if(isAfter(requestDate, addDays(new Date(), 30))) {
+        throw new BadRequestException(`Too far in the future: ${date}`);
+      }
+      
+      return requestDate
     }
 
     //returns a date object and a string in the needed format

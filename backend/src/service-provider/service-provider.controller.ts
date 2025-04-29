@@ -8,6 +8,8 @@ import { CreateWorkerDto } from './dtos/create-worker.dto';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { GenerateTokenDto } from 'src/auth/dtos/generate-token.dto';
 import { BaseResponseDto } from 'src/dtos/base-reposnse.dto';
+import { UpdateScheduleDto } from './dtos/update-schedule.dto';
+import { error } from 'console';
 
 
 @Controller('service-provider')
@@ -69,6 +71,20 @@ export class ServiceProviderController {
     }
     catch (err) {
       throw err;
+    }
+  }
+
+  @Roles(Role.SERVICE_PROVIDER)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post(':id/schedule')
+  async updateSchedule(@Body() dto: UpdateScheduleDto, @CurrentUser() user: GenerateTokenDto): Promise<BaseResponseDto> {
+    try
+    {
+      const closed = await this.serviceProviderService.replaceBlockedDays(user.id, dto.dates);
+      return { message: 'Schedule updated', data: { blockedDays: closed } };
+    }
+    catch(err){
+      throw err
     }
   }
   

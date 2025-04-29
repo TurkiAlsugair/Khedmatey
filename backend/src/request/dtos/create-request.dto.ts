@@ -21,6 +21,6 @@ export class CreateRequestDto {
   location!: LocationDto;
 
   @IsNotEmpty()
-  @IsDateString()            // "2025‑04‑22"
+  @IsString()
   date!: string;        
 }
