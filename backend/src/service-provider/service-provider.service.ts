@@ -125,6 +125,7 @@ export class ServiceProviderService {
       });
     }
 
+    //returns 2 arrays, blockedDays and busyDays
     async getNext30DaysSchedule(providerId: number) {
 
       if (isNaN(providerId)) {
@@ -139,9 +140,8 @@ export class ServiceProviderService {
         throw new NotFoundException(`Service provider not found`);
       }
 
-
       //get today and next 30 days(inclusive)
-      const today = new Date();
+      const today = startOfDay(new Date());
       const end = addDays(today, 29);
   
       // fetch only rows that actually exist in DB
@@ -152,6 +152,7 @@ export class ServiceProviderService {
         },
         select: { date: true, isClosed: true, isBusy: true },
       });
+      
   
       // quick maps for O(1) lookup, value of true is arbitrary cuz we only care about existence
       const closedMap = new Map(
@@ -191,6 +192,7 @@ export class ServiceProviderService {
           d,
         ]),
       );
+      
       //close requested dates and open others
       await this.prisma.$transaction(async (tx) => {
         //fetch all providerDay rows in the range

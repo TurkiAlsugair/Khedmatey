@@ -4,7 +4,7 @@ import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { cleanObject } from 'src/utils/cleanObject';
 import { CityName, Prisma, Status } from '@prisma/client';
-import { addDays, eachDayOfInterval, format } from 'date-fns';
+import { addDays, eachDayOfInterval, format, startOfDay } from 'date-fns';
 
 @Injectable()
 export class ServiceService {
@@ -239,20 +239,36 @@ export class ServiceService {
    * - providerDay.isBusy   (no worker capacity)
    * - providerDayService.isClosed (service‑specific closure)
    */
-  async getServiceSchedule(serviceId: number): Promise<string[]> {
+  async getServiceSchedule(serviceId: number, city?: string): Promise<string[]> {
 
     //find the service to get its provider
     const service = await this.prisma.service.findUnique({
       where: { id: serviceId },
-      select: { serviceProviderId: true },
+      select: { serviceProviderId: true, requiredNbOfWorkers: true },
     });
     if (!service) {
       throw new NotFoundException('Service not found');
     }
     const providerId = service.serviceProviderId;
 
-    //compute date range [today … today+29]
-    const today = new Date();
+    //if city, validate it
+    let cityFilter: CityName | undefined = undefined;
+    if(city)
+      cityFilter = await this.parseCity(city)
+    
+    //compute number of workers for the city
+    let totalCityWorkers: number | undefined;
+    if (cityFilter) {
+      totalCityWorkers = await this.prisma.worker.count({
+        where: {
+          serviceProviderId: providerId,
+          city: { name: cityFilter },
+        },
+      });
+    }
+
+    //compute date range
+    const today = startOfDay(new Date());
     const end   = addDays(today, 29);
 
     //fetch all ProviderDay rows in the date range, plus the services specific schedule
@@ -266,6 +282,15 @@ export class ServiceService {
           where: { serviceId: serviceId },
           select: { isClosed: true },
         },
+        //get workers for the specific city
+        providerDayWorkers: cityFilter
+          ? {
+              where: {
+                worker: { city: { name: cityFilter } },
+              },
+              select: { id: true, nbOfAssignedRequests: true, capacity: true },
+            }
+          : undefined,
       },
     });
 
@@ -275,15 +300,32 @@ export class ServiceService {
     for (const r of rows) {
       const key = r.date.toDateString();
       
-      //fist check if unavailable from service provider side, then check the service side
+      //manually closed or out of workers
       if (r.isClosed || r.isBusy) {
         unavailableMap.set(key, true);
         continue;
       }
+      //service specifc close
       //legth is checked because if no request happens on that day for the service, no row would exist.
       if (r.providerDayServices.length > 0 && r.providerDayServices[0].isClosed) {
         unavailableMap.set(key, true);
+        continue
       }
+
+      //city specific close (not enough workers in city)
+      if(cityFilter)
+        {
+          const dayWorkers = r.providerDayWorkers ?? [];
+          // count how many are fully booked
+          const closedWorkersCount = dayWorkers.filter(
+            (dw) => dw.nbOfAssignedRequests >= dw.capacity).length;
+          
+          const freeWorkersCount = (totalCityWorkers! - closedWorkersCount);
+          if (freeWorkersCount < service.requiredNbOfWorkers) {
+            unavailableMap.set(key, true);
+            continue;
+          }
+        }
     }
 
     //walk each day in the interval and collect ISO strings for unavailable ones
@@ -300,7 +342,9 @@ export class ServiceService {
 
   //helper
   async parseCity(cityNameStr: string) {
-    //calidate that the string is a valid enum value
+    //normalize
+    cityNameStr = cityNameStr.charAt(0).toUpperCase() + cityNameStr.slice(1).toLowerCase();
+    //validate that the string is a valid enum value
     if (!Object.values(CityName).includes(cityNameStr as CityName)) {
       throw new BadRequestException(`Invalid city: ${cityNameStr}`);
     }

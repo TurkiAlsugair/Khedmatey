@@ -4,14 +4,13 @@ import { DatabaseService } from 'src/database/database.service';
 import { CityName } from '@prisma/client';
 import { Status } from '@prisma/client';
 import { isBefore, isAfter, addDays, format, startOfDay } from 'date-fns';
+import { ServiceService } from 'src/service/service.service';
+import { error } from 'console';
 
 @Injectable()
 export class RequestService {
-    static isValidDDMMYYYYFormat(date: string) {
-      throw new Error('Method not implemented.');
-    }
-
-    constructor(private prisma: DatabaseService) {}
+  
+    constructor(private prisma: DatabaseService, private serviceService: ServiceService) {}
 
     async createRequest(createRequestDto: CreateRequestDto, userId: number) 
     {
@@ -51,15 +50,20 @@ export class RequestService {
             }
         });
 
-        //extract cities's names to compare with provided location
-        const cityNames = providerCities.map(c => c.name as string); //cast enum to string
-        if (!cityNames.includes(location.city)) {
+        //extract cities's of provider to compare with provided location
+        const city = await this.serviceService.parseCity(location.city) //normalize it and return it as enum
+        const cityNames = providerCities.map(c => c.name); //keep as enum
+        if (!cityNames.includes(city)) {
             throw new BadRequestException('Location not served by this provider');
         }
         
-        //2- Check if date is available 
+        // 2- Check if date is available 
+        const closedServiceDates = await this.serviceService.getServiceSchedule(serviceId, location.city as CityName)
+        if(closedServiceDates.includes(format(requestDate, 'yyyy-MM-dd'))){
+          throw new BadRequestException("This service is closed for that day")
+        }
 
-        //check ProviderDay, if not exists, create it (not existing means it is available)
+        //get ProviderDay, if not exists, create it (not existing means it is available)
         const providerDay = await this.prisma.providerDay.upsert({
           where: {
             date_serviceProviderId: {
@@ -76,51 +80,26 @@ export class RequestService {
           },
         });
 
-        //return if day isnt available 
-        if (providerDay.isClosed || providerDay.isBusy) {
-            throw new BadRequestException('Day is closed for the provider');
-        }
-
-        //check availability of service (day of provider might be available but a specific service might not be)
-        //if not exist create it
-        const providerDayService = await this.prisma.providerDayService.upsert({
-          where: {
-            serviceId_providerDayId: {
-              providerDayId: providerDay.id,
-              serviceId:     serviceId,
-            },
-          },
-          update: {},
-          create: {                        
-            providerDayId:   providerDay.id,
-            serviceId:       serviceId,
-            isClosed: false,                             
-          },
-        });
-        
-        if (providerDayService.isClosed) {
-          throw new BadRequestException('This service is closed for that day');
-        }
-
         //Create new request -------------------
         return this.prisma.$transaction(async (tx) => {
           
           //3- Get workers
 
-          //get all workers of provider who are in the same city of the request (each Worker belongs to exactly 1 city)
           const providerWorkers = await tx.worker.findMany({
-            where: { 
-              serviceProviderId: providerId, 
-              city: {
-                name: location.city as CityName
-              }
-             },
-            select: { id: true, cityId: true, city: { select: { name: true } } },
+            where: {
+              serviceProviderId: providerId,
+            },
+            select: { id: true, city: true },
           });
+
+          //get all workers of provider who are in the same city of the request (each Worker belongs to exactly 1 city)
+          const providerWorkersByCity = providerWorkers.filter(
+            (w) => w.city.name === (location.city as CityName)
+          ); 
 
           //find schedule of each worker, if not exist create it
           const dayWorkers = await Promise.all(
-            providerWorkers.map((w) =>
+            providerWorkersByCity.map((w) =>
               tx.providerDayWorker.upsert({
                 where: {
                   workerId_providerDayId: 
@@ -143,22 +122,22 @@ export class RequestService {
             ),
           );
 
+          const availableDayWorkers = dayWorkers.filter(
+            (dw) => dw.nbOfAssignedRequests < dw.capacity,
+          );
+
           //get number of workers needed for the service
           const neededWorkers = service.requiredNbOfWorkers;
     
-          //if not enough workers, close the service for that day, and throw. 
-          //(this should not happen because the service will be already closed from before and wouldnt have reached this code)
-          if (dayWorkers.length < neededWorkers) {
-            await tx.providerDayService.update({
-              where: { id: providerDayService.id },
-              data: { isClosed: true }
-            });
+          // if not enough workers, it means either there is not enough workers available from this provider
+          // or there is but they are not in the same city as the request
+          if (availableDayWorkers.length < neededWorkers) {
             throw new BadRequestException('Not enough workers available for this service in the selected city');
           }
       
           //pick workers to work on the request
           //could have some kind of logic but not needed for now
-          const chosenWorkers = dayWorkers.slice(0, neededWorkers);
+          const chosenWorkers = availableDayWorkers.slice(0, neededWorkers);
 
           //create location if not exists
           const loc = await tx.location.upsert({
@@ -190,10 +169,25 @@ export class RequestService {
               notes,
               locationId:loc.id, 
             },
-            include: {
-              dailyWorkers: true,
-              location:     true,
-              providerDay: true
+            include: 
+            {
+              dailyWorkers: 
+              {
+                select: 
+                {
+                  id: true,
+                  workerId: true,
+                }
+              },
+              location: true,
+              providerDay:
+              {
+                select: 
+                {
+                  id: true,
+                  date: true,
+                }
+              }
             }
           });
           
@@ -210,12 +204,44 @@ export class RequestService {
               data: { nbOfAssignedRequests: { increment: 1 } }
             });
           }
-      
+
+          //get updated workers after increment
+          const updatedDayWorkers = await Promise.all(
+            providerWorkers.map((w) =>
+              tx.providerDayWorker.upsert(
+              {
+                where: 
+                {
+                  workerId_providerDayId: 
+                  {
+                    workerId:      w.id,
+                    providerDayId: providerDay.id,
+                  },
+                },
+                update: {},
+                create: 
+                {
+                  workerId:             w.id,
+                  providerDayId:        providerDay.id,
+                  nbOfAssignedRequests: 0,
+                  capacity:             2,
+                },
+                select: 
+                {
+                  id:                   true,
+                  workerId:             true,
+                  nbOfAssignedRequests: true,
+                  capacity:             true,
+                },
+              }),
+            ),
+          );
+
           //5- Update schedules --------------------------------------------
     
           //get nb of free workers to check if to close service for the day or not (based on if they have enouph capacity to get more requests)
-          const freeWorkersCount = dayWorkers.filter(dw => dw.nbOfAssignedRequests < dw.capacity).length;
-      
+          const freeWorkersCount = updatedDayWorkers.filter(dw => dw.nbOfAssignedRequests < dw.capacity).length;
+          
           //close entire day for service provider if no workers are left
           if (freeWorkersCount === 0) 
           {
@@ -223,29 +249,65 @@ export class RequestService {
               where: { id: providerDay.id },
               data: { isBusy: true }
             });
+
+            //also close services schedule
+            const services = await tx.service.findMany({
+              where: { serviceProviderId: providerId },
+              select: { id: true, requiredNbOfWorkers: true },
+            });
+            await Promise.all(services.map(({ id: svcId }) => 
+              tx.providerDayService.upsert(
+              { 
+                where: 
+                {
+                  serviceId_providerDayId: {
+                    serviceId:      svcId,
+                    providerDayId:  providerDay.id,
+                  },
+                },
+                update: {
+                  isClosed: true,
+                },
+                create: {
+                  serviceId:       svcId,
+                  providerDayId:   providerDay.id,
+                  isClosed:        true,
+                },
+              })
+            ))
           }
+
           //other wise, check every service if enouph workers are available for it, else, close it for the day.
+          //this does not check the avaialbity of a service based on city, that happens on the getService function of the service
           else 
           {
-            const dayServices = await tx.providerDayService.findMany({
-              where: { providerDayId: providerDay.id },
-              include: {
-                  service: {
-                    select: {
-                      requiredNbOfWorkers: true,
+            const services = await tx.service.findMany({
+              where: { serviceProviderId: providerId },
+              select: { id: true, requiredNbOfWorkers: true },
+            });
+            
+            await Promise.all(
+              services.map(({ id: svcId, requiredNbOfWorkers }) => {
+                const shouldClose = freeWorkersCount < requiredNbOfWorkers;
+                
+                return tx.providerDayService.upsert({
+                  where: {
+                    serviceId_providerDayId: {
+                      serviceId:      svcId,
+                      providerDayId:  providerDay.id,
                     },
                   },
-              },
-            });
-      
-            for (const ds of dayServices) {
-              if (freeWorkersCount < ds.service.requiredNbOfWorkers) {
-                await tx.providerDayService.update({
-                  where: { id: ds.id },
-                  data: { isClosed: true }
+                  update: {
+                    isClosed: shouldClose,
+                  },
+                  create: {
+                    serviceId:       svcId,
+                    providerDayId:   providerDay.id,
+                    isClosed:        shouldClose,
+                  },
                 });
-              }
-            }
+              }),
+            );
           }      
           return newRequest;
         });
@@ -273,7 +335,7 @@ export class RequestService {
     }
 
     //returns a date object and a string in the needed format
-    //assumes correct format 
+    //assumes "DD/MM/YYYY" format 
     toDDMMYYYY(dateInput: Date | string): { date: Date; formatted: string; } 
     {
       let dateObj

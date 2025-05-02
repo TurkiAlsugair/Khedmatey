@@ -3,7 +3,7 @@ import { ServiceService } from './service.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { BaseResponseDto } from 'src/dtos/base-reposnse.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
-import { Role } from '@prisma/client';
+import { CityName, Role } from '@prisma/client';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
@@ -118,8 +118,9 @@ export class ServiceController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':serviceId/schedule')
-  async getServiceSchedule(@Param('serviceId', ParseIntPipe) serviceId: number,): Promise<BaseResponseDto> {
-    const busyDates = await this.serviceService.getServiceSchedule(serviceId);
+  async getServiceSchedule(@Param('serviceId', ParseIntPipe) serviceId: number, @Query('city') city?: string,): Promise<BaseResponseDto> {
+
+    const busyDates = await this.serviceService.getServiceSchedule(serviceId, city);
     return {
       message: 'Service schedule fetched',
       data: { busyDates },

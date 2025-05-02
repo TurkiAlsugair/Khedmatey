@@ -157,7 +157,7 @@ model Request {
 model Location {
   id           Int     @id @default(autoincrement())
   city         String
-  fullAddress  String  @unique
+  fullAddress  String 
   miniAddress  String
   lat          Float
   lng          Float
