@@ -12,7 +12,7 @@ export class RequestService {
   
     constructor(private prisma: DatabaseService, private serviceService: ServiceService) {}
 
-    async createRequest(createRequestDto: CreateRequestDto, userId: number) 
+    async createRequest(createRequestDto: CreateRequestDto, userId: string) 
     {
         const { serviceId, customerId, notes, location, date } = createRequestDto;
 
@@ -317,11 +317,15 @@ export class RequestService {
     async getRequests(
       user: GenerateTokenDto,status?: Status): Promise<Request[] | Record<Status, Request[]>> {
 
-      //1- build the base filter by role (search for )
+      //1- build the base filter by role
       const where: any = {};
       switch (user.role) {
         case Role.SERVICE_PROVIDER:
-          where.providerDay = { providerId: user.id };
+          where.providerDay = {
+            is: {
+              serviceProviderId: user.id,
+            },
+          };
           break;
         case Role.CUSTOMER:
           where.customerId = user.id;
@@ -348,6 +352,7 @@ export class RequestService {
         },
         orderBy: { createdAt: 'desc' },
       });
+      console.log(requests)
   
       //4- if specific status, return requests as is 
       if (status) {
@@ -366,7 +371,7 @@ export class RequestService {
       return grouped;
     }
 
-    async updateStatus(id: number, user: GenerateTokenDto, newStatus: Status) {
+    async updateStatus(id: string, user: GenerateTokenDto, newStatus: Status) {
 
       const request = await this.prisma.request.findUnique({ 
         where: { id },
@@ -386,11 +391,11 @@ export class RequestService {
       switch (newStatus) 
       {
         case Status.ACCEPTED:
-          result = await this.handleAccepted(request, user, serviceProviderId as number);
+          result = await this.handleAccepted(request, user, serviceProviderId as string);
           break;
 
         case Status.DECLINED:
-          result = await this.handledDeclined(request, user, serviceProviderId as number);
+          result = await this.handledDeclined(request, user, serviceProviderId as string);
           break;
         
         default:
@@ -419,7 +424,7 @@ export class RequestService {
       return false;
     }
 
-    async handleAccepted(request: Request, user: GenerateTokenDto, serviceProviderId: number){
+    async handleAccepted(request: Request, user: GenerateTokenDto, serviceProviderId: string){
 
       if (user.role !== Role.SERVICE_PROVIDER) {
         throw new ForbiddenException('Only service providers may accept');
@@ -443,7 +448,7 @@ export class RequestService {
       });
     }
 
-    async handledDeclined(request: Request, user: GenerateTokenDto, serviceProviderId: number){
+    async handledDeclined(request: Request, user: GenerateTokenDto, serviceProviderId: string){
       if (user.role !== Role.SERVICE_PROVIDER) {
         throw new ForbiddenException('Only service providers may accept');
       }

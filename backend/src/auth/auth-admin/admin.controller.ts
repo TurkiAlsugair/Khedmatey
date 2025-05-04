@@ -36,7 +36,7 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch("service-providers/:spId/status")
   async updateProviderStatus(
-    @Param("spId", ParseIntPipe) id: number,
+    @Param("spId") id: string,
     @Body() data: UpdateStatusDto ): Promise<BaseResponseDto> {
     try {
       const result = await this.adminService.updateServiceProviderStatus( id, data.status );
@@ -54,8 +54,8 @@ export class AdminController {
   @Roles(Role.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   async updateServiceStatus(
-    @Param("spId", ParseIntPipe) spId: number,
-    @Param("sId", ParseIntPipe) sId: number,
+    @Param("spId") spId: string,
+    @Param("sId") sId: string,
     @Body() data: UpdateStatusDto ): Promise<BaseResponseDto> {
     try {
       const result = await this.adminService.updateServiceStatus( spId, sId, data.status );

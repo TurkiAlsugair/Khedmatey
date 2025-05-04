@@ -34,7 +34,7 @@ export class RequestController {
 
     @UseGuards(JwtAuthGuard)
     @Patch(':id/status')
-    async updateStatus(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: GenerateTokenDto, @Body() dto: UpdateRequestStatusDto): Promise<BaseResponseDto> {
+    async updateStatus(@Param('id') id: string, @CurrentUser() user: GenerateTokenDto, @Body() dto: UpdateRequestStatusDto): Promise<BaseResponseDto> {
       try
       {
         const data = await this.requestService.updateStatus(id, user, dto.status);

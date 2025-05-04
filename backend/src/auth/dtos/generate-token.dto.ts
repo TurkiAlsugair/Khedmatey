@@ -2,7 +2,7 @@ import { IsInt, IsString, IsPhoneNumber } from "class-validator";
 
 export class GenerateTokenDto {
   @IsString()
-  id: String;
+  id: string;
 
   @IsString()
   username: String;

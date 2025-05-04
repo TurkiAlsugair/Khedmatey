@@ -21,7 +21,7 @@ enum Role {
 }
 
 model Customer {
-  id Int @default(autoincrement()) @id
+  id String @id @default(uuid()) @db.Char(36)
 
   username String 
 
@@ -29,11 +29,11 @@ model Customer {
 
   role Role @default(value: CUSTOMER)
 
-  Request Request[]
+  Requests Request[]
 }
 
 model ServiceProvider{
-  id Int @default(autoincrement()) @id
+  id String @id @default(uuid()) @db.Char(36)
 
   username String
 
@@ -52,7 +52,7 @@ model ServiceProvider{
   status  Status  @default(PENDING)
 
   //schedule of the service provider
-  ProviderDay ProviderDay[]
+  ProviderDays ProviderDay[]
 }
 
 enum CityName {
@@ -87,7 +87,7 @@ model Category {
 }
 
 model Service {
-  id Int @id @default(autoincrement())
+  id String @id @default(uuid()) @db.Char(36)
 
   nameAR String 
   nameEN String
@@ -102,15 +102,15 @@ model Service {
   status  Status  @default(PENDING)
 
   serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id])
-  serviceProviderId Int
+  serviceProviderId String
 
-  Request Request[]
+  Requests Request[]
 
-  ServiceDay ServiceDay[]
+  ServiceDays ServiceDay[]
 }
 
 model Worker {
-  id Int @id @default(autoincrement())
+  id String @id @default(uuid()) @db.Char(36)
   
   username String       
   
@@ -119,27 +119,27 @@ model Worker {
   role Role @default(value: WORKER)
 
   serviceProvider  ServiceProvider  @relation(fields: [serviceProviderId], references: [id])
-  serviceProviderId Int
+  serviceProviderId String
 
   //city the worker works in
   city        City    @relation(fields: [cityId], references: [id])
   cityId      Int    
 
   //schedule of the worker, which links to the requests the worker worked on 
-  WorkerDay WorkerDay[]
+  WorkerDays WorkerDay[]
 }
 
 
 model Request {
-  id Int @id @default(autoincrement())
+  id String @id @default(uuid()) @db.Char(36)
 
-  customerId      Int
+  customerId      String
   customer        Customer         @relation(fields: [customerId], references: [id])
 
-  serviceId       Int
+  serviceId       String
   service         Service          @relation(fields: [serviceId], references: [id])
 
-  locationId  Int
+  locationId  String
   location    Location @relation(fields: [locationId], references: [id])
 
   notes           String?
@@ -149,7 +149,7 @@ model Request {
   createdAt      DateTime      @default(now())
 
   //the day the request was scheduled on
-  providerDayId   Int
+  providerDayId   String
   providerDay     ProviderDay      @relation(fields: [providerDayId], references: [id])
 
   //the entity of the schedule of the worker
@@ -157,7 +157,7 @@ model Request {
 }
 
 model Location {
-  id           Int     @id @default(autoincrement())
+  id String @id @default(uuid()) @db.Char(36)
   city         String
   fullAddress  String 
   miniAddress  String
@@ -175,7 +175,7 @@ enum Status {
 }
 
 model Admin {
-  id          Int     @id @default(autoincrement())
+  id String @id @default(uuid()) @db.Char(36)
   username    String
   phoneNumber String @unique
   role        Role    @default(value: ADMIN)
@@ -186,14 +186,14 @@ model Admin {
 
 //A day of a provider, all other scheduling models link back to this model 
 model ProviderDay {
-  id                   Int                     @id @default(autoincrement())
+  id String @id @default(uuid()) @db.Char(36)
   date                 DateTime
   isClosed             Boolean                 @default(false) //closed manually
   isBusy               Boolean                 @default(false) //closed by not enouph workers
   totalRequestsCount   Int                     @default(0)
 
   //link to provider
-  serviceProviderId    Int
+  serviceProviderId    String
   serviceProvider      ServiceProvider         @relation(fields: [serviceProviderId], references: [id])
 
   //workers on this day
@@ -211,15 +211,15 @@ model ProviderDay {
 
 //For each service on a day
 model ServiceDay {
-  id              Int    @id @default(autoincrement())
+  id String @id @default(uuid()) @db.Char(36)
   isClosed        Boolean @default(false)
 
   //link to original day
-  providerDayId   Int
+  providerDayId   String
   providerDay     ProviderDay @relation(fields: [providerDayId], references: [id])
 
   //the specific service
-  serviceId       Int         
+  serviceId       String         
   service         Service     @relation(fields: [serviceId], references: [id])
 
   //compound unique constraint to ensure date + servuce is unique such that no there is no duplicate days for the same service
@@ -227,16 +227,16 @@ model ServiceDay {
 }
 
 model WorkerDay {
-  id               Int    @id @default(autoincrement())
+  id String @id @default(uuid()) @db.Char(36)
   nbOfAssignedRequests Int    @default(0)
   capacity         Int    @default(2)
 
   //link to original day
-  providerDayId    Int
+  providerDayId    String
   providerDay      ProviderDay @relation(fields: [providerDayId], references: [id])
 
   //link to the worker
-  workerId         Int
+  workerId         String
   worker           Worker       @relation(fields: [workerId], references: [id])
 
   //requests the worker works on at this day

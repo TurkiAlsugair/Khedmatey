@@ -6,10 +6,12 @@ import { LocationDto } from './location.dto';
 
 export class CreateRequestDto {
   @IsNotEmpty()
-  serviceId: number;
+  @IsString()
+  serviceId: string;
 
   @IsNotEmpty()
-  customerId: number;
+  @IsString()
+  customerId: string;
 
   @IsOptional()
   @IsString()

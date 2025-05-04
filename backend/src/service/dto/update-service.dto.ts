@@ -13,6 +13,6 @@ export class UpdateServiceDto {
   @IsNotEmpty()
   price: string;
 
-  @IsInt()
+  @IsNumber()
   categoryId: number;
 }

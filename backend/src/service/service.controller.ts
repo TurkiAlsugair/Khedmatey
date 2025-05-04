@@ -38,7 +38,7 @@ export class ServiceController {
   @Delete(':id')
   async deleteService(@Param('id') id: string, @CurrentUser() user: GenerateTokenDto): Promise<BaseResponseDto> 
   {
-    const serviceId = parseInt(id);
+    const serviceId = id;
     const servicespId = user.id;
 
     try
@@ -60,7 +60,7 @@ export class ServiceController {
   @Patch(':id')
   async updateService(@Param('id') id: string, @Body() dto: UpdateServiceDto, @CurrentUser() user: GenerateTokenDto): Promise<BaseResponseDto> 
   {
-    const serviceId = parseInt(id);
+    const serviceId = id;
     const servicespId = user.id;
 
     try
@@ -80,7 +80,7 @@ export class ServiceController {
 
   @UseGuards(JwtAuthGuard)//only require a valid token regardless of role
   @Get()
-  async getAllServices(@Query('spId') spIdString?: string, @Query('city') cityName?: string,): Promise<BaseResponseDto> {
+  async getAllServices(@Query('spId') spIdString?: string, @Query('city') cityName?: string): Promise<BaseResponseDto> {
 
     //if query params are provided, services are filtered by them
     //otherwise, return all services
@@ -88,10 +88,9 @@ export class ServiceController {
 
       //filter by service provider
       if (spIdString) {
-        const spId = parseInt(spIdString);
-        const services = await this.serviceService.getAllServicesForProvider(spId);
+        const services = await this.serviceService.getAllServicesForProvider(spIdString);
         return {
-          message: `List of services for provider with ID=${spId}`,
+          message: `List of services for provider with ID=${spIdString}`,
           data: services,
         };
       }
@@ -118,7 +117,7 @@ export class ServiceController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':serviceId/schedule')
-  async getServiceSchedule(@Param('serviceId', ParseIntPipe) serviceId: number, @Query('city') city?: string,): Promise<BaseResponseDto> {
+  async getServiceSchedule(@Param('serviceId', ParseIntPipe) serviceId: string, @Query('city') city?: string,): Promise<BaseResponseDto> {
 
     const busyDates = await this.serviceService.getServiceSchedule(serviceId, city);
     return {

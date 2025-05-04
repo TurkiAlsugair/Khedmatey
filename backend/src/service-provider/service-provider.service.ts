@@ -11,7 +11,7 @@ import { RequestService } from 'src/request/request.service';
 export class ServiceProviderService {
     constructor( private prisma: DatabaseService, private twilio: TwilioService, private requestService: RequestService){}
 
-    async createWorker(dto: CreateWorkerDto, serviceProviderId: number) {
+    async createWorker(dto: CreateWorkerDto, serviceProviderId: string) {
 
         //check if phonenumber exists
         const existing = await this.prisma.worker.findUnique({
@@ -126,11 +126,7 @@ export class ServiceProviderService {
     }
 
     //returns 2 arrays, blockedDays and busyDays
-    async getNext30DaysSchedule(providerId: number) {
-
-      if (isNaN(providerId)) {
-        throw new BadRequestException('Invalid provider ID');
-      }
+    async getNext30DaysSchedule(providerId: string) {
 
       //check if provider exists
       const provider = await this.prisma.serviceProvider.findUnique({
@@ -177,7 +173,7 @@ export class ServiceProviderService {
       return { blockedDates, busyDates };
     }
 
-    async replaceBlockedDays(providerId: number, newDates: string[],): Promise<string[]> {
+    async replaceBlockedDays(providerId: string, newDates: string[],): Promise<string[]> {
       const todayMidnight = startOfDay(new Date());
       const maxRange = addDays(todayMidnight, 30);
   

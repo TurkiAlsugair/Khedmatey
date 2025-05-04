@@ -10,7 +10,7 @@ import { addDays, eachDayOfInterval, format, startOfDay } from 'date-fns';
 export class ServiceService {
   constructor(private prisma: DatabaseService) {}
   
-  async create(dto: CreateServiceDto, serviceProviderId: number) {
+  async create(dto: CreateServiceDto, serviceProviderId: string) {
     const { nameAR, nameEN, price, categoryId } = dto;
 
     // search the service provider know it status 
@@ -54,12 +54,7 @@ export class ServiceService {
     return newService;
   }
 
-  async delete(serviceId: number, serviceProviderId: number) {
-
-    //check if serviceId is a number
-    if (isNaN(serviceId)) {
-      throw new BadRequestException('Invalid service ID');
-    }
+  async delete(serviceId: string, serviceProviderId: string) {
 
     //get service info
     const service = await this.prisma.service.findUnique({
@@ -83,12 +78,7 @@ export class ServiceService {
     return deletedService
   }
   
-  async update(serviceId: number, dto: UpdateServiceDto, serviceProviderId: number) {    
-
-    //check if serviceId is a number
-    if (isNaN(serviceId)) {
-      throw new BadRequestException('Invalid service ID');
-    }
+  async update(serviceId: string, dto: UpdateServiceDto, serviceProviderId: string) {    
     
     //get service info
     const service = await this.prisma.service.findUnique({
@@ -134,12 +124,7 @@ export class ServiceService {
     return updatedService;
   }
   
-  async getAllServicesForProvider(spId: number) {
-
-    //check if a number is provided
-    if (isNaN(spId)) {
-      throw new BadRequestException('Invalid service provider ID');
-    }
+  async getAllServicesForProvider(spId: string) {
 
     //check if provider exists
     const serviceProvider = await this.prisma.serviceProvider.findUnique({
@@ -277,7 +262,7 @@ export class ServiceService {
    * - providerDay.isBusy   (no worker capacity)
    * - providerDayService.isClosed (service‑specific closure)
    */
-  async getServiceSchedule(serviceId: number, city?: string): Promise<string[]> {
+  async getServiceSchedule(serviceId: string, city?: string): Promise<string[]> {
 
     //find the service to get its provider
     const service = await this.prisma.service.findUnique({

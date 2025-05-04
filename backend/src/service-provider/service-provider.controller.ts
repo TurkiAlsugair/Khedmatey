@@ -9,7 +9,7 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { GenerateTokenDto } from 'src/auth/dtos/generate-token.dto';
 import { BaseResponseDto } from 'src/dtos/base-reposnse.dto';
 import { UpdateScheduleDto } from './dtos/update-schedule.dto';
-import { UpdateRequestStatusDto } from 'src/request/dtos/update-status.dto';
+import { OwnerGuard } from 'src/auth/guards/owner.guard';
 
 
 @Controller('service-provider')
@@ -17,8 +17,8 @@ export class ServiceProviderController {
   constructor(private serviceProviderService: ServiceProviderService) {}
 
   @Roles(Role.SERVICE_PROVIDER)
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Post('workers')
+  @UseGuards(JwtAuthGuard, RolesGuard, OwnerGuard)
+  @Post(':id/workers')
   async addWorker(@Body() dto: CreateWorkerDto, @CurrentUser() user: GenerateTokenDto): Promise<BaseResponseDto> {
     try {
       const serviceProviderId = user.id;
@@ -60,7 +60,7 @@ export class ServiceProviderController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':id/schedule')
-  async getSchedule(@Param('id', ParseIntPipe) providerId: number): Promise<BaseResponseDto> {
+  async getSchedule(@Param('id') providerId: string): Promise<BaseResponseDto> {
     try
     {
       const schedule = await this.serviceProviderService.getNext30DaysSchedule(providerId);
@@ -75,7 +75,7 @@ export class ServiceProviderController {
   }
 
   @Roles(Role.SERVICE_PROVIDER)
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, OwnerGuard)
   @Post(':id/schedule')
   async updateSchedule(@Body() dto: UpdateScheduleDto, @CurrentUser() user: GenerateTokenDto): Promise<BaseResponseDto> {
     try
@@ -87,5 +87,5 @@ export class ServiceProviderController {
       throw err
     }
   }
-
+  
 }
