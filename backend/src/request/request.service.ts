@@ -1,10 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateRequestDto } from './dtos/create-request.dto';
 import { DatabaseService } from 'src/database/database.service';
-import { CityName } from '@prisma/client';
-import { Status } from '@prisma/client';
+import { CityName, Status, Request, Customer, Role } from '@prisma/client';
 import { isBefore, isAfter, addDays, format, startOfDay } from 'date-fns';
 import { ServiceService } from 'src/service/service.service';
+import { GenerateTokenDto } from 'src/auth/dtos/generate-token.dto';
 import { error } from 'console';
 
 @Injectable()
@@ -100,7 +100,7 @@ export class RequestService {
           //find schedule of each worker, if not exist create it
           const dayWorkers = await Promise.all(
             providerWorkersByCity.map((w) =>
-              tx.providerDayWorker.upsert({
+              tx.workerDay.upsert({
                 where: {
                   workerId_providerDayId: 
                   { 
@@ -140,12 +140,8 @@ export class RequestService {
           const chosenWorkers = availableDayWorkers.slice(0, neededWorkers);
 
           //create location if not exists
-          const loc = await tx.location.upsert({
-            where: {
-              fullAddress: location.fullAddress,       
-            },
-            update: {},
-            create: {                                  
+          const loc = await tx.location.create({
+            data: {                                  
               city:         location.city,
               fullAddress:  location.fullAddress,
               miniAddress:  location.miniAddress,
@@ -199,7 +195,7 @@ export class RequestService {
 
           //increment nb of assigned requests for each workerDay
           for (const cw of chosenWorkers) {
-            await tx.providerDayWorker.update({
+            await tx.workerDay.update({
               where: { id: cw.id },
               data: { nbOfAssignedRequests: { increment: 1 } }
             });
@@ -208,7 +204,7 @@ export class RequestService {
           //get updated workers after increment
           const updatedDayWorkers = await Promise.all(
             providerWorkers.map((w) =>
-              tx.providerDayWorker.upsert(
+              tx.workerDay.upsert(
               {
                 where: 
                 {
@@ -256,7 +252,7 @@ export class RequestService {
               select: { id: true, requiredNbOfWorkers: true },
             });
             await Promise.all(services.map(({ id: svcId }) => 
-              tx.providerDayService.upsert(
+              tx.serviceDay.upsert(
               { 
                 where: 
                 {
@@ -290,7 +286,7 @@ export class RequestService {
               services.map(({ id: svcId, requiredNbOfWorkers }) => {
                 const shouldClose = freeWorkersCount < requiredNbOfWorkers;
                 
-                return tx.providerDayService.upsert({
+                return tx.serviceDay.upsert({
                   where: {
                     serviceId_providerDayId: {
                       serviceId:      svcId,
@@ -312,6 +308,162 @@ export class RequestService {
           return newRequest;
         });
 
+    }
+
+    /*
+    returns the requests that belongs to the requester.
+    if no status filter provided, returns requests filtered by status, otherwise return one array of requests.
+    */
+    async getRequests(
+      user: GenerateTokenDto,status?: Status): Promise<Request[] | Record<Status, Request[]>> {
+
+      //1- build the base filter by role (search for )
+      const where: any = {};
+      switch (user.role) {
+        case Role.SERVICE_PROVIDER:
+          where.providerDay = { providerId: user.id };
+          break;
+        case Role.CUSTOMER:
+          where.customerId = user.id;
+          break;
+        case Role.WORKER:
+          where.dailyWorkers = { some: { workerId: user.id } };
+          break;
+        default:
+          throw new ForbiddenException('Invalid role');
+      }
+  
+      //2- add optional status filter
+      if (status) {
+        where.status = status;
+      }
+  
+      //3- fetch with all relevant relations
+      const requests = await this.prisma.request.findMany({
+        where,
+        include: {
+          customer: true,
+          providerDay: { select: { date: true, serviceProviderId: true } },
+          dailyWorkers: { include: { worker: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+  
+      //4- if specific status, return requests as is 
+      if (status) {
+        return requests;
+      }
+  
+      //5- otherwise group by status
+      const grouped = Object.values(Status).reduce((acc, s) => {
+        acc[s] = [];
+        return acc;
+      }, {} as Record<Status, Request[]>);
+  
+      for (const req of requests) {
+        grouped[req.status].push(req);
+      }
+      return grouped;
+    }
+
+    async updateStatus(id: number, user: GenerateTokenDto, newStatus: Status) {
+
+      const request = await this.prisma.request.findUnique({ 
+        where: { id },
+        include: {
+          providerDay: { select: { serviceProviderId: true } },
+          customer: true,
+          dailyWorkers: { include: { worker: true } },
+        },
+      });
+      const serviceProviderId = request?.providerDay.serviceProviderId
+
+      if (!request) {
+        throw new NotFoundException(`Request with id ${id} not found`);
+      }
+      
+      let result: Request 
+      switch (newStatus) 
+      {
+        case Status.ACCEPTED:
+          result = await this.handleAccepted(request, user, serviceProviderId as number);
+          break;
+
+        case Status.DECLINED:
+          result = await this.handledDeclined(request, user, serviceProviderId as number);
+          break;
+        
+        default:
+          throw new BadRequestException("Unknown status")
+      }
+
+      return result
+    }
+
+    //returns true and update request's status to cancelled if it has been created for more than 10 min, otherwise return false.
+    private async autoCancel(request: Request, nowMs: number): Promise<boolean> {
+      const tenMinutesMs = 10 * 60 * 1000;
+      const age = nowMs - request.createdAt.getTime();
+
+      if(request.status !== Status.PENDING){
+        return false
+      }
+
+      if (age > tenMinutesMs) {
+        await this.prisma.request.update({
+          where: { id: request.id },
+          data: { status: Status.CANCELED },
+        });
+        return true;
+      }
+      return false;
+    }
+
+    async handleAccepted(request: Request, user: GenerateTokenDto, serviceProviderId: number){
+
+      if (user.role !== Role.SERVICE_PROVIDER) {
+        throw new ForbiddenException('Only service providers may accept');
+      }
+      if (serviceProviderId !== user.id) {
+        throw new ForbiddenException(
+          'You can only accept requests assigned to your services',
+        );
+      }
+      
+
+      if (await this.autoCancel(request, Date.now())) {
+        throw new ForbiddenException(
+          'Request automatically cancelled due to time limit',
+        );
+      }
+  
+      return this.prisma.request.update({
+        where: { id: request.id },
+        data: { status: Status.ACCEPTED },
+      });
+    }
+
+    async handledDeclined(request: Request, user: GenerateTokenDto, serviceProviderId: number){
+      if (user.role !== Role.SERVICE_PROVIDER) {
+        throw new ForbiddenException('Only service providers may accept');
+      }
+      if (serviceProviderId !== user.id) 
+      {
+        throw new ForbiddenException(
+          'You can only decline requests assigned to your services',
+        );
+      }
+
+      if (await this.autoCancel(request, Date.now())) {
+        throw new ForbiddenException(
+          'Request automatically cancelled due to time limit',
+        );
+      }
+  
+      return this.prisma.request.update({
+        where: { id: request.id },
+        data: { status: Status.DECLINED },
+      });
     }
 
     //validates date and returns date as date object

@@ -106,7 +106,7 @@ model Service {
 
   Request Request[]
 
-  ProviderDayService ProviderDayService[]
+  ServiceDay ServiceDay[]
 }
 
 model Worker {
@@ -126,7 +126,7 @@ model Worker {
   cityId      Int    
 
   //schedule of the worker, which links to the requests the worker worked on 
-  ProviderDayWorker ProviderDayWorker[]
+  WorkerDay WorkerDay[]
 }
 
 
@@ -146,12 +146,14 @@ model Request {
 
   status  Status  @default(PENDING)
 
+  createdAt      DateTime      @default(now())
+
   //the day the request was scheduled on
   providerDayId   Int
   providerDay     ProviderDay      @relation(fields: [providerDayId], references: [id])
 
   //the entity of the schedule of the worker
-  dailyWorkers    ProviderDayWorker[] @relation("DailyWorkerOnRequest")
+  dailyWorkers    WorkerDay[] @relation("DailyWorkerOnRequest")
 }
 
 model Location {
@@ -169,6 +171,7 @@ enum Status {
   PENDING
   ACCEPTED
   DECLINED
+  CANCELED
 }
 
 model Admin {
@@ -194,10 +197,10 @@ model ProviderDay {
   serviceProvider      ServiceProvider         @relation(fields: [serviceProviderId], references: [id])
 
   //workers on this day
-  providerDayWorkers   ProviderDayWorker[]
+  WorkerDays   WorkerDay[]
 
   //services made on this day
-  providerDayServices  ProviderDayService[]
+  ServiceDays  ServiceDay[]
 
   //requests scheduled on this day
   requests Request[]
@@ -207,7 +210,7 @@ model ProviderDay {
 }
 
 //For each service on a day
-model ProviderDayService {
+model ServiceDay {
   id              Int    @id @default(autoincrement())
   isClosed        Boolean @default(false)
 
@@ -223,7 +226,7 @@ model ProviderDayService {
   @@unique([serviceId, providerDayId]) 
 }
 
-model ProviderDayWorker {
+model WorkerDay {
   id               Int    @id @default(autoincrement())
   nbOfAssignedRequests Int    @default(0)
   capacity         Int    @default(2)

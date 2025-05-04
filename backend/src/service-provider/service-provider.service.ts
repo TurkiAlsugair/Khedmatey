@@ -3,7 +3,7 @@ import { DatabaseService } from 'src/database/database.service';
 import { TwilioService } from 'src/twilio/twilio.service';
 import { CreateWorkerDto } from './dtos/create-worker.dto'
 import { CityName, Status } from '@prisma/client';
-import { addDays, eachDayOfInterval, format, formatISO, isAfter, isBefore, parseISO, startOfDay } from 'date-fns';
+import { addDays, eachDayOfInterval, format, formatISO, startOfDay } from 'date-fns';
 import { RequestService } from 'src/request/request.service';
 
 
@@ -192,7 +192,7 @@ export class ServiceProviderService {
           d,
         ]),
       );
-      
+
       //close requested dates and open others
       await this.prisma.$transaction(async (tx) => {
         //fetch all providerDay rows in the range

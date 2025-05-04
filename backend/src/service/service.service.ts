@@ -171,7 +171,45 @@ export class ServiceService {
       },
     });
 
-    return services;
+    const grouped = services.reduce<
+    {
+      categoryId:   string;
+      categoryName: string;
+      services: {
+        serviceId:     string;
+        nameEN:        string;
+        nameAR:        string;
+        price:         string;
+        workersNeeded: string;
+      }[];
+    }[]>((acc, svc) => 
+    {
+      const catId = svc.category.id.toString();
+      let bucket = acc.find(b => b.categoryId === catId);
+      if (!bucket) {
+        bucket = {
+          categoryId:   catId,
+          categoryName: svc.category.name,
+          services:     [],
+        };
+        acc.push(bucket);
+      }
+      bucket.services.push({
+        serviceId:     svc.id.toString(),
+        nameEN:        svc.nameEN,
+        nameAR:        svc.nameAR,
+        price:         svc.price?.toString() ?? 'TBD',
+        workersNeeded: svc.requiredNbOfWorkers.toString(),
+      });
+      return acc;
+    }, []);
+
+    return {
+      data: {
+        serviceProviderId: spId.toString(),
+        services:          grouped,
+      },
+    };
   }
 
   async getAllServices() {
@@ -278,12 +316,12 @@ export class ServiceService {
         date: { gte: today, lte: end },
       },
       include: {
-        providerDayServices: {
+        ServiceDays: {
           where: { serviceId: serviceId },
           select: { isClosed: true },
         },
         //get workers for the specific city
-        providerDayWorkers: cityFilter
+        WorkerDays: cityFilter
           ? {
               where: {
                 worker: { city: { name: cityFilter } },
@@ -307,7 +345,7 @@ export class ServiceService {
       }
       //service specifc close
       //legth is checked because if no request happens on that day for the service, no row would exist.
-      if (r.providerDayServices.length > 0 && r.providerDayServices[0].isClosed) {
+      if (r.ServiceDays.length > 0 && r.ServiceDays[0].isClosed) {
         unavailableMap.set(key, true);
         continue
       }
@@ -315,7 +353,7 @@ export class ServiceService {
       //city specific close (not enough workers in city)
       if(cityFilter)
         {
-          const dayWorkers = r.providerDayWorkers ?? [];
+          const dayWorkers = r.WorkerDays ?? [];
           // count how many are fully booked
           const closedWorkersCount = dayWorkers.filter(
             (dw) => dw.nbOfAssignedRequests >= dw.capacity).length;

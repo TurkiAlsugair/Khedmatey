@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ServiceProviderService } from './service-provider.service';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
@@ -9,7 +9,7 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { GenerateTokenDto } from 'src/auth/dtos/generate-token.dto';
 import { BaseResponseDto } from 'src/dtos/base-reposnse.dto';
 import { UpdateScheduleDto } from './dtos/update-schedule.dto';
-import { error } from 'console';
+import { UpdateRequestStatusDto } from 'src/request/dtos/update-status.dto';
 
 
 @Controller('service-provider')
@@ -87,5 +87,5 @@ export class ServiceProviderController {
       throw err
     }
   }
-  
+
 }
