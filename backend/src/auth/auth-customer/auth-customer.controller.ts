@@ -36,8 +36,8 @@ export class AuthCustomerController {
 
   @Roles(Role.CUSTOMER) //set metadata
   @UseGuards(JwtAuthGuard, RolesGuard, OwnerGuard)
-  @Patch("/account")
-  async updateCustomer(@Body() updateDto: UpdateCustomerDto, @Req() req: Request): Promise<BaseResponseDto> {
+  @Patch(":id/account")
+  async updateCustomer(@Body() updateDto: UpdateCustomerDto): Promise<BaseResponseDto> {
 
     try{
 
@@ -56,7 +56,7 @@ export class AuthCustomerController {
 
   @Roles(Role.CUSTOMER) //set metadata
   @UseGuards(JwtAuthGuard, RolesGuard, OwnerGuard)
-  @Delete("/account")
+  @Delete(":id/account")
   async deleteCustomer(@Body() {phoneNumber}: FindUserDto): Promise<BaseResponseDto>{
     
     try{
