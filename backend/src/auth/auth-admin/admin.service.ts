@@ -37,7 +37,7 @@ async signupAdmin({ phoneNumber, username, otpCode }: CreateAdminDto) {
   return { token, newAdmin };
 }
 
-  async updateServiceProviderStatus(spId: number, status: Status) {
+  async updateServiceProviderStatus(spId: string, status: Status) {
 
     // Find the service provider
     const provider = await this.prisma.serviceProvider.findUnique({
@@ -63,7 +63,7 @@ async signupAdmin({ phoneNumber, username, otpCode }: CreateAdminDto) {
   }
 
 
-  async updateServiceStatus(spId: number, sId: number, status: Status) {
+  async updateServiceStatus(spId: string, sId: string, status: Status) {
 
   // Check if the service exists and belongs to the service provider
     const service = await this.prisma.service.findUnique({
