@@ -352,20 +352,42 @@ export class RequestService {
         },
         orderBy: { createdAt: 'desc' },
       });
-      console.log(requests)
   
-      //4- if specific status, return requests as is 
+      //4- Run auto-cancel on all pending requests
+      const now = Date.now();
+      const updatedRequests = await Promise.all(
+        requests.map(async (req) => {
+          if (req.status === Status.PENDING) {
+            await this.autoCancel(req, now);
+            // Refresh the request after possible status change
+            return this.prisma.request.findUnique({
+              where: { id: req.id },
+              include: {
+                customer: true,
+                providerDay: { select: { date: true, serviceProviderId: true } },
+                dailyWorkers: { include: { worker: true } },
+              },
+            });
+          }
+          return req;
+        })
+      );
+
+      // Filter out any null values (shouldn't happen, but just in case)
+      const filteredRequests = updatedRequests.filter(req => req !== null) as Request[];
+  
+      //5- if specific status, return requests as is 
       if (status) {
-        return requests;
+        return filteredRequests;
       }
   
-      //5- otherwise group by status
+      //6- otherwise group by status
       const grouped = Object.values(Status).reduce((acc, s) => {
         acc[s] = [];
         return acc;
       }, {} as Record<Status, Request[]>);
   
-      for (const req of requests) {
+      for (const req of filteredRequests) {
         grouped[req.status].push(req);
       }
       return grouped;
@@ -435,7 +457,6 @@ export class RequestService {
         );
       }
       
-
       if (await this.autoCancel(request, Date.now())) {
         throw new ForbiddenException(
           'Request automatically cancelled due to time limit',
