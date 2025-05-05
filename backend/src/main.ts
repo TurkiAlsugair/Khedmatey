@@ -19,6 +19,7 @@ async function bootstrap() {
     .addTag('service-provider', 'Service provider management endpoints')
     .addTag('service', 'Service management endpoints')
     .addTag('request', 'Service request endpoints')
+    .addTag('search', 'Search endpoints')
     .addBearerAuth(
       {
         type: 'http',

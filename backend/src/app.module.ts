@@ -24,7 +24,7 @@ import { RequestModule } from './request/request.module';
     ServiceProviderModule,
     ServiceModule,
     AdminModule,
-    SearchModule
+    SearchModule,
     RequestModule],
   controllers: [AppController],
   providers: [AppService],
