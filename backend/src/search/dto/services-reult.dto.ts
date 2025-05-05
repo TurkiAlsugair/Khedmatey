@@ -1,10 +1,23 @@
+import { Status } from "@prisma/client";
+
 export class ServicesResultDto {
-    serviceId: number;
-    nameEN: string;
-    nameAR: string;
-    categoryId: number;
-    price: number;
+  id: number;
+  nameEN: string;
+  nameAR: string;
+  categoryId: number;
+  price: string;
+  serviceProviderId: number;
+
+  category: {
+    id: number;
+    name: string;
+  };
+
+  serviceProvider: {
     providerId: number;
-    providerNameEN: string;
-    providerNameAR: string;
+    username: string;
+    phoneNumber: string;
+    email: string;
+  };
+
   }

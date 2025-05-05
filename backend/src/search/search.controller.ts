@@ -9,10 +9,10 @@ export class SearchController {
 
     // @UseGuards(JwtAuthGuard)
     @Get()
-    async search(@Query('searchTerm') searchTerm: string): Promise<BaseResponseDto>
+    async search(@Query('searchTerm') searchTerm: string, @Query('city') city: string): Promise<BaseResponseDto>
     {
         try{
-      const { services, providers } = await this.searchService.search(searchTerm.trim());
+      const { services, providers } = await this.searchService.search(searchTerm.trim(), city.trim());
   
       const response = {
         message: 'Search results fetched successfully.',
