@@ -12,9 +12,13 @@ async function bootstrap() {
     .setDescription('API for the Khedmatey application')
     .setVersion('1.0')
     .addTag('auth', 'Authentication endpoints')
-    .addTag('auth:admin', 'Admin authentication endpoints')
     .addTag('auth:customer', 'Customer authentication endpoints')
     .addTag('auth:service-provider', 'Service provider authentication endpoints')
+    .addTag('auth:admin', 'Admin authentication endpoints')
+    .addTag('customer', 'Customer management endpoints')
+    .addTag('service-provider', 'Service provider management endpoints')
+    .addTag('service', 'Service management endpoints')
+    .addTag('request', 'Service request endpoints')
     .addBearerAuth(
       {
         type: 'http',

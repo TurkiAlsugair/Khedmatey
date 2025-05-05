@@ -10,12 +10,42 @@ import { GenerateTokenDto } from 'src/auth/dtos/generate-token.dto';
 import { BaseResponseDto } from 'src/dtos/base-reposnse.dto';
 import { UpdateScheduleDto } from './dtos/update-schedule.dto';
 import { OwnerGuard } from 'src/auth/guards/owner.guard';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiParam, ApiQuery } from '@nestjs/swagger';
 
-
+@ApiTags('service-provider')
 @Controller('service-provider')
 export class ServiceProviderController {
   constructor(private serviceProviderService: ServiceProviderService) {}
 
+  @ApiOperation({ summary: 'Add worker', description: 'Create a new worker account under the service provider' })
+  @ApiBody({ type: CreateWorkerDto })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'Worker created successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Worker created successfully'
+        },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: 'worker-uuid' },
+            username: { type: 'string', example: 'workerName' },
+            phoneNumber: { type: 'string', example: '+123456789' },
+            role: { type: 'string', example: 'WORKER' },
+            city: { type: 'string', example: 'RIYADH' }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Not a service provider' })
+  @ApiBearerAuth('JWT-auth')
   @Roles(Role.SERVICE_PROVIDER)
   @UseGuards(JwtAuthGuard, RolesGuard, OwnerGuard)
   @Post(':id/workers')
@@ -33,6 +63,40 @@ export class ServiceProviderController {
     }
   }
 
+  @ApiOperation({ summary: 'Get service providers', description: 'Retrieve a list of service providers, optionally filtered by city' })
+  @ApiQuery({ name: 'city', required: false, description: 'Filter providers by city name' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'List of service providers retrieved',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'List of all service providers'
+        },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'provider-uuid' },
+              username: { type: 'string', example: 'serviceCompany' },
+              email: { type: 'string', example: 'service@example.com' },
+              status: { type: 'string', example: 'APPROVED' },
+              cities: { 
+                type: 'array', 
+                items: { type: 'string' },
+                example: ['RIYADH', 'JEDDAH']
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard) // or remove if you want public access
   @Get()
   async getProviders(@Query('city') cityName?: string): Promise<BaseResponseDto> {
@@ -58,6 +122,39 @@ export class ServiceProviderController {
     }
   }
 
+  @ApiOperation({ summary: 'Get provider schedule', description: 'Retrieve the next 30 days schedule for a service provider' })
+  @ApiParam({ name: 'id', description: 'Service Provider ID', type: 'string' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Schedule retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'List of blocked dates and busy dates'
+        },
+        data: {
+          type: 'object',
+          properties: {
+            blockedDays: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['2023-01-01', '2023-01-02']
+            },
+            busyDays: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['2023-01-05', '2023-01-10']
+            }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Service provider not found' })
+  @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard)
   @Get(':id/schedule')
   async getSchedule(@Param('id') providerId: string): Promise<BaseResponseDto> {
@@ -74,6 +171,37 @@ export class ServiceProviderController {
     }
   }
 
+  @ApiOperation({ summary: 'Update provider schedule', description: 'Update the blocked days for a service provider' })
+  @ApiParam({ name: 'id', description: 'Service Provider ID', type: 'string' })
+  @ApiBody({ type: UpdateScheduleDto })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Schedule updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Schedule updated'
+        },
+        data: {
+          type: 'object',
+          properties: {
+            blockedDays: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['2023-01-01', '2023-01-02']
+            }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Not the owner of this service provider account' })
+  @ApiResponse({ status: 404, description: 'Service provider not found' })
+  @ApiBearerAuth('JWT-auth')
   @Roles(Role.SERVICE_PROVIDER)
   @UseGuards(JwtAuthGuard, RolesGuard, OwnerGuard)
   @Post(':id/schedule')
