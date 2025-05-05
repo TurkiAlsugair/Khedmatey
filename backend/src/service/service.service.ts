@@ -4,12 +4,13 @@ import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { cleanObject } from 'src/utils/cleanObject';
 import { CityName, Prisma, Status } from '@prisma/client';
+import { addDays, eachDayOfInterval, format, startOfDay } from 'date-fns';
 
 @Injectable()
 export class ServiceService {
   constructor(private prisma: DatabaseService) {}
   
-  async create(dto: CreateServiceDto, serviceProviderId: number) {
+  async create(dto: CreateServiceDto, serviceProviderId: string) {
     const { nameAR, nameEN, price, categoryId } = dto;
 
     // search the service provider know it status 
@@ -53,12 +54,7 @@ export class ServiceService {
     return newService;
   }
 
-  async delete(serviceId: number, serviceProviderId: number) {
-
-    //check if serviceId is a number
-    if (isNaN(serviceId)) {
-      throw new BadRequestException('Invalid service ID');
-    }
+  async delete(serviceId: string, serviceProviderId: string) {
 
     //get service info
     const service = await this.prisma.service.findUnique({
@@ -82,12 +78,7 @@ export class ServiceService {
     return deletedService
   }
   
-  async update(serviceId: number, dto: UpdateServiceDto, serviceProviderId: number) {    
-
-    //check if serviceId is a number
-    if (isNaN(serviceId)) {
-      throw new BadRequestException('Invalid service ID');
-    }
+  async update(serviceId: string, dto: UpdateServiceDto, serviceProviderId: string) {    
     
     //get service info
     const service = await this.prisma.service.findUnique({
@@ -133,12 +124,7 @@ export class ServiceService {
     return updatedService;
   }
   
-  async getAllServicesForProvider(spId: number) {
-
-    //check if a number is provided
-    if (isNaN(spId)) {
-      throw new BadRequestException('Invalid service provider ID');
-    }
+  async getAllServicesForProvider(spId: string) {
 
     //check if provider exists
     const serviceProvider = await this.prisma.serviceProvider.findUnique({
@@ -170,7 +156,45 @@ export class ServiceService {
       },
     });
 
-    return services;
+    const grouped = services.reduce<
+    {
+      categoryId:   string;
+      categoryName: string;
+      services: {
+        serviceId:     string;
+        nameEN:        string;
+        nameAR:        string;
+        price:         string;
+        workersNeeded: string;
+      }[];
+    }[]>((acc, svc) => 
+    {
+      const catId = svc.category.id.toString();
+      let bucket = acc.find(b => b.categoryId === catId);
+      if (!bucket) {
+        bucket = {
+          categoryId:   catId,
+          categoryName: svc.category.name,
+          services:     [],
+        };
+        acc.push(bucket);
+      }
+      bucket.services.push({
+        serviceId:     svc.id.toString(),
+        nameEN:        svc.nameEN,
+        nameAR:        svc.nameAR,
+        price:         svc.price?.toString() ?? 'TBD',
+        workersNeeded: svc.requiredNbOfWorkers.toString(),
+      });
+      return acc;
+    }, []);
+
+    return {
+      data: {
+        serviceProviderId: spId.toString(),
+        services:          grouped,
+      },
+    };
   }
 
   async getAllServices() {
@@ -231,9 +255,119 @@ export class ServiceService {
     return services;
   }
 
+  /**
+   * Returns an array of ISO‑dates (yyyy-MM-dd) over the next 30 days
+   * on which the given service is unavailable because:
+   * - providerDay.isClosed (manually blocked)
+   * - providerDay.isBusy   (no worker capacity)
+   * - providerDayService.isClosed (service‑specific closure)
+   */
+  async getServiceSchedule(serviceId: string, city?: string): Promise<string[]> {
+
+    //find the service to get its provider
+    const service = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+      select: { serviceProviderId: true, requiredNbOfWorkers: true },
+    });
+    if (!service) {
+      throw new NotFoundException('Service not found');
+    }
+    const providerId = service.serviceProviderId;
+
+    //if city, validate it
+    let cityFilter: CityName | undefined = undefined;
+    if(city)
+      cityFilter = await this.parseCity(city)
+    
+    //compute number of workers for the city
+    let totalCityWorkers: number | undefined;
+    if (cityFilter) {
+      totalCityWorkers = await this.prisma.worker.count({
+        where: {
+          serviceProviderId: providerId,
+          city: { name: cityFilter },
+        },
+      });
+    }
+
+    //compute date range
+    const today = startOfDay(new Date());
+    const end   = addDays(today, 29);
+
+    //fetch all ProviderDay rows in the date range, plus the services specific schedule
+    const rows = await this.prisma.providerDay.findMany({
+      where: {
+        serviceProviderId: providerId,
+        date: { gte: today, lte: end },
+      },
+      include: {
+        ServiceDays: {
+          where: { serviceId: serviceId },
+          select: { isClosed: true },
+        },
+        //get workers for the specific city
+        WorkerDays: cityFilter
+          ? {
+              where: {
+                worker: { city: { name: cityFilter } },
+              },
+              select: { id: true, nbOfAssignedRequests: true, capacity: true },
+            }
+          : undefined,
+      },
+    });
+
+    //build lookup map: key = date.toDateString(), value = true if any closed/busy
+    //no differenciation between closed and busy, cuz only one array is returned
+    const unavailableMap = new Map<string, true>();
+    for (const r of rows) {
+      const key = r.date.toDateString();
+      
+      //manually closed or out of workers
+      if (r.isClosed || r.isBusy) {
+        unavailableMap.set(key, true);
+        continue;
+      }
+      //service specifc close
+      //legth is checked because if no request happens on that day for the service, no row would exist.
+      if (r.ServiceDays.length > 0 && r.ServiceDays[0].isClosed) {
+        unavailableMap.set(key, true);
+        continue
+      }
+
+      //city specific close (not enough workers in city)
+      if(cityFilter)
+        {
+          const dayWorkers = r.WorkerDays ?? [];
+          // count how many are fully booked
+          const closedWorkersCount = dayWorkers.filter(
+            (dw) => dw.nbOfAssignedRequests >= dw.capacity).length;
+          
+          const freeWorkersCount = (totalCityWorkers! - closedWorkersCount);
+          if (freeWorkersCount < service.requiredNbOfWorkers) {
+            unavailableMap.set(key, true);
+            continue;
+          }
+        }
+    }
+
+    //walk each day in the interval and collect ISO strings for unavailable ones
+    const busyDates: string[] = [];
+    eachDayOfInterval({ start: today, end }).forEach((d) => {
+      const key = d.toDateString();
+      if (unavailableMap.has(key)) {
+        busyDates.push(format(d, 'yyyy-MM-dd'));
+      }
+    });
+
+    return busyDates;
+  }
+
   //helper
   async parseCity(cityNameStr: string) {
-    //calidate that the string is a valid enum value
+    //normalize
+    cityNameStr = cityNameStr.charAt(0).toUpperCase() + cityNameStr.slice(1).toLowerCase();
+    //validate that the string is a valid enum value
     if (!Object.values(CityName).includes(cityNameStr as CityName)) {
       throw new BadRequestException(`Invalid city: ${cityNameStr}`);
     }

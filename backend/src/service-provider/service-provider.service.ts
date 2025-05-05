@@ -3,13 +3,15 @@ import { DatabaseService } from 'src/database/database.service';
 import { TwilioService } from 'src/twilio/twilio.service';
 import { CreateWorkerDto } from './dtos/create-worker.dto'
 import { CityName, Status } from '@prisma/client';
+import { addDays, eachDayOfInterval, format, formatISO, startOfDay } from 'date-fns';
+import { RequestService } from 'src/request/request.service';
 
 
 @Injectable()
 export class ServiceProviderService {
-    constructor( private prisma: DatabaseService, private twilio: TwilioService){}
+    constructor( private prisma: DatabaseService, private twilio: TwilioService, private requestService: RequestService){}
 
-    async createWorker(dto: CreateWorkerDto, serviceProviderId: number) {
+    async createWorker(dto: CreateWorkerDto, serviceProviderId: string) {
 
         //check if phonenumber exists
         const existing = await this.prisma.worker.findUnique({
@@ -121,6 +123,129 @@ export class ServiceProviderService {
           cities: true
         },
       });
+    }
+
+    //returns 2 arrays, blockedDays and busyDays
+    async getNext30DaysSchedule(providerId: string) {
+
+      //check if provider exists
+      const provider = await this.prisma.serviceProvider.findUnique({
+        where: { id: providerId },
+      });
+      if (!provider) {
+        throw new NotFoundException(`Service provider not found`);
+      }
+
+      //get today and next 30 days(inclusive)
+      const today = startOfDay(new Date());
+      const end = addDays(today, 29);
+  
+      // fetch only rows that actually exist in DB
+      const rows = await this.prisma.providerDay.findMany({
+        where: {
+          serviceProviderId: providerId,
+          date: { gte: today, lte: end },
+        },
+        select: { date: true, isClosed: true, isBusy: true },
+      });
+      
+  
+      // quick maps for O(1) lookup, value of true is arbitrary cuz we only care about existence
+      const closedMap = new Map(
+        rows.filter(r => r.isClosed).map(r => [r.date.toDateString(), true]),
+      );
+      const busyMap = new Map(
+        rows.filter(r => r.isBusy).map(r => [r.date.toDateString(), true]),
+      );
+  
+      const blockedDates: string[] = [];
+      const busyDates: string[]    = [];
+  
+      // iterate through full 30‑day range and check each date against the maps
+      eachDayOfInterval({ start: today, end }).forEach(d => {
+        const key = d.toDateString();              
+        const iso = format(d, 'yyyy-MM-dd');       
+  
+        if (closedMap.has(key)) blockedDates.push(iso);
+        else if (busyMap.has(key)) busyDates.push(iso);
+      });
+  
+      return { blockedDates, busyDates };
+    }
+
+    async replaceBlockedDays(providerId: string, newDates: string[],): Promise<string[]> {
+      const todayMidnight = startOfDay(new Date());
+      const maxRange = addDays(todayMidnight, 30);
+  
+      //validate date is in correct format and time and return as date object
+      const normalizedDates: Date[] = newDates.map((dateStr) =>
+        this.requestService.validateDate(dateStr)
+      );
+
+      const wantClosedMap: Map<string, Date> = new Map(
+        normalizedDates.map((d) => [
+          formatISO(d, { representation: 'date' }),
+          d,
+        ]),
+      );
+
+      //close requested dates and open others
+      await this.prisma.$transaction(async (tx) => {
+        //fetch all providerDay rows in the range
+        const existing = await tx.providerDay.findMany({
+          where: {
+            serviceProviderId: providerId,
+            date: { gte: todayMidnight, lte: maxRange },
+          },
+          select: { id: true, date: true, isClosed: true },
+        });
+  
+      //loop over database rows
+      for (const row of existing) 
+      {
+        const iso = formatISO(row.date, { representation: 'date' });
+
+        //if date exist in want closed dates, close it
+        if (wantClosedMap.has(iso)) 
+        {
+          if (!row.isClosed) {
+            await tx.providerDay.update({
+              where: { id: row.id },
+              data:  { isClosed: true },
+            });
+          }
+
+          //delete from want closed
+          wantClosedMap.delete(iso);
+        } 
+        //otherwise open it
+        else 
+        {
+          if (row.isClosed) {
+            await tx.providerDay.update({
+              where: { id: row.id },
+              data:  { isClosed: false },
+            });
+          }
+        }
+      }
+      
+      //any keys still in wantClosedMap are new dates → create them closed
+      for (const [iso, dateObj] of wantClosedMap) {
+        await tx.providerDay.create({
+          data: {
+            serviceProviderId: providerId,
+            date:              dateObj,
+            isClosed:          true,
+            isBusy:            false,
+            totalRequestsCount: 0,
+          },
+        });
+      }
+
+      });
+  
+      return newDates
     }
 
     //helper
