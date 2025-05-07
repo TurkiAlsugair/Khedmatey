@@ -11,6 +11,7 @@ import { ServiceProviderModule } from './service-provider/service-provider.modul
 import { AdminModule } from './auth/auth-admin/admin.module';
 import { SearchModule } from './search/search.module';
 import { RequestModule } from './request/request.module';
+import { OrderStatusGateway } from './sockets/order-status.gateway';
 
 
 @Module({
