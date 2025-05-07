@@ -3,7 +3,7 @@ import { DatabaseService } from "src/database/database.service";
 import { TwilioService } from "src/twilio/twilio.service";
 import { JwtService } from "@nestjs/jwt";
 import { GenerateTokenDto } from "./dtos/generate-token.dto";
-import { FindUserDto } from "./dtos/find-user.dto";
+import { FindUserDto } from "../dtos/find-user.dto";
 
 @Injectable()
 export class AuthService {

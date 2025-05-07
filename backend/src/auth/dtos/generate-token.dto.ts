@@ -1,3 +1,4 @@
+import { Role } from "@prisma/client";
 import { IsInt, IsString, IsPhoneNumber } from "class-validator";
 
 export class GenerateTokenDto {
@@ -12,5 +13,5 @@ export class GenerateTokenDto {
   phoneNumber: String;
 
   @IsString()
-  role: String;
+  role: Role;
 }
