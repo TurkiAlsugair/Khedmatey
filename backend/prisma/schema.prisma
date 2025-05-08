@@ -145,7 +145,7 @@ model Request {
 
   notes           String?
 
-  status  Status  @default(PENDING_BY_SP)
+  status  Status  @default(PENDING)
 
   createdAt      DateTime      @default(now())
 
@@ -177,9 +177,7 @@ model Location {
 }
 
 enum Status {
-  PENDING //service or sp is pending
-  PENDING_BY_SP
-  PENDING_BY_C // for follow-up pending customer scheduling
+  PENDING // service or sp is pending
   ACCEPTED
   DECLINED
   CANCELED

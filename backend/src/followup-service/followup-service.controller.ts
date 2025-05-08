@@ -44,7 +44,7 @@ export class FollowupServiceController {
               type: 'object',
               properties: {
                 id: { type: 'string', example: 'request-uuid' },
-                status: { type: 'string', example: 'PENDING_BY_C' }
+                status: { type: 'string', example: 'FINISHED' }
               }
             }
           }

@@ -89,12 +89,18 @@ export class FollowupServiceService {
         }
       });
 
-      // Use updateStatus to update the request status to PENDING_BY_C
-      const updatedRequest = await this.requestService.updateStatus(
-        requestId, 
-        user, 
-        Status.PENDING_BY_C
-      );
+      // Update the request to add notes but keep it in FINISHED state
+      const updatedRequest = await tx.request.update({
+        where: { id: requestId },
+        data: {
+          notes: notes ? `${originalRequest.notes ? originalRequest.notes + ' | ' : ''}Follow-up notes: ${notes}` : originalRequest.notes,
+        },
+        include: {
+          followupService: true,
+          service: true,
+          customer: true,
+        }
+      });
 
       return {
         followupService,

@@ -177,7 +177,7 @@ export class RequestService {
           const newRequest = await tx.request.create({
             data: 
             {
-              status: Status.PENDING_BY_SP,
+              status: Status.PENDING,
               providerDayId: providerDay.id,
               serviceId: service.id,
               customerId: customerId,
@@ -485,7 +485,7 @@ export class RequestService {
       const tenMinutesMs = 10 * 60 * 1000;
       const age = nowMs - request.createdAt.getTime();
 
-      if(request.status !== Status.PENDING_BY_SP){
+      if(request.status !== Status.PENDING){
         return false;
       }
 
@@ -500,9 +500,9 @@ export class RequestService {
     }
 
     async handleAccepted(request: RequestWithRelations, user: GenerateTokenDto, serviceProviderId: string){
-      //validate current status - can only accept from PENDING_BY_SP
-      if (request.status !== Status.PENDING_BY_SP) {
-        throw new BadRequestException(`Cannot accept a request that is not in PENDING_BY_SP status (current: ${request.status})`);
+      //validate current status - can only accept from PENDING
+      if (request.status !== Status.PENDING) {
+        throw new BadRequestException(`Cannot accept a request that is not in PENDING status (current: ${request.status})`);
       }
 
       //validate role
@@ -524,9 +524,9 @@ export class RequestService {
     }
 
     async handleDeclined(request: RequestWithRelations, user: GenerateTokenDto, serviceProviderId: string){
-      //validate current status - can only decline from PENDING_BY_SP
-      if (request.status !== Status.PENDING_BY_SP) {
-        throw new BadRequestException(`Cannot decline a request that is not in PENDING_BY_SP status (current: ${request.status})`);
+      //validate current status - can only decline from PENDING
+      if (request.status !== Status.PENDING) {
+        throw new BadRequestException(`Cannot decline a request that is not in PENDING status (current: ${request.status})`);
       }
 
       //validate role
@@ -552,9 +552,9 @@ export class RequestService {
       //validate current status based on role
       if (user.role === Role.CUSTOMER)
       {
-        //customers can cancel PENDING_BY_SP or ACCEPTED requests
-        if (request.status !== Status.PENDING_BY_SP && request.status !== Status.ACCEPTED) {
-          throw new BadRequestException(`Customers can only cancel requests in PENDING_BY_SP or ACCEPTED status (current: ${request.status})`);
+        //customers can cancel PENDING or ACCEPTED requests
+        if (request.status !== Status.PENDING && request.status !== Status.ACCEPTED) {
+          throw new BadRequestException(`Customers can only cancel requests in PENDING or ACCEPTED status (current: ${request.status})`);
         }
 
         //verify ownership
@@ -565,9 +565,9 @@ export class RequestService {
 
       else if (user.role === Role.SERVICE_PROVIDER) 
       {
-        //service providers can only cancel PENDING_BY_SP requests
-        if (request.status !== Status.PENDING_BY_SP) {
-          throw new BadRequestException(`Service providers can only cancel requests in PENDING_BY_SP status (current: ${request.status})`);
+        //service providers can only cancel PENDING requests
+        if (request.status !== Status.PENDING) {
+          throw new BadRequestException(`Service providers can only cancel requests in PENDING status (current: ${request.status})`);
         }
 
         //verify ownership
