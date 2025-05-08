@@ -6,6 +6,7 @@ import { isBefore, isAfter, addDays, format, startOfDay } from 'date-fns';
 import { ServiceService } from 'src/service/service.service';
 import { GenerateTokenDto } from 'src/auth/dtos/generate-token.dto';
 import { error } from 'console';
+import { OrderStatusGateway } from 'src/sockets/order-status.gateway';
 
 // Add type definition at the top of the file, after imports
 type RequestWithRelations = Request & {
@@ -31,6 +32,7 @@ type RequestWithRelations = Request & {
 
 @Injectable()
 export class RequestService {
+  private orderStatusSocket: OrderStatusGateway
   
     constructor(private prisma: DatabaseService, private serviceService: ServiceService) {}
 
@@ -468,15 +470,10 @@ export class RequestService {
         case Status.PAID:
           result = await this.handlePaid(request, user);
           break;
-        case Status.PENDING_BY_C:
-          if (!request.followupService) {
-            throw new BadRequestException('Cannot set request to PENDING_BY_C without a follow-up service');
-          }
-          return null;
         default:
           throw new BadRequestException("Unknown status transition");
       }
-
+      this.orderStatusSocket.emitOrderStatusUpdate(result.id, result.status)
       return result;
     }
 
@@ -494,6 +491,7 @@ export class RequestService {
           where: { id: request.id },
           data: { status: Status.CANCELED },
         });
+        this.orderStatusSocket.emitOrderStatusUpdate(request.id, Status.CANCELED)
         return true;
       }
       return false;
@@ -516,7 +514,8 @@ export class RequestService {
           'You can only accept requests assigned to your services',
         );
       }
-  
+      
+
       return this.prisma.request.update({
         where: { id: request.id },
         data: { status: Status.ACCEPTED },
