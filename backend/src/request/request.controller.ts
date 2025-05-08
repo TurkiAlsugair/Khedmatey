@@ -199,4 +199,67 @@ export class RequestController {
         throw err
       }
     }
+
+    @ApiOperation({ 
+      summary: 'Schedule follow-up appointment', 
+      description: 'Schedule an appointment for a request with a follow-up service' 
+    })
+    @ApiParam({ name: 'id', description: 'Request ID', type: 'string' })
+    @ApiBody({ 
+      schema: {
+        type: 'object',
+        properties: {
+          date: { 
+            type: 'string', 
+            example: '15/01/2023', 
+            description: 'Date for the follow-up appointment in DD/MM/YYYY format'
+          }
+        },
+        required: ['date']
+      }
+    })
+    @ApiResponse({ 
+      status: 200, 
+      description: 'Follow-up appointment scheduled successfully',
+      schema: {
+        type: 'object',
+        properties: {
+          message: {
+            type: 'string',
+            example: 'Follow-up appointment scheduled'
+          },
+          data: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'request-uuid' },
+              status: { type: 'string', example: 'PENDING_BY_SP' },
+              followupDate: { type: 'string', example: '2023-01-15T00:00:00.000Z' }
+            }
+          }
+        }
+      }
+    })
+    @ApiResponse({ status: 400, description: 'Bad request - Invalid date or request not in valid state' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Not authorized to schedule this follow-up' })
+    @ApiResponse({ status: 404, description: 'Request not found' })
+    @ApiBearerAuth('JWT-auth')
+    @Roles(Role.CUSTOMER)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Patch(':id/schedule-followup')
+    async scheduleFollowupAppointment(
+      @Param('id') id: string, 
+      @Body() body: { date: string },
+      @CurrentUser() user: GenerateTokenDto
+    ): Promise<BaseResponseDto> {
+      try {
+        const updatedRequest = await this.requestService.scheduleFollowupAppointment(id, body.date, user.id);
+        return { 
+          message: 'Follow-up appointment scheduled', 
+          data: updatedRequest 
+        };
+      } catch (err) {
+        throw err;
+      }
+    }
 }

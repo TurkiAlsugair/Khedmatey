@@ -22,10 +22,10 @@ export class ServiceService {
       throw new NotFoundException('Service provider not found');
     }
     
-    // // Check if the provider is ACCEPTED
-    // if (serviceProvider.status !== 'ACCEPTED') {
-    //   throw new BadRequestException('Only ACCEPTED service providers can create services');
-    // }
+    // Check if the provider is ACCEPTED
+    if (serviceProvider.status !== 'ACCEPTED') {
+      throw new BadRequestException('Only ACCEPTED service providers can create services');
+    }
 
     //validate category exists
     const category = await this.prisma.category.findUnique({

@@ -11,7 +11,8 @@ import { ServiceProviderModule } from './service-provider/service-provider.modul
 import { AdminModule } from './auth/auth-admin/admin.module';
 import { SearchModule } from './search/search.module';
 import { RequestModule } from './request/request.module';
-
+import { TwilioModule } from './twilio/twilio.module';
+import { FollowupServiceModule } from './followup-service/followup-service.module';
 
 @Module({
   imports: [
@@ -22,10 +23,12 @@ import { RequestModule } from './request/request.module';
     AuthServiceProviderModule, 
     ServiceModule, 
     ServiceProviderModule,
-    ServiceModule,
     AdminModule,
     SearchModule,
-    RequestModule],
+    RequestModule,
+    TwilioModule,
+    FollowupServiceModule
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

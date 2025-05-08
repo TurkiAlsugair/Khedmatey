@@ -19,6 +19,14 @@ type RequestWithRelations = Request & {
   }>;
   service: Service;
   location: Location;
+  followupService?: {
+    id: string;
+    nameAR: string;
+    nameEN: string;
+    price: string;
+    requiredNbOfWorkers: number;
+    categoryId: number;
+  };
 };
 
 @Injectable()
@@ -287,38 +295,39 @@ export class RequestService {
             ))
           }
 
+          //unnesseary check because every service requires only 1 worker
           //other wise, check every service if enouph workers are available for it, else, close it for the day.
           //this does not check the avaialbity of a service based on city, that happens on the getService function of the service
-          else 
-          {
-            const services = await tx.service.findMany({
-              where: { serviceProviderId: providerId },
-              select: { id: true, requiredNbOfWorkers: true },
-            });
+          // else 
+          // {
+          //   const services = await tx.service.findMany({
+          //     where: { serviceProviderId: providerId },
+          //     select: { id: true, requiredNbOfWorkers: true },
+          //   });
             
-            await Promise.all(
-              services.map(({ id: svcId, requiredNbOfWorkers }) => {
-                const shouldClose = freeWorkersCount < requiredNbOfWorkers;
+          //   await Promise.all(
+          //     services.map(({ id: svcId, requiredNbOfWorkers }) => {
+          //       const shouldClose = freeWorkersCount < requiredNbOfWorkers;
                 
-                return tx.serviceDay.upsert({
-                  where: {
-                    serviceId_providerDayId: {
-                      serviceId:      svcId,
-                      providerDayId:  providerDay.id,
-                    },
-                  },
-                  update: {
-                    isClosed: shouldClose,
-                  },
-                  create: {
-                    serviceId:       svcId,
-                    providerDayId:   providerDay.id,
-                    isClosed:        shouldClose,
-                  },
-                });
-              }),
-            );
-          }      
+          //       return tx.serviceDay.upsert({
+          //         where: {
+          //           serviceId_providerDayId: {
+          //             serviceId:      svcId,
+          //             providerDayId:  providerDay.id,
+          //           },
+          //         },
+          //         update: {
+          //           isClosed: shouldClose,
+          //         },
+          //         create: {
+          //           serviceId:       svcId,
+          //           providerDayId:   providerDay.id,
+          //           isClosed:        shouldClose,
+          //         },
+          //       });
+          //     }),
+          //   );
+          // }      
           return newRequest;
         });
 
@@ -363,10 +372,21 @@ export class RequestService {
           customer: true,
           providerDay: { select: { date: true, serviceProviderId: true } },
           dailyWorkers: { include: { worker: true } },
+          service: {
+            include: {
+              serviceProvider: {
+                select: {
+                  id: true,
+                  username: true
+                }
+              }
+            }
+          },
+          location: true,
+          followupService: true
         },
         orderBy: { createdAt: 'desc' },
       });
-      console.log(requests)
   
       //4- if specific status, return requests as is 
       if (status) {
@@ -404,7 +424,8 @@ export class RequestService {
             } 
           },
           service: true,
-          location: true
+          location: true,
+          followupService: true
         },
       }) as RequestWithRelations;
       
@@ -447,6 +468,11 @@ export class RequestService {
         case Status.PAID:
           result = await this.handlePaid(request, user);
           break;
+        case Status.PENDING_BY_C:
+          if (!request.followupService) {
+            throw new BadRequestException('Cannot set request to PENDING_BY_C without a follow-up service');
+          }
+          return null;
         default:
           throw new BadRequestException("Unknown status transition");
       }
@@ -747,5 +773,271 @@ export class RequestService {
         parsed.getMonth() === month - 1 &&
         parsed.getDate() === day
       );
+    }
+
+    async scheduleFollowupAppointment(requestId: string, date: string, userId: string) {
+      //validate the request exists and has a follow-up service
+      const request = await this.prisma.request.findUnique({
+        where: { id: requestId },
+        include: {
+          service: {
+            include: { 
+              serviceProvider: true,
+              category: true
+            }
+          },
+          followupService: true,
+          customer: true,
+          location: true
+        }
+      });
+
+      if (!request) {
+        throw new NotFoundException('Request not found');
+      }
+
+      if (!request.followupService) {
+        throw new BadRequestException('This request does not have a follow-up service');
+      }
+
+      //verify the request belongs to the customer
+      if (request.customerId !== userId) {
+        throw new ForbiddenException('You do not have permission to schedule this follow-up appointment');
+      }
+
+      //verify the request is in the correct state
+      if (request.status !== Status.FINISHED) {
+        throw new BadRequestException('Cannot schedule follow-up for a request that is not in FINISHED state');
+      }
+
+      //validate and format the date
+      const requestDate = this.validateDate(date);
+
+      const providerId = request.service.serviceProviderId;
+
+      const providerDay = await this.prisma.providerDay.upsert({
+        where: {
+          date_serviceProviderId: {
+            date: requestDate,              
+            serviceProviderId: providerId,
+          },
+        },
+        update: {},
+        create: {                           
+          date: requestDate,
+          serviceProviderId: providerId,
+          isClosed: false,                  
+          isBusy: false,
+        },
+        include: {
+          serviceProvider: true
+        }
+      });
+
+      //check if the provider is available on that day
+      if (providerDay.isClosed || providerDay.isBusy) {
+        throw new BadRequestException('The service provider is not available on this day');
+      }
+
+      //update the request with the follow-up date and change status
+      return this.prisma.$transaction(async (tx) => {
+
+        //get workers from the same city as the original request
+        const providerWorkers = await tx.worker.findMany({
+          where: {
+            serviceProviderId: providerId,
+          },
+          select: { id: true, city: true },
+        });
+
+        const city = request.location.city as CityName;
+        const providerWorkersByCity = providerWorkers.filter(
+          (w) => w.city.name === city
+        );
+
+        const dayWorkers = await Promise.all(
+          providerWorkersByCity.map((w) =>
+            tx.workerDay.upsert({
+              where: {
+                workerId_providerDayId: 
+                { 
+                  workerId: w.id, 
+                  providerDayId: providerDay.id 
+                },
+              },
+              update: {}, 
+              create: {
+                workerId: w.id,
+                providerDayId: providerDay.id,
+                nbOfAssignedRequests: 0,
+                capacity: 2,         
+              },
+              include: {
+                worker: true
+              }
+            }),
+          ),
+        );
+
+        const availableDayWorkers = dayWorkers.filter(
+          (dw) => dw.nbOfAssignedRequests < dw.capacity,
+        );
+
+        const neededWorkers = request.followupService!.requiredNbOfWorkers;
+
+        if (availableDayWorkers.length < neededWorkers) {
+          throw new BadRequestException('Not enough workers available for this follow-up service in the selected city');
+        }
+
+        const chosenWorkers = availableDayWorkers.slice(0, neededWorkers);
+
+        //update the original request
+        const updatedRequest = await tx.request.update({
+          where: { id: requestId },
+          data: {
+            status: Status.PENDING,
+            followUpProviderDayId: providerDay.id,
+            followupDailyWorkers: {
+              connect: chosenWorkers.map(dw => ({ id: dw.id }))
+            }
+          },
+          include: {
+            service: true,
+            followupService: true,
+            location: true,
+            customer: true,
+            dailyWorkers: {
+              include: {
+                worker: true
+              }
+            },
+            followupDailyWorkers: {
+              include: {
+                worker: true
+              }
+            },
+            providerDay: true,
+            followUpProviderDay: true
+          }
+        });
+
+        //update counts  
+        await Promise.all(
+          chosenWorkers.map(worker => 
+            tx.workerDay.update({
+              where: { id: worker.id },
+              data: { nbOfAssignedRequests: { increment: 1 } }
+            })
+          )
+        );
+        await tx.providerDay.update({
+          where: { id: providerDay.id },
+          data: { totalRequestsCount: { increment: 1 } }
+        });
+
+        //update schedules
+        const updatedDayWorkers = await Promise.all(
+          providerWorkers.map((w) =>
+            tx.workerDay.upsert(
+            {
+              where: 
+              {
+                workerId_providerDayId: 
+                {
+                  workerId:      w.id,
+                  providerDayId: providerDay.id,
+                },
+              },
+              update: {},
+              create: 
+              {
+                workerId:             w.id,
+                providerDayId:        providerDay.id,
+                nbOfAssignedRequests: 0,
+                capacity:             2,
+              },
+              select: 
+              {
+                id:                   true,
+                workerId:             true,
+                nbOfAssignedRequests: true,
+                capacity:             true,
+              },
+            }),
+          ),
+        );
+
+        //get number of free workers to check if we should close the provider day
+        const freeWorkersCount = updatedDayWorkers.filter(dw => dw.nbOfAssignedRequests < dw.capacity).length;
+        
+        //close entire day for service provider if no workers are left
+        if (freeWorkersCount === 0) 
+        {
+          await tx.providerDay.update({
+            where: { id: providerDay.id },
+            data: { isBusy: true }
+          });
+
+          //close all services for this day
+          const services = await tx.service.findMany({
+            where: { serviceProviderId: providerId },
+            select: { id: true, requiredNbOfWorkers: true },
+          });
+          await Promise.all(services.map(({ id: svcId }) => 
+            tx.serviceDay.upsert(
+            { 
+              where: 
+              {
+                serviceId_providerDayId: {
+                  serviceId:      svcId,
+                  providerDayId:  providerDay.id,
+                },
+              },
+              update: {
+                isClosed: true,
+              },
+              create: {
+                serviceId:       svcId,
+                providerDayId:   providerDay.id,
+                isClosed:        true,
+              },
+            })
+          ));
+        }
+        //unnecssary code now because every service needs only 1 worker
+        // // Otherwise check each service if enough workers are available
+        // else 
+        // {
+        //   const services = await tx.service.findMany({
+        //     where: { serviceProviderId: providerId },
+        //     select: { id: true, requiredNbOfWorkers: true },
+        //   });
+          
+        //   await Promise.all(
+        //     services.map(({ id: svcId, requiredNbOfWorkers }) => {
+        //       const shouldClose = freeWorkersCount < requiredNbOfWorkers;
+              
+        //       return tx.serviceDay.upsert({
+        //         where: {
+        //           serviceId_providerDayId: {
+        //             serviceId:      svcId,
+        //             providerDayId:  providerDay.id,
+        //           },
+        //         },
+        //         update: {
+        //           isClosed: shouldClose,
+        //         },
+        //         create: {
+        //           serviceId:       svcId,
+        //           providerDayId:   providerDay.id,
+        //           isClosed:        shouldClose,
+        //         },
+        //       });
+        //     }),
+        //   );
+        // }      
+
+        return updatedRequest;
+      });
     }
 }
