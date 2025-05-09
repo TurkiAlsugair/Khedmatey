@@ -30,6 +30,8 @@ model Customer {
   role Role @default(value: CUSTOMER)
 
   Requests Request[]
+
+  isBlacklisted Boolean @default(false)
 }
 
 model ServiceProvider{
@@ -101,7 +103,7 @@ model Service {
 
   status  Status  @default(PENDING)
 
-  serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id])
+  serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id], onDelete: Cascade)
   serviceProviderId String
 
   Requests Request[]
@@ -118,7 +120,7 @@ model Worker {
 
   role Role @default(value: WORKER)
 
-  serviceProvider  ServiceProvider  @relation(fields: [serviceProviderId], references: [id])
+  serviceProvider  ServiceProvider  @relation(fields: [serviceProviderId], references: [id], onDelete: Cascade)
   serviceProviderId String
 
   //city the worker works in
@@ -134,7 +136,7 @@ model Request {
   id String @id @default(uuid()) @db.Char(36)
 
   customerId      String
-  customer        Customer         @relation(fields: [customerId], references: [id])
+  customer        Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   serviceId       String
   service         Service          @relation(fields: [serviceId], references: [id])
@@ -243,7 +245,7 @@ model WorkerDay {
 
   //link to the worker
   workerId         String
-  worker           Worker       @relation(fields: [workerId], references: [id])
+  worker           Worker       @relation(fields: [workerId], references: [id], onDelete: Cascade)
 
   //requests the worker works on at this day
   requests Request[] @relation("DailyWorkerOnRequest")
