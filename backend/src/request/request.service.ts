@@ -587,7 +587,6 @@ export class RequestService {
         );
       }
       
-
       return this.prisma.request.update({
         where: { id: request.id },
         data: { status: Status.ACCEPTED },
