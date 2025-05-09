@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
 import { TwilioService } from 'src/twilio/twilio.service';
 import { CreateWorkerDto } from './dtos/create-worker.dto'
@@ -6,12 +6,17 @@ import { CityName, Status } from '@prisma/client';
 import { addDays, eachDayOfInterval, format, formatISO, startOfDay } from 'date-fns';
 import { RequestService } from 'src/request/request.service';
 import { ServiceService } from 'src/service/service.service';
+import { forwardRef } from '@nestjs/common';
 
 
 @Injectable()
 export class ServiceProviderService {
-    constructor( private prisma: DatabaseService, private twilio: TwilioService,
-       private requestService: RequestService, private serviceService: ServiceService){}
+    constructor(
+      private prisma: DatabaseService, 
+      private twilio: TwilioService,
+      @Inject(forwardRef(() => RequestService)) private requestService: RequestService, 
+      private serviceService: ServiceService
+    ){}
 
     async createWorker(dto: CreateWorkerDto, serviceProviderId: string) {
 

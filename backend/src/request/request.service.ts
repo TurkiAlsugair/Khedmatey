@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateRequestDto } from './dtos/create-request.dto';
 import { DatabaseService } from 'src/database/database.service';
 import { CityName, Status, Request, Customer, Role, WorkerDay, Worker, Service, Location } from '@prisma/client';
@@ -7,6 +7,7 @@ import { ServiceService } from 'src/service/service.service';
 import { GenerateTokenDto } from 'src/auth/dtos/generate-token.dto';
 import { OrderStatusGateway } from 'src/sockets/order-status.gateway';
 import { ServiceProviderService } from 'src/service-provider/service-provider.service';
+import { forwardRef } from '@nestjs/common';
 
 type RequestWithRelations = Request & {
   customer: Customer;
@@ -31,9 +32,12 @@ type RequestWithRelations = Request & {
 
 @Injectable()
 export class RequestService {
-  private orderStatusSocket: OrderStatusGateway
-  
-    constructor(private prisma: DatabaseService, private serviceService: ServiceService, private spService: ServiceProviderService) {}
+  constructor(
+    private prisma: DatabaseService, 
+    private serviceService: ServiceService, 
+    @Inject(forwardRef(() => ServiceProviderService)) private spService: ServiceProviderService,
+    private orderStatusSocket: OrderStatusGateway
+  ) {}
 
     async createRequest(createRequestDto: CreateRequestDto, userId: string) 
     {
@@ -117,7 +121,7 @@ export class RequestService {
 
           //get all workers of provider who are in the same city of the request (each Worker belongs to exactly 1 city)
           const providerWorkersByCity = providerWorkers.filter(
-            (w) => w.city.name === (location.city as CityName)
+            (w) => w.city.name === (city)
           ); 
 
           //find schedule of each worker, if not exist create it
@@ -369,10 +373,24 @@ export class RequestService {
       //3- fetch with all relevant relations
       const requests = await this.prisma.request.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          status: true,
+          notes: true,
+          createdAt: true,
+          // Excluding: customerId, serviceId, locationId, providerDayId, followUpProviderDayId
           customer: true,
-          providerDay: { select: { date: true, serviceProviderId: true } },
-          dailyWorkers: { include: { worker: true } },
+          providerDay: { 
+            select: { 
+              date: true, 
+              serviceProviderId: true 
+            } 
+          },
+          dailyWorkers: { 
+            include: { 
+              worker: true 
+            } 
+          },
           service: {
             include: {
               serviceProvider: {
@@ -384,10 +402,21 @@ export class RequestService {
             }
           },
           location: true,
-          followupService: true
+          followupService: true,
+          followupDailyWorkers: {
+            include: {
+              worker: true
+            }
+          },
+          followUpProviderDay: { 
+            select: {
+              date: true,
+              serviceProviderId: true
+            }
+          }
         },
         orderBy: { createdAt: 'desc' },
-      });
+      }) as unknown as Request[];
   
       //4- if specific status, return requests as is 
       if (status) {
@@ -818,6 +847,8 @@ export class RequestService {
 
       //2- Check if date is available
       const { busyDates, blockedDates } = await this.spService.getNext30DaysSchedule(providerId, request.location.city);
+      console.log("busyDates", busyDates)
+      console.log("blockedDates", blockedDates)
       if(busyDates.includes(format(requestDate, 'yyyy-MM-dd')) || blockedDates.includes(format(requestDate, 'yyyy-MM-dd'))){
         throw new BadRequestException("This service is closed for that day");
       }
@@ -852,7 +883,7 @@ export class RequestService {
           select: { id: true, city: true },
         });
 
-        const city = request.location.city as CityName;
+        const city = await this.serviceService.parseCity(request.location.city);
         const providerWorkersByCity = providerWorkers.filter(
           (w) => w.city.name === city
         );

@@ -156,10 +156,9 @@ model Request {
   //the entity of the schedule of the worker
   dailyWorkers    WorkerDay[] @relation("DailyWorkerOnRequest")
 
-  // Follow-up service relationship
   followupService FollowupService?
 
-  // Follow-up appointment relations
+  //follow-up service relations
   followUpProviderDayId String?
   followUpProviderDay   ProviderDay? @relation("FollowUpProviderDay", fields: [followUpProviderDayId], references: [id])
   followupDailyWorkers  WorkerDay[] @relation("FollowUpDailyWorkerOnRequest")
