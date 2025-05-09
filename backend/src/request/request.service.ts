@@ -350,7 +350,7 @@ export class RequestService {
     if no status filter provided, returns requests filtered by status, otherwise return one array of requests.
     */
     async getRequests(
-      user: GenerateTokenDto,status?: Status): Promise<Request[] | Record<Status, Request[]>> {
+      user: GenerateTokenDto, statuses?: Status[]): Promise<Request[] | Record<Status, Request[]>> {
 
       //1- build the base filter by role
       const where: any = {};
@@ -373,8 +373,8 @@ export class RequestService {
       }
   
       //2- add optional status filter
-      if (status) {
-        where.status = status;
+      if (statuses && statuses.length > 0) {
+        where.status = { in: statuses };
       }
   
       //3- fetch with all relevant relations
@@ -425,12 +425,7 @@ export class RequestService {
         orderBy: { createdAt: 'desc' },
       }) as unknown as Request[];
   
-      //4- if specific status, return requests as is 
-      if (status) {
-        return requests;
-      }
-  
-      //5- otherwise group by status
+      //5- group by status
       const grouped = Object.values(Status).reduce((acc, s) => {
         acc[s] = [];
         return acc;

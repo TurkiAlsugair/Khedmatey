@@ -127,8 +127,14 @@ export class RequestController {
       }
     }
 
-    @ApiOperation({ summary: 'Get requests', description: 'Get a list of service requests related to the authenticated user, optionally filtered by status' })
-    @ApiQuery({ name: 'status', required: false, description: 'Filter requests by status', enum: Status })
+    @ApiOperation({ summary: 'Get requests', description: 'Get a list of service requests related to the authenticated user, optionally filtered by multiple status values' })
+    @ApiQuery({ 
+      name: 'status', 
+      required: false, 
+      description: 'Filter requests by one or more status values (can be provided multiple times)', 
+      enum: Status,
+      isArray: true 
+    })
     @ApiResponse({ 
       status: 200, 
       description: 'Requests fetched successfully',
@@ -148,7 +154,7 @@ export class RequestController {
                 serviceId: { type: 'string', example: 'service-uuid' },
                 customerId: { type: 'string', example: 'customer-uuid' },
                 notes: { type: 'string', example: 'Please come before noon' },
-                status: { type: 'string', example: 'PENDING_BY_SP' },
+                status: { type: 'string', example: 'PENDING' },
                 date: { type: 'string', example: '2023-01-15' },
                 service: {
                   type: 'object',
@@ -189,14 +195,21 @@ export class RequestController {
     @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtAuthGuard)
     @Get() 
-    async getRequests(@CurrentUser() user: GenerateTokenDto, @Query('status') status?: Status): Promise<BaseResponseDto> {
-      try
-      {
-        const data = await this.requestService.getRequests(user, status);
+    async getRequests(
+      @CurrentUser() user: GenerateTokenDto, 
+      @Query('status') status?: Status | Status[]
+    ): Promise<BaseResponseDto> {
+      try {
+        //ensure status is always an array
+        const statusArray = status 
+          ? Array.isArray(status) ? status : [status] 
+          : undefined;
+          
+        const data = await this.requestService.getRequests(user, statusArray);
         return { message: 'Requests fetched', data };
       }
-      catch(err){
-        throw err
+      catch(err) {
+        throw err;
       }
     }
 
