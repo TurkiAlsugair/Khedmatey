@@ -30,16 +30,13 @@ export default function LoginScreen({ navigation }) {
   const handleInputChange = (value) => {
     setFormState({ phoneNumber: { value, isValid: true } });
     setBackendError("");
-    // Reset error on change as well
   };
 
-  // Phone number validation function
   const validatePhoneNumber = (input) => {
-    const phoneRegex = /^05\d{8}$/; // Must start with "05" and be 10 digits
+    const phoneRegex = /^05\d{8}$/;
     return phoneRegex.test(input);
   };
 
-  // Called when Login button is pressed
   const handleSendOtp = async () => {
     const isPhoneValid = validatePhoneNumber(formState.phoneNumber.value);
     if (!isPhoneValid) {
@@ -124,7 +121,7 @@ export default function LoginScreen({ navigation }) {
         visible={otpVisible}
         phoneNumber={formState.phoneNumber.value}
         // here i can control what to return as a response by adding params ********
-        verifyUrl="/auth/signin/verifyOTP?role=c"
+        verifyUrl="/auth/signin/verifyOTP?role=w"
         onClose={() => setOtpVisible(false)}
         onVerify={(data) => {
           const { accessToken, user } = data;

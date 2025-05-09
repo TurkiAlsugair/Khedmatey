@@ -10,19 +10,21 @@ import ServicesList from "../../../components/Services/ServicesList";
 import { ServicesContext } from "../../../context/ServicesContext";
 import { Colors } from "../../../constants/styles";
 import { serviceCategories } from "../../../constants/data";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const categories = serviceCategories;
 
 export default function MyServicesScreen({ navigation }) {
   const { servicesData, activeCategoryId, setActiveCategoryId, error } =
     useContext(ServicesContext);
+  const insets = useSafeAreaInsets();
 
   const selectedCategoryServices = servicesData.find(
     (cat) => cat.categoryId === activeCategoryId
   )?.services;
 
   return (
-    <View style={styles.mainCont}>
+    <View style={[styles.mainCont, { paddingTop: insets.top }]}>
       <View style={styles.titleCont}>
         <Text style={styles.titleText}>Services</Text>
         <View style={styles.addIconCont}>

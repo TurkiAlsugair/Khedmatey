@@ -1,40 +1,48 @@
-import { View, Text, StyleSheet } from "react-native";
+import React, { useContext, useState } from "react";
+import { View, Text, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
+
 import { Colors } from "../../../constants/styles";
 import Button from "../../../components/UI/Button";
 import Input from "../../../components/UI/Input";
-import { useContext, useState } from "react";
+import SingleSelect from "../../../components/SelectInputs/SingleSelect"; // a custom single-select component
+import LoadingOverlay from "../../../components/LoadingOverlay";
+import OtpModal from "../../../components/Modals/OtpModal";
+
 import { AuthContext } from "../../../context/AuthContext";
+import { ServicesContext } from "../../../context/ServicesContext"; // if you need
 import axios from "axios";
 import Toast from "react-native-toast-message";
-import LoadingOverlay from "../../../components/LoadingOverlay";
-import OtpModal from "../../../components/Modals/OtpModal"; // ← You already have this
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
 
 export default function AddWorkerScreen({ navigation }) {
-  const { token } = useContext(AuthContext);
+  const { token, userInfo } = useContext(AuthContext);
+  // Suppose userInfo.cities = ["Riyadh","Jeddah","Unayzah"] for the service provider
+  const spCities = userInfo?.cities || []; // fallback to empty array if not found
+
   const [backendError, setBackendError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [otpVisible, setOtpVisible] = useState(false);
 
   const [formState, setFormState] = useState({
     username: { value: "", isValid: true },
     phoneNumber: { value: "", isValid: true },
+    city: { value: "", isValid: true }, // new city field
   });
-  const [otpVisible, setOtpVisible] = useState(false);
 
   // Validation
-  const validateUsername = (input) => {
-    return input.trim().length > 0;
-  };
+  const validateUsername = (input) => input.trim().length > 0;
   const validatePhoneNumber = (input) => {
     const phoneRegex = /^05\d{8}$/; // Must start with "05" and be 10 digits
     return phoneRegex.test(input);
   };
+  const validateCity = (input) => input.trim().length > 0; // simple check for non-empty
 
+  // Handler for input changes
   function handleInputChange(field, value) {
     setFormState((prev) => ({
       ...prev,
@@ -46,13 +54,22 @@ export default function AddWorkerScreen({ navigation }) {
   async function handleSendOtp() {
     const isUsernameValid = validateUsername(formState.username.value);
     const isPhoneValid = validatePhoneNumber(formState.phoneNumber.value);
+    const isCityValid = validateCity(formState.city.value);
 
-    if (!isUsernameValid || !isPhoneValid) {
-      setFormState((prevState) => ({
-        username: { value: prevState.username.value, isValid: isUsernameValid },
+    if (!isUsernameValid || !isPhoneValid || !isCityValid) {
+      setFormState((prev) => ({
+        ...prev,
+        username: {
+          value: prev.username.value,
+          isValid: isUsernameValid,
+        },
         phoneNumber: {
-          value: prevState.phoneNumber.value,
+          value: prev.phoneNumber.value,
           isValid: isPhoneValid,
+        },
+        city: {
+          value: prev.city.value,
+          isValid: isCityValid,
         },
       }));
       return;
@@ -65,6 +82,7 @@ export default function AddWorkerScreen({ navigation }) {
         {
           username: formState.username.value,
           phoneNumber: formState.phoneNumber.value,
+          city: formState.city.value,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -86,7 +104,7 @@ export default function AddWorkerScreen({ navigation }) {
           label="Worker Name"
           placeholder="Enter your worker name"
           keyboardType="default"
-          onUpdateValue={(value) => handleInputChange("username", value)}
+          onUpdateValue={(val) => handleInputChange("username", val)}
           value={formState.username.value}
           labelFontSize={wp(3.8)}
           labelColor="#6F6F6F"
@@ -100,7 +118,7 @@ export default function AddWorkerScreen({ navigation }) {
           label="Phone Number"
           placeholder="05XXXXXXXX"
           keyboardType="phone-pad"
-          onUpdateValue={(value) => handleInputChange("phoneNumber", value)}
+          onUpdateValue={(val) => handleInputChange("phoneNumber", val)}
           value={formState.phoneNumber.value}
           labelFontSize={wp(3.8)}
           labelColor="#6F6F6F"
@@ -111,13 +129,27 @@ export default function AddWorkerScreen({ navigation }) {
               : ""
           }
         />
+
+        {/* New SingleSelect for city */}
+        <SingleSelect
+          label="Select City For the Worker"
+          placeholder="Choose your worker's city"
+          data={spCities.map((cityName) => ({
+            label: cityName,
+            value: cityName,
+          }))}
+          value={formState.city.value}
+          onChange={(item) => handleInputChange("city", item.value)}
+          isInvalid={!formState.city.isValid}
+          errorMessage="City is required"
+        />
       </View>
 
       {backendError ? (
         <Text style={styles.backendError}>{backendError}</Text>
       ) : null}
 
-      {/* Button triggers handleSendOtp */}
+      {/* Trigger handleSendOtp */}
       <Button cusStyles={styles.addWorkerButton} onPress={handleSendOtp}>
         Send OTP
       </Button>
@@ -128,7 +160,10 @@ export default function AddWorkerScreen({ navigation }) {
       <OtpModal
         visible={otpVisible}
         phoneNumber={formState.phoneNumber.value}
-        extraData={{ username: formState.username.value }}
+        extraData={{
+          username: formState.username.value,
+          city: formState.city.value, // if needed
+        }}
         verifyUrl="/serviceProvider/workers"
         onClose={() => setOtpVisible(false)}
         onVerify={(data) => {
@@ -166,5 +201,6 @@ const styles = StyleSheet.create({
     color: "red",
     fontSize: wp(4),
     marginTop: 8,
+    textAlign: "center",
   },
 });

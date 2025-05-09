@@ -106,7 +106,7 @@ export default function PendingServicesScreen({ route, navigation }) {
               contentFit="contain"
             />
           )}
-          <Text style={styles.smallText}> {item.price}</Text>
+          <Text style={styles.smallText}>{item.price}</Text>
         </View>
       </View>
       <View style={styles.btnRow}>
@@ -171,13 +171,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
   },
   titleText: {
-    fontSize: wp(3.8),
+    fontSize: wp(3.4),
     fontWeight: "bold",
     alignSelf: "center",
     backgroundColor: Colors.secondary,
     color: "white",
     padding: 7,
     borderRadius: 10,
+    marginBottom: 10,
   },
   smallText: {
     fontSize: wp(3.6),
@@ -193,6 +194,7 @@ const styles = StyleSheet.create({
   riyalLogo: {
     width: wp(4),
     height: hp(1.3),
+    marginTop: hp(1),
   },
   btnRow: {
     alignSelf: "center",

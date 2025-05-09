@@ -1,38 +1,52 @@
 import React, { createContext, useState, useEffect } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Location from "expo-location";
+import { getAddressFromCoords } from "../utility/location"; // your helper
 
 export const LocationContext = createContext();
 
-export const LocationProvider = ({ children }) => {
-  const [location, setLocationState] = useState(null);
+export function LocationProvider({ children }) {
+  const [location, setLocation] = useState(null);
   const [locationLoading, setLocationLoading] = useState(true);
 
   useEffect(() => {
-    const loadStoredLocation = async () => {
+    const fetchLocation = async () => {
       try {
-        const savedLocation = await AsyncStorage.getItem("userLocation");
-        if (savedLocation) {
-          setLocationState(JSON.parse(savedLocation));
-          console.log("✅ Location loaded from storage");
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          console.log("Location permission denied");
+          setLocation(null);
+          return;
         }
+
+        const coords = await Location.getCurrentPositionAsync({});
+        const addressDetails = await getAddressFromCoords(
+          coords.coords.latitude,
+          coords.coords.longitude
+        );
+
+        if (!addressDetails?.city) {
+          console.log("City not found");
+          return;
+        }
+
+        const locationObj = {
+          lat: coords.coords.latitude,
+          lng: coords.coords.longitude,
+          city: addressDetails.city,
+          address: addressDetails.address,
+          fullAddress: addressDetails.fullAddress,
+        };
+
+        setLocation(locationObj);
       } catch (error) {
-        console.error("Failed to load location from storage", error);
+        console.log("Error fetching location:", error);
       } finally {
         setLocationLoading(false);
       }
     };
 
-    loadStoredLocation();
+    fetchLocation();
   }, []);
-
-  const setLocation = async (loc) => {
-    try {
-      setLocationState(loc);
-      await AsyncStorage.setItem("userLocation", JSON.stringify(loc));
-    } catch (error) {
-      console.error("Failed to save location", error);
-    }
-  };
 
   return (
     <LocationContext.Provider
@@ -41,4 +55,4 @@ export const LocationProvider = ({ children }) => {
       {children}
     </LocationContext.Provider>
   );
-};
+}

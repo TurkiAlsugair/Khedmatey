@@ -6,10 +6,13 @@ import {
 import { Colors } from "../../../constants/styles";
 import Button from "../../../components/UI/Button";
 import IconButton from "../../../components/UI/IconButton";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function WorkersScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.mainCont}>
+    <View style={[styles.mainCont, { paddingTop: insets.top + hp(1.5) }]}>
       <View style={styles.titleCont}>
         <Text style={styles.titleText}>Workers</Text>
         <View style={styles.addIconCont}>

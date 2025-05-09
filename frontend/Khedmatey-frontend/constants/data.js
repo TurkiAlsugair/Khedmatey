@@ -22,3 +22,5 @@ export const serviceCategories = [
   { label: "Furniture Moving", value: "11" },
   { label: "Other", value: "12" },
 ];
+
+export const supportedCities = ["Riyadh", "Jeddah", "Dammam", "Unayzah"];
