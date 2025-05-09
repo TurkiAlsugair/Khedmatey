@@ -9,5 +9,6 @@ import { RequestModule } from 'src/request/request.module';
   imports: [TwilioModule, DatabaseModule, RequestModule],
   controllers: [ServiceProviderController],
   providers: [ServiceProviderService],
+  exports: [ServiceProviderService],
 })
 export class ServiceProviderModule {}

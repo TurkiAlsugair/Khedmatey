@@ -5,11 +5,13 @@ import { CreateWorkerDto } from './dtos/create-worker.dto'
 import { CityName, Status } from '@prisma/client';
 import { addDays, eachDayOfInterval, format, formatISO, startOfDay } from 'date-fns';
 import { RequestService } from 'src/request/request.service';
+import { ServiceService } from 'src/service/service.service';
 
 
 @Injectable()
 export class ServiceProviderService {
-    constructor( private prisma: DatabaseService, private twilio: TwilioService, private requestService: RequestService){}
+    constructor( private prisma: DatabaseService, private twilio: TwilioService,
+       private requestService: RequestService, private serviceService: ServiceService){}
 
     async createWorker(dto: CreateWorkerDto, serviceProviderId: string) {
 
@@ -30,7 +32,7 @@ export class ServiceProviderService {
           throw new NotFoundException(`Service provider not found`);
         }
 
-        const cityName = await this.parseCity(dto.city)
+        const cityName = await this.serviceService.parseCity(dto.city)
 
         //find the city by name
         const city = await this.prisma.city.findUnique({
@@ -83,7 +85,7 @@ export class ServiceProviderService {
     async findProvidersByCity(cityNameStr: string) {
       
       //validate and get the city name by the enum
-      const cityEnum = await this.parseCity(cityNameStr)
+      const cityEnum = await this.serviceService.parseCity(cityNameStr)
       
       //get the city
       const city = await this.prisma.city.findUnique({
@@ -126,7 +128,7 @@ export class ServiceProviderService {
     }
 
     //returns 2 arrays, blockedDays and busyDays
-    async getNext30DaysSchedule(providerId: string) {
+    async getNext30DaysSchedule(providerId: string, city?: string) {
 
       //check if provider exists
       const provider = await this.prisma.serviceProvider.findUnique({
@@ -135,6 +137,11 @@ export class ServiceProviderService {
       if (!provider) {
         throw new NotFoundException(`Service provider not found`);
       }
+
+      //if city, validate it
+      let cityFilter: CityName | undefined = undefined;
+      if(city)
+        cityFilter = await this.serviceService.parseCity(city)
 
       //get today and next 30 days(inclusive)
       const today = startOfDay(new Date());
@@ -146,7 +153,34 @@ export class ServiceProviderService {
           serviceProviderId: providerId,
           date: { gte: today, lte: end },
         },
-        select: { date: true, isClosed: true, isBusy: true },
+        select: { 
+          date: true, 
+          isClosed: true, 
+          isBusy: true,
+          // Include worker days if filtering by city
+          ...(cityFilter && {
+            WorkerDays: {
+              where: {
+                worker: { city: { name: cityFilter } },
+              },
+              select: { 
+                id: true, 
+                nbOfAssignedRequests: true, 
+                capacity: true,
+                worker: {
+                  select: {
+                    id: true,
+                    city: {
+                      select: {
+                        name: true
+                      }
+                    }
+                  }
+                }
+              },
+            }
+          })
+        },
       });
       
   
@@ -154,9 +188,37 @@ export class ServiceProviderService {
       const closedMap = new Map(
         rows.filter(r => r.isClosed).map(r => [r.date.toDateString(), true]),
       );
-      const busyMap = new Map(
-        rows.filter(r => r.isBusy).map(r => [r.date.toDateString(), true]),
-      );
+      
+      // For busy days, consider both provider's isBusy flag and city-specific worker availability
+      const busyMap = new Map();
+      
+      for (const row of rows) {
+        
+        if (row.isClosed) continue;
+        
+        //check if the day is marked as busy at the provider level
+        if (row.isBusy) {
+          busyMap.set(row.date.toDateString(), true);
+          continue;
+        }
+        
+        //if filtering by city, check workers availability
+        if (cityFilter && 'WorkerDays' in row) {
+          const workerDays = row.WorkerDays as any[];
+          
+          //if there are no workers in this city, mark as busy
+          if (workerDays.length === 0) {
+            busyMap.set(row.date.toDateString(), true);
+            continue;
+          }
+          
+          //check if all workers in this city are fully booked
+          const allBusy = workerDays.every(wd => wd.nbOfAssignedRequests >= wd.capacity);
+          if (allBusy) {
+            busyMap.set(row.date.toDateString(), true);
+          }
+        }
+      }
   
       const blockedDates: string[] = [];
       const busyDates: string[]    = [];
@@ -246,14 +308,5 @@ export class ServiceProviderService {
       });
   
       return newDates
-    }
-
-    //helper
-    async parseCity(cityNameStr: string) {
-      //calidate that the string is a valid enum value
-      if (!Object.values(CityName).includes(cityNameStr as CityName)) {
-        throw new BadRequestException(`Invalid city: ${cityNameStr}`);
-      }
-      return cityNameStr as CityName;
     }
 }

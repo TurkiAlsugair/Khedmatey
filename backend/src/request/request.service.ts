@@ -5,10 +5,9 @@ import { CityName, Status, Request, Customer, Role, WorkerDay, Worker, Service, 
 import { isBefore, isAfter, addDays, format, startOfDay } from 'date-fns';
 import { ServiceService } from 'src/service/service.service';
 import { GenerateTokenDto } from 'src/auth/dtos/generate-token.dto';
-import { error } from 'console';
 import { OrderStatusGateway } from 'src/sockets/order-status.gateway';
+import { ServiceProviderService } from 'src/service-provider/service-provider.service';
 
-// Add type definition at the top of the file, after imports
 type RequestWithRelations = Request & {
   customer: Customer;
   providerDay: {
@@ -34,7 +33,7 @@ type RequestWithRelations = Request & {
 export class RequestService {
   private orderStatusSocket: OrderStatusGateway
   
-    constructor(private prisma: DatabaseService, private serviceService: ServiceService) {}
+    constructor(private prisma: DatabaseService, private serviceService: ServiceService, private spService: ServiceProviderService) {}
 
     async createRequest(createRequestDto: CreateRequestDto, userId: string) 
     {
@@ -775,6 +774,9 @@ export class RequestService {
     }
 
     async scheduleFollowupAppointment(requestId: string, date: string, userId: string) {
+
+      //1- Basic checks
+
       //validate the request exists and has a follow-up service
       const request = await this.prisma.request.findUnique({
         where: { id: requestId },
@@ -814,6 +816,12 @@ export class RequestService {
 
       const providerId = request.service.serviceProviderId;
 
+      //2- Check if date is available
+      const { busyDates, blockedDates } = await this.spService.getNext30DaysSchedule(providerId, request.location.city);
+      if(busyDates.includes(format(requestDate, 'yyyy-MM-dd')) || blockedDates.includes(format(requestDate, 'yyyy-MM-dd'))){
+        throw new BadRequestException("This service is closed for that day");
+      }
+
       const providerDay = await this.prisma.providerDay.upsert({
         where: {
           date_serviceProviderId: {
@@ -832,11 +840,6 @@ export class RequestService {
           serviceProvider: true
         }
       });
-
-      //check if the provider is available on that day
-      if (providerDay.isClosed || providerDay.isBusy) {
-        throw new BadRequestException('The service provider is not available on this day');
-      }
 
       //update the request with the follow-up date and change status
       return this.prisma.$transaction(async (tx) => {

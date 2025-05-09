@@ -63,49 +63,33 @@ export class FollowupServiceService {
       throw new NotFoundException('Category not found');
     }
 
-    //create the follow-up service and update the request status
-    return this.prisma.$transaction(async (tx) => {
-      const followupService = await tx.followupService.create({
-        data: {
-          nameAR,
-          nameEN,
-          price,
-          requiredNbOfWorkers,
-          category: {
-            connect: { id: categoryId },
-          },
-          request: {
-            connect: { id: requestId },
-          }
+    //create the follow-up service
+    const followupService = await this.prisma.followupService.create({
+      data: {
+        nameAR,
+        nameEN,
+        price,
+        requiredNbOfWorkers,
+        category: {
+          connect: { id: categoryId },
         },
-        include: {
-          category: true,
-          request: {
-            include: {
-              service: true,
-              customer: true,
-            }
+        request: {
+          connect: { id: requestId },
+        }
+      },
+      include: {
+        category: true,
+        request: {
+          include: {
+            service: true,
+            customer: true,
           }
         }
-      });
-
-      // Update the request to add notes but keep it in FINISHED state
-      const updatedRequest = await tx.request.update({
-        where: { id: requestId },
-        data: {
-          notes: notes ? `${originalRequest.notes ? originalRequest.notes + ' | ' : ''}Follow-up notes: ${notes}` : originalRequest.notes,
-        },
-        include: {
-          followupService: true,
-          service: true,
-          customer: true,
-        }
-      });
-
-      return {
-        followupService,
-        request: updatedRequest
-      };
+      }
     });
+
+    return {
+      followupService,
+    };
   }
 } 
