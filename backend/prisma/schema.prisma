@@ -162,6 +162,8 @@ model Request {
   followUpProviderDayId String?
   followUpProviderDay   ProviderDay? @relation("FollowUpProviderDay", fields: [followUpProviderDayId], references: [id])
   followupDailyWorkers  WorkerDay[] @relation("FollowUpDailyWorkerOnRequest")
+
+  invoiceItems    InvoiceItem[]
 }
 
 model Location {
@@ -282,5 +284,16 @@ model FollowupService {
   requiredNbOfWorkers   Int @default(1)
 
   createdAt      DateTime      @default(now())
+}
+
+model InvoiceItem {
+  id          String   @id @default(uuid()) @db.Char(36)
+  description String
+  price       Float
+  
+  requestId   String
+  request     Request  @relation(fields: [requestId], references: [id])
+  
+  createdAt   DateTime @default(now())
 }
 

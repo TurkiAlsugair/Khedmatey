@@ -8,6 +8,7 @@ import { GenerateTokenDto } from 'src/auth/dtos/generate-token.dto';
 import { OrderStatusGateway } from 'src/sockets/order-status.gateway';
 import { ServiceProviderService } from 'src/service-provider/service-provider.service';
 import { forwardRef } from '@nestjs/common';
+import { AddInvoiceItemDto } from './dtos/add-invoice-item.dto';
 
 type RequestWithRelations = Request & {
   customer: Customer;
@@ -420,7 +421,8 @@ export class RequestService {
               date: true,
               serviceProviderId: true
             }
-          }
+          },
+          invoiceItems: true
         },
         orderBy: { createdAt: 'desc' },
       }) as unknown as Request[];
@@ -1184,7 +1186,8 @@ export class RequestService {
               date: true,
               serviceProviderId: true
             }
-          }
+          },
+          invoiceItems: true
         },
       }) as unknown as Request;
 
@@ -1193,5 +1196,109 @@ export class RequestService {
       }
 
       return request;
+    }
+
+    async addInvoiceItem(requestId: string, userId: string, addInvoiceItemDto: AddInvoiceItemDto) {
+      try {
+        const request = await this.prisma.request.findUnique({
+          where: { id: requestId },
+          include: {
+            service: {
+              include: {
+                serviceProvider: true
+              }
+            },
+            customer: true,
+            dailyWorkers: { 
+              include: { 
+                worker: true 
+              } 
+            },
+            followupService: true,
+            followupDailyWorkers: {
+              include: {
+                worker: true
+              }
+            }
+          }
+        });
+
+        if (!request) {
+          throw new NotFoundException('Request not found');
+        }
+
+        const service = await this.prisma.service.findUnique({
+          where: { id: request.serviceId },
+          include: { serviceProvider: true }
+        });
+
+        if (!service) {
+          throw new NotFoundException('Service not found');
+        }
+
+        //check permissions
+        const user = await this.prisma.serviceProvider.findUnique({
+          where: { id: userId }
+        });
+        const worker = await this.prisma.worker.findUnique({
+          where: { id: userId }
+        });
+
+        if (!user && !worker) {
+          throw new ForbiddenException('Only service providers and workers can add invoice items');
+        }
+
+        //if user is service provider, check if request belongs to their service
+        if (user && service.serviceProviderId !== userId) {
+          throw new ForbiddenException('You can only add invoice items to your own service requests');
+        }
+
+        //if user is worker, check if worker is assigned to the request
+        if (worker) 
+        {
+          //for requests with follow-up service, check if the worker is assigned to the follow-up
+          if (request.followupService) 
+          {
+            const isFollowupWorker = request.followupDailyWorkers?.some(
+              dw => dw.worker.id === userId
+            );
+            if (!isFollowupWorker) {
+              throw new ForbiddenException('You are not assigned to this follow-up request');
+            }
+          } 
+          else 
+          {
+            // For regular requests, check if worker is in the daily workers
+            const isAssignedWorker = request.dailyWorkers?.some(
+              dw => dw.worker.id === userId
+            );
+            if (!isAssignedWorker) {
+              throw new ForbiddenException('You are not assigned to this request');
+            }
+          }
+        }
+
+        //create the invoice item
+        await this.prisma.invoiceItem.create({
+          data: {
+            description: addInvoiceItemDto.description,
+            price: addInvoiceItemDto.price,
+            requestId: requestId
+          }
+        });
+
+        //get all invoice items
+        const invoiceItems = await this.prisma.invoiceItem.findMany({
+          where: { requestId }
+        });
+
+        return {
+          ...request,
+          invoiceItems
+        };
+      } 
+      catch (error) {
+        throw error;
+      }
     }
 }

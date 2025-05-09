@@ -10,6 +10,7 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { UpdateRequestStatusDto } from './dtos/update-status.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { AddInvoiceItemDto } from './dtos/add-invoice-item.dto';
 
 @ApiTags('request')
 @Controller('request')
@@ -400,6 +401,62 @@ export class RequestController {
         };
       } catch (err) {
         throw err;
+      }
+    }
+
+    @ApiOperation({ 
+      summary: 'Add invoice item', 
+      description: 'Add an invoice item to a request. This does not override existing items but adds to them.' 
+    })
+    @ApiParam({ name: 'id', description: 'Request ID', type: 'string' })
+    @ApiBody({ type: AddInvoiceItemDto })
+    @ApiResponse({ 
+      status: 200, 
+      description: 'Invoice item added successfully',
+      schema: {
+        type: 'object',
+        properties: {
+          message: {
+            type: 'string',
+            example: 'Invoice item added'
+          },
+          data: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'request-uuid' },
+              invoiceItems: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string', example: 'invoice-item-uuid' },
+                    description: { type: 'string', example: 'Service call fee' },
+                    price: { type: 'number', example: 50.00 },
+                    createdAt: { type: 'string', example: '2023-05-15T10:30:00Z' }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+    @ApiResponse({ status: 400, description: 'Bad request - Invalid input data' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Not authorized to modify this request' })
+    @ApiResponse({ status: 404, description: 'Request not found' })
+    @ApiBearerAuth('JWT-auth')
+    @UseGuards(JwtAuthGuard)
+    @Patch(':id/invoice')
+    async addInvoiceItem(@Param('id') id: string, @Body() addInvoiceItemDto: AddInvoiceItemDto, @CurrentUser() user: GenerateTokenDto): Promise<BaseResponseDto> {
+      try {
+        const data = await this.requestService.addInvoiceItem(id, user.id, addInvoiceItemDto);
+        return { 
+          message: 'Invoice item added', 
+          data 
+        };
+      } catch (error) {
+        throw error;
       }
     }
 }
