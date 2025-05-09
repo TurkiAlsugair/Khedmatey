@@ -3,11 +3,12 @@ import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
 import { GenerateTokenDto } from "../dtos/generate-token.dto";
 import { ConfigService } from "@nestjs/config";
+import { DatabaseService } from "src/database/database.service";
 
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
-  constructor(private configService: ConfigService) {
+  constructor(private configService: ConfigService, private prisma: DatabaseService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: true,

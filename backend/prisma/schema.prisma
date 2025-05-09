@@ -21,17 +21,19 @@ enum Role {
 }
 
 model Customer {
-  id Int @default(autoincrement()) @id
+  id String @id @default(uuid()) @db.Char(36)
 
   username String 
 
   phoneNumber String @unique
 
   role Role @default(value: CUSTOMER)
+
+  Requests Request[]
 }
 
 model ServiceProvider{
-  id Int @default(autoincrement()) @id
+  id String @id @default(uuid()) @db.Char(36)
 
   username String
 
@@ -49,6 +51,8 @@ model ServiceProvider{
 
   status  Status  @default(PENDING)
 
+  //schedule of the service provider
+  ProviderDays ProviderDay[]
 }
 
 enum CityName {
@@ -60,9 +64,11 @@ enum CityName {
 model City {
   id Int @id @default(autoincrement())
 
-  name CityName
+  name CityName @unique //unique is used so that findUnique function of prisma client can be used
 
   providers ServiceProvider[]
+
+  workers   Worker[] //workers that work in this city
 }
 
 enum CategoryName {
@@ -78,10 +84,11 @@ model Category {
   id       Int       @id @default(autoincrement())
   name     CategoryName    @unique
   services Service[]
+  followupServices FollowupService[]
 }
 
 model Service {
-  id Int @id @default(autoincrement())
+  id String @id @default(uuid()) @db.Char(36)
 
   nameAR String 
   nameEN String
@@ -91,17 +98,20 @@ model Service {
 
   price String
 
+  requiredNbOfWorkers   Int @default(1)
+
   status  Status  @default(PENDING)
 
   serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id])
-  serviceProviderId Int
+  serviceProviderId String
 
+  Requests Request[]
 
-  Request Request[]
+  ServiceDays ServiceDay[]
 }
 
 model Worker {
-  id Int @id @default(autoincrement())
+  id String @id @default(uuid()) @db.Char(36)
   
   username String       
   
@@ -110,33 +120,180 @@ model Worker {
   role Role @default(value: WORKER)
 
   serviceProvider  ServiceProvider  @relation(fields: [serviceProviderId], references: [id])
-  serviceProviderId Int
+  serviceProviderId String
 
-  requests Request[]    
+  //city the worker works in
+  city        City    @relation(fields: [cityId], references: [id])
+  cityId      Int    
+
+  //schedule of the worker, which links to the requests the worker worked on 
+  WorkerDays WorkerDay[]
 }
 
 
 model Request {
-  id Int @id @default(autoincrement())
+  id String @id @default(uuid()) @db.Char(36)
 
-  service     Service    @relation(fields: [serviceId], references: [id])
-  serviceId   Int
+  customerId      String
+  customer        Customer         @relation(fields: [customerId], references: [id])
 
-  workers Worker[]
+  serviceId       String
+  service         Service          @relation(fields: [serviceId], references: [id])
+
+  locationId  String
+  location    Location @relation(fields: [locationId], references: [id])
+
+  notes           String?
 
   status  Status  @default(PENDING)
+
+  createdAt      DateTime      @default(now())
+
+  //the day the request was scheduled on
+  providerDayId   String
+  providerDay     ProviderDay      @relation(fields: [providerDayId], references: [id])
+
+  //the entity of the schedule of the worker
+  dailyWorkers    WorkerDay[] @relation("DailyWorkerOnRequest")
+
+  followupService FollowupService?
+
+  //follow-up service relations
+  followUpProviderDayId String?
+  followUpProviderDay   ProviderDay? @relation("FollowUpProviderDay", fields: [followUpProviderDayId], references: [id])
+  followupDailyWorkers  WorkerDay[] @relation("FollowUpDailyWorkerOnRequest")
+
+  invoiceItems    InvoiceItem[]
+}
+
+model Location {
+  id String @id @default(uuid()) @db.Char(36)
+  city         String
+  fullAddress  String 
+  miniAddress  String
+  lat          Float
+  lng          Float
+
+  requests     Request[] 
 }
 
 enum Status {
-  PENDING
+  PENDING // service or sp is pending
   ACCEPTED
   DECLINED
+  CANCELED
+  COMING
+  IN_PROGRESS
+  FINISHED
+  INVOICED
+  PAID
 }
 
 model Admin {
-  id          Int     @id @default(autoincrement())
+  id String @id @default(uuid()) @db.Char(36)
   username    String
   phoneNumber String @unique
   role        Role    @default(value: ADMIN)
+}
+
+
+//SCHEDULING MODELS 
+
+//A day of a provider, all other scheduling models link back to this model 
+model ProviderDay {
+  id String @id @default(uuid()) @db.Char(36)
+  date                 DateTime
+  isClosed             Boolean                 @default(false) //closed manually
+  isBusy               Boolean                 @default(false) //closed by not enouph workers
+  totalRequestsCount   Int                     @default(0)
+
+  //link to provider
+  serviceProviderId    String
+  serviceProvider      ServiceProvider         @relation(fields: [serviceProviderId], references: [id])
+
+  //workers on this day
+  WorkerDays   WorkerDay[]
+
+  //services made on this day
+  ServiceDays  ServiceDay[]
+
+  //requests scheduled on this day
+  requests Request[]
+
+  //follow-up requests scheduled on this day
+  followUpRequests Request[] @relation("FollowUpProviderDay")
+
+  //compound unique constraint to ensure date + serviceProviderId is unique such that no there is no duplicate days
+  @@unique([date, serviceProviderId])
+}
+
+//For each service on a day
+model ServiceDay {
+  id String @id @default(uuid()) @db.Char(36)
+  isClosed        Boolean @default(false)
+
+  //link to original day
+  providerDayId   String
+  providerDay     ProviderDay @relation(fields: [providerDayId], references: [id])
+
+  //the specific service
+  serviceId       String         
+  service         Service     @relation(fields: [serviceId], references: [id])
+
+  //compound unique constraint to ensure date + servuce is unique such that no there is no duplicate days for the same service
+  @@unique([serviceId, providerDayId]) 
+}
+
+model WorkerDay {
+  id String @id @default(uuid()) @db.Char(36)
+  nbOfAssignedRequests Int    @default(0)
+  capacity         Int    @default(2)
+
+  //link to original day
+  providerDayId    String
+  providerDay      ProviderDay @relation(fields: [providerDayId], references: [id])
+
+  //link to the worker
+  workerId         String
+  worker           Worker       @relation(fields: [workerId], references: [id])
+
+  //requests the worker works on at this day
+  requests Request[] @relation("DailyWorkerOnRequest")
+
+  //follow-up requests the worker works on
+  followUpRequests Request[] @relation("FollowUpDailyWorkerOnRequest")
+
+  //compound unique constraint to ensure date + worker is unique such that no there is no duplicate days for the worker
+  @@unique([workerId, providerDayId]) 
+}
+
+model FollowupService {
+  id String @id @default(uuid()) @db.Char(36)
+
+  requestId   String   @unique
+  request     Request  @relation(fields: [requestId], references: [id])
+
+  nameAR String 
+  nameEN String
+  
+  categoryId       Int
+  category         Category         @relation(fields: [categoryId], references: [id])
+
+  price String
+
+  requiredNbOfWorkers   Int @default(1)
+
+  createdAt      DateTime      @default(now())
+}
+
+model InvoiceItem {
+  id          String   @id @default(uuid()) @db.Char(36)
+  description String
+  price       Float
+  
+  requestId   String
+  request     Request  @relation(fields: [requestId], references: [id])
+  
+  createdAt   DateTime @default(now())
 }
 

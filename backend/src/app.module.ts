@@ -9,8 +9,10 @@ import { AuthServiceProviderModule } from './auth/auth-service-provider/auth-ser
 import { ServiceModule } from './service/service.module';
 import { ServiceProviderModule } from './service-provider/service-provider.module';
 import { AdminModule } from './auth/auth-admin/admin.module';
-
-
+import { SearchModule } from './search/search.module';
+import { RequestModule } from './request/request.module';
+import { TwilioModule } from './twilio/twilio.module';
+import { FollowupServiceModule } from './followup-service/followup-service.module';
 
 @Module({
   imports: [
@@ -21,8 +23,12 @@ import { AdminModule } from './auth/auth-admin/admin.module';
     AuthServiceProviderModule, 
     ServiceModule, 
     ServiceProviderModule,
-    ServiceModule,
-    AdminModule],
+    AdminModule,
+    SearchModule,
+    RequestModule,
+    TwilioModule,
+    FollowupServiceModule
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

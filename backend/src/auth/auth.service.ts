@@ -35,17 +35,66 @@ export class AuthService {
       throw new NotFoundException("User not found");
     }
 
-    //verify otp
+    // //verify otp
     // try {
     //   await this.twilio.verifyOtp(userPhoneNumber, code);
     //   } catch (err) {
     //     throw new BadRequestException("Wrong OTP");
     //   }
 
-    const newUser = user;
+    let userWithCities = user;
 
-    const token = this.generateToken(newUser);
-    return { token, newUser };
+
+    //if role is SP, include service provider's cities and email in user object
+    if (user.role === 'SERVICE_PROVIDER') 
+    {
+      const serviceProvider = await this.prisma.serviceProvider.findUnique({
+        where: { id: user.id },
+        include: { cities: true },
+      });
+
+      //this will never enter but it is needed so that acceccing cities does not give 'serviceProvider is possibly null' error
+      if (!serviceProvider) {
+        throw new NotFoundException('Service provider record not found');
+      }
+
+      //map city objects to just their `name`
+      const cityNames = serviceProvider.cities.map((c) => c.name);
+
+      //merge original user data with the city names array
+      userWithCities = {
+        ...user,
+        cities: cityNames,
+      };
+    }
+
+    //if role is worker, include worker's city in user object
+    else if(user.role === 'WORKER')
+    {
+      const worker = await this.prisma.worker.findUnique({
+        where: { id: user.id },
+        include: { city: true },
+      });
+
+      //this will never enter but it is needed so that acceccing the city does not give 'worker is possibly null' error
+      if (!worker) {
+        throw new NotFoundException('Service provider record not found');
+      }
+
+      //map city objects to just their `name`
+      const cityName = worker.city.name
+
+      //merge original user data with the city names array
+      userWithCities = {
+        ...user,
+        city: cityName,
+      };
+    }
+
+    const token = this.generateToken(userWithCities);
+
+    return { token, user: userWithCities };
+
   }
 
   async findUser ({phoneNumber}: FindUserDto){

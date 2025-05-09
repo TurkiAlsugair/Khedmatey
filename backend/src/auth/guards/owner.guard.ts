@@ -6,28 +6,16 @@ import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@
    */
   @Injectable()
   export class OwnerGuard implements CanActivate {
-    canActivate(context: ExecutionContext): boolean {
-      const request = context.switchToHttp().getRequest();
-  
-      // Extract phoneNumber from JWT payload and request body
-      const phoneNumberFromToken = request.user?.phoneNumber;
-      const phoneNumberFromBody = request.body?.phoneNumber;
-  
-      // If phoneNumber is missing in the body, throw an error
-      if (!phoneNumberFromBody) {
-        throw new ForbiddenException(
-          'phoneNumber is required in the request body',
-        );
+    canActivate(ctx: ExecutionContext): boolean {
+      const req = ctx.switchToHttp().getRequest();
+      const user = req.user;
+      const { id } = req.params;
+      
+      if (!id || user.id !== id) {
+        throw new ForbiddenException('You may only modify your own account');
       }
-  
-      // Deny access if phone numbers do not match
-      if (phoneNumberFromToken !== phoneNumberFromBody) {
-        throw new ForbiddenException(
-          'You are not authorized to access this resource',
-        );
-      }
-  
       return true;
+  
     }
   }
   
