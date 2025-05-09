@@ -79,12 +79,14 @@ export class RequestController {
     @ApiOperation({ 
       summary: 'Update request status', 
       description: `Update the status of a service request. Status transitions follow these rules:
-      - PENDING_BY_SP → ACCEPTED/DECLINED (by service provider) or CANCELLED (by customer)
+      - PENDING → ACCEPTED/DECLINED (by service provider) or CANCELLED (by customer)
       - ACCEPTED → COMING (by worker) or CANCELLED (by customer)
       - COMING → IN_PROGRESS or CANCELLED (by worker)
       - IN_PROGRESS → CANCELLED or FINISHED (by worker)
       - FINISHED → INVOICED (by worker)
-      - INVOICED → PAID (by customer)` 
+      - INVOICED → PAID (by customer)
+      
+      Note: When cancelling a request that already has invoice items, the status will be set to INVOICED instead of CANCELLED.` 
     })
     @ApiParam({ name: 'id', description: 'Request ID', type: 'string' })
     @ApiBody({ type: UpdateRequestStatusDto })

@@ -607,7 +607,7 @@ export class RequestService {
       if (user.role === Role.CUSTOMER)
       {
         //customers can cancel PENDING or ACCEPTED requests
-        if (request.status !== Status.PENDING && request.status !== Status.ACCEPTED) {
+        if (request.status !== Status.PENDING && request.status !== Status.ACCEPTED && request.status !== Status.FINISHED) {
           throw new BadRequestException(`Customers can only cancel requests in PENDING or ACCEPTED status (current: ${request.status})`);
         }
 
@@ -650,10 +650,26 @@ export class RequestService {
         throw new ForbiddenException('Your role cannot cancel requests');
       }
       
-      return this.prisma.request.update({
-        where: { id: request.id },
-        data: { status: Status.CANCELED },
+      // Check if the request has invoice items
+      const invoiceItems = await this.prisma.invoiceItem.findMany({
+        where: { requestId: request.id }
       });
+
+      // If request has invoice items, set status to INVOICED instead of CANCELED
+      const newStatus = invoiceItems.length > 0 ? Status.INVOICED : Status.CANCELED;
+      
+      const updatedRequest = await this.prisma.request.update({
+        where: { id: request.id },
+        data: { status: newStatus },
+      });
+
+      if (newStatus === Status.INVOICED) {
+        this.orderStatusSocket.emitOrderStatusUpdate(updatedRequest.id, Status.INVOICED);
+      } else {
+        this.orderStatusSocket.emitOrderStatusUpdate(updatedRequest.id, Status.CANCELED);
+      }
+
+      return updatedRequest;
     }
 
     async handleComing(request: RequestWithRelations, user: GenerateTokenDto){
