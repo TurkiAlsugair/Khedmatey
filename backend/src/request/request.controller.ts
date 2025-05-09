@@ -130,7 +130,10 @@ export class RequestController {
       }
     }
 
-    @ApiOperation({ summary: 'Get requests', description: 'Get a list of service requests related to the authenticated user, optionally filtered by multiple status values' })
+    @ApiOperation({ 
+      summary: 'Get requests', 
+      description: 'Get a list of service requests related to the authenticated user. For customers and workers, requests are grouped by status. For service providers, requests are grouped by city.' 
+    })
     @ApiQuery({ 
       name: 'status', 
       required: false, 
@@ -149,47 +152,46 @@ export class RequestController {
             example: 'Requests fetched'
           },
           data: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                id: { type: 'string', example: 'request-uuid' },
-                serviceId: { type: 'string', example: 'service-uuid' },
-                customerId: { type: 'string', example: 'customer-uuid' },
-                notes: { type: 'string', example: 'Please come before noon' },
-                status: { type: 'string', example: 'PENDING' },
-                date: { type: 'string', example: '2023-01-15' },
-                service: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'string', example: 'service-uuid' },
-                    nameAR: { type: 'string', example: 'خدمة السباكة' },
-                    nameEN: { type: 'string', example: 'Plumbing Service' },
-                    serviceProvider: {
-                      type: 'object',
-                      properties: {
-                        id: { type: 'string', example: 'provider-uuid' },
-                        username: { type: 'string', example: 'serviceCompany' }
-                      }
+            oneOf: [
+              {
+                // Status-grouped response (for customers and workers)
+                type: 'object',
+                additionalProperties: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string', example: 'request-uuid' }
+                      // Other properties omitted for brevity
                     }
                   }
                 },
-                customer: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'string', example: 'customer-uuid' },
-                    username: { type: 'string', example: 'customerName' }
+                example: {
+                  "PENDING": [],
+                  "ACCEPTED": [],
+                  "CANCELED": []
+                }
+              },
+              {
+                // City-grouped response (for service providers)
+                type: 'object',
+                additionalProperties: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string', example: 'request-uuid' }
+                      // Other properties omitted for brevity  
+                    }
                   }
                 },
-                location: {
-                  type: 'object',
-                  properties: {
-                    city: { type: 'string', example: 'RIYADH' },
-                    fullAddress: { type: 'string', example: '123 Main St, Riyadh' }
-                  }
+                example: {
+                  "Riyadh": [],
+                  "Jeddah": [],
+                  "Dammam": []
                 }
               }
-            }
+            ]
           }
         }
       }

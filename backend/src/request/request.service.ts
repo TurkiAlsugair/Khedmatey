@@ -348,10 +348,10 @@ export class RequestService {
 
     /*
     returns the requests that belongs to the requester.
-    if no status filter provided, returns requests filtered by status, otherwise return one array of requests.
+    For service providers, requests are grouped by city instead of status.
     */
     async getRequests(
-      user: GenerateTokenDto, statuses?: Status[]): Promise<Request[] | Record<Status, Request[]>> {
+      user: GenerateTokenDto, statuses?: Status[]): Promise<Request[] | Record<Status, Request[]> | Record<string, Request[]>> {
 
       //1- build the base filter by role
       const where: any = {};
@@ -426,8 +426,25 @@ export class RequestService {
         },
         orderBy: { createdAt: 'desc' },
       }) as unknown as Request[];
+
+      //5- group request
   
-      //5- group by status
+      //if user is service provider, group by city instead of status
+      if (user.role === Role.SERVICE_PROVIDER) {
+        const groupedByCity: Record<string, Request[]> = {};
+        
+        for (const req of requests) {
+          const location = (req as any).location;
+          const city = location.city;
+          if (!groupedByCity[city]) {
+            groupedByCity[city] = [];
+          }
+          groupedByCity[city].push(req);
+        }
+        
+        return groupedByCity;
+      }
+      
       const grouped = Object.values(Status).reduce((acc, s) => {
         acc[s] = [];
         return acc;
