@@ -28,6 +28,13 @@ type RequestWithRelations = Request & {
     requiredNbOfWorkers: number;
     categoryId: number;
   };
+  followupDailyWorkers?: Array<WorkerDay & {
+    worker: Worker;
+  }>;
+  followUpProviderDay?: {
+    serviceProviderId: string;
+    date: Date;
+  };
 };
 
 @Injectable()
@@ -435,6 +442,18 @@ export class RequestService {
       return grouped;
     }
 
+    // Helper method to check if worker is assigned to a request (either original or follow-up)
+    private isWorkerAssignedToRequest(request: RequestWithRelations, workerId: string): boolean {
+      // If request has a follow-up service, only follow-up workers can change status
+      if (request.followupService) {
+        // Only allow follow-up workers to change status
+        return request.followupDailyWorkers?.some(dw => dw.worker.id === workerId) || false;
+      }
+      
+      // If no follow-up service, check regular assignment
+      return request.dailyWorkers?.some(dw => dw.worker.id === workerId) || false;
+    }
+
     async updateStatus(id: string, user: GenerateTokenDto, newStatus: Status) {
 
       // Fetch the request with all necessary relations in one query
@@ -455,7 +474,18 @@ export class RequestService {
           },
           service: true,
           location: true,
-          followupService: true
+          followupService: true,
+          followupDailyWorkers: {
+            include: {
+              worker: true
+            }
+          },
+          followUpProviderDay: {
+            select: {
+              serviceProviderId: true,
+              date: true
+            }
+          }
         },
       }) as RequestWithRelations;
       
@@ -609,10 +639,14 @@ export class RequestService {
           throw new BadRequestException(`Workers can only cancel requests in ACCEPTED, COMING, or IN_PROGRESS status (current: ${request.status})`);
         }
 
-        //verify assignment
-        const isWorkerAssigned = request.dailyWorkers.some(dw => dw.worker.id === user.id);
-        if (!isWorkerAssigned) {
-          throw new ForbiddenException('You are not assigned to this request');
+        //verify assignment - check if authorized to change this request
+        if (!this.isWorkerAssignedToRequest(request, user.id)) {
+          if (request.followupService) {
+            throw new ForbiddenException('This request has a follow-up service. Only follow-up workers can change its status.');
+          } 
+          else {
+            throw new ForbiddenException('You are not assigned to this request');
+          }
         }
       } 
       else {
@@ -636,10 +670,13 @@ export class RequestService {
         throw new ForbiddenException('Only workers can mark a request as coming');
       }
       
-      //check if this worker is assigned to this request
-      const isWorkerAssigned = request.dailyWorkers.some(dw => dw.worker.id === user.id);
-      if (!isWorkerAssigned) {
-        throw new ForbiddenException('You are not assigned to this request');
+      //check if this worker is authorized to change this request
+      if (!this.isWorkerAssignedToRequest(request, user.id)) {
+        if (request.followupService) {
+          throw new ForbiddenException('This request has a follow-up service. Only follow-up workers can change its status.');
+        } else {
+          throw new ForbiddenException('You are not assigned to this request');
+        }
       }
       
       return this.prisma.request.update({
@@ -659,10 +696,13 @@ export class RequestService {
         throw new ForbiddenException('Only workers can mark a request as in progress');
       }
       
-      //check if this worker is assigned to this request
-      const isWorkerAssigned = request.dailyWorkers.some(dw => dw.worker.id === user.id);
-      if (!isWorkerAssigned) {
-        throw new ForbiddenException('You are not assigned to this request');
+      //check if this worker is authorized to change this request
+      if (!this.isWorkerAssignedToRequest(request, user.id)) {
+        if (request.followupService) {
+          throw new ForbiddenException('This request has a follow-up service. Only follow-up workers can change its status.');
+        } else {
+          throw new ForbiddenException('You are not assigned to this request');
+        }
       }
       
       return this.prisma.request.update({
@@ -682,10 +722,13 @@ export class RequestService {
         throw new ForbiddenException('Only workers can mark a request as finished');
       }
       
-      //check if this worker is assigned to this request
-      const isWorkerAssigned = request.dailyWorkers.some(dw => dw.worker.id === user.id);
-      if (!isWorkerAssigned) {
-        throw new ForbiddenException('You are not assigned to this request');
+      //check if this worker is authorized to change this request
+      if (!this.isWorkerAssignedToRequest(request, user.id)) {
+        if (request.followupService) {
+          throw new ForbiddenException('This request has a follow-up service. Only follow-up workers can change its status.');
+        } else {
+          throw new ForbiddenException('You are not assigned to this request');
+        }
       }
       
       return this.prisma.request.update({
@@ -695,8 +738,8 @@ export class RequestService {
     }
 
     async handleInvoiced(request: RequestWithRelations, user: GenerateTokenDto){
-      //validate current status - can only transition to INVOICED from FINISHED
-      if (request.status !== Status.FINISHED) {
+      //validate current status - can only transition to INVOICED from IN_PROGRESS
+      if (request.status !== Status.IN_PROGRESS) {
         throw new BadRequestException(`Can only set to INVOICED from FINISHED status (current: ${request.status})`);
       }
 
@@ -705,10 +748,13 @@ export class RequestService {
         throw new ForbiddenException('Only workers can mark a request as invoiced');
       }
       
-      //check if this worker is assigned to this request
-      const isWorkerAssigned = request.dailyWorkers.some(dw => dw.worker.id === user.id);
-      if (!isWorkerAssigned) {
-        throw new ForbiddenException('You are not assigned to this request');
+      //check if this worker is authorized to change this request
+      if (!this.isWorkerAssignedToRequest(request, user.id)) {
+        if (request.followupService) {
+          throw new ForbiddenException('This request has a follow-up service. Only follow-up workers can change its status.');
+        } else {
+          throw new ForbiddenException('You are not assigned to this request');
+        }
       }
       
       return this.prisma.request.update({
@@ -1072,5 +1118,85 @@ export class RequestService {
 
         return updatedRequest;
       });
+    }
+
+    async getRequestById(id: string, user: GenerateTokenDto): Promise<Request> {
+      //Build a where object based on user role and request ID
+      const where: any = { id };
+      
+      switch (user.role) {
+        case Role.SERVICE_PROVIDER:
+          // The provider is the same for both original and follow-up services
+          where.providerDay = {
+            is: {
+              serviceProviderId: user.id,
+            },
+          };
+          break;
+        case Role.CUSTOMER:
+          where.customerId = user.id;
+          break;
+        case Role.WORKER:
+          where.OR = [
+            { dailyWorkers: { some: { workerId: user.id } } },
+            { followupDailyWorkers: { some: { workerId: user.id } } }
+          ];
+          break;
+        case Role.ADMIN:
+          break;
+        default:
+          throw new ForbiddenException('Invalid role');
+      }
+
+      const request = await this.prisma.request.findFirst({
+        where,
+        select: {
+          id: true,
+          status: true,
+          notes: true,
+          createdAt: true,
+          customer: true,
+          providerDay: { 
+            select: { 
+              date: true, 
+              serviceProviderId: true 
+            } 
+          },
+          dailyWorkers: { 
+            include: { 
+              worker: true 
+            } 
+          },
+          service: {
+            include: {
+              serviceProvider: {
+                select: {
+                  id: true,
+                  username: true
+                }
+              }
+            }
+          },
+          location: true,
+          followupService: true,
+          followupDailyWorkers: {
+            include: {
+              worker: true
+            }
+          },
+          followUpProviderDay: { 
+            select: {
+              date: true,
+              serviceProviderId: true
+            }
+          }
+        },
+      }) as unknown as Request;
+
+      if (!request) {
+        throw new NotFoundException(`Request with id ${id} not found or you don't have permission to access it`);
+      }
+
+      return request;
     }
 }

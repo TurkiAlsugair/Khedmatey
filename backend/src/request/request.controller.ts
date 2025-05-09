@@ -200,6 +200,133 @@ export class RequestController {
       }
     }
 
+    @ApiOperation({ summary: 'Get request by ID', description: 'Get detailed information about a specific request' })
+    @ApiParam({ name: 'id', description: 'Request ID', type: 'string' })
+    @ApiResponse({ 
+      status: 200, 
+      description: 'Request details fetched successfully',
+      schema: {
+        type: 'object',
+        properties: {
+          message: {
+            type: 'string',
+            example: 'Request fetched'
+          },
+          data: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'request-uuid' },
+              status: { type: 'string', example: 'PENDING' },
+              notes: { type: 'string', example: 'Please come before noon' },
+              createdAt: { type: 'string', example: '2023-01-15T08:30:00.000Z' },
+              service: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', example: 'service-uuid' },
+                  nameAR: { type: 'string', example: 'خدمة السباكة' },
+                  nameEN: { type: 'string', example: 'Plumbing Service' },
+                  serviceProvider: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string', example: 'provider-uuid' },
+                      username: { type: 'string', example: 'serviceCompany' }
+                    }
+                  }
+                }
+              },
+              customer: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', example: 'customer-uuid' },
+                  username: { type: 'string', example: 'customerName' },
+                  phone: { type: 'string', example: '+966500000000' }
+                }
+              },
+              location: {
+                type: 'object',
+                properties: {
+                  city: { type: 'string', example: 'RIYADH' },
+                  fullAddress: { type: 'string', example: '123 Main St, Riyadh' },
+                  miniAddress: { type: 'string', example: 'Al Olaya District' },
+                  lat: { type: 'number', example: 24.7136 },
+                  lng: { type: 'number', example: 46.6753 }
+                }
+              },
+              providerDay: {
+                type: 'object',
+                properties: {
+                  date: { type: 'string', example: '2023-01-15T00:00:00.000Z' },
+                  serviceProviderId: { type: 'string', example: 'provider-uuid' }
+                }
+              },
+              dailyWorkers: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    worker: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string', example: 'worker-uuid' },
+                        name: { type: 'string', example: 'Worker Name' },
+                        phone: { type: 'string', example: '+966500000000' }
+                      }
+                    }
+                  }
+                }
+              },
+              followupService: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', example: 'followup-service-uuid' },
+                  nameAR: { type: 'string', example: 'متابعة السباكة' },
+                  nameEN: { type: 'string', example: 'Plumbing Follow-up' }
+                }
+              },
+              followUpProviderDay: {
+                type: 'object',
+                properties: {
+                  date: { type: 'string', example: '2023-01-25T00:00:00.000Z' },
+                  serviceProviderId: { type: 'string', example: 'provider-uuid' }
+                }
+              },
+              followupDailyWorkers: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    worker: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string', example: 'worker-uuid' },
+                        name: { type: 'string', example: 'Worker Name' },
+                        phone: { type: 'string', example: '+966500000000' }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Not authorized to access this request' })
+    @ApiResponse({ status: 404, description: 'Request not found' })
+    @ApiBearerAuth('JWT-auth')
+    @UseGuards(JwtAuthGuard)
+    @Get(':id')
+    async getRequestById(@Param('id') id: string, @CurrentUser() user: GenerateTokenDto): Promise<BaseResponseDto> {
+      try {
+        const data = await this.requestService.getRequestById(id, user);
+        return { message: 'Request fetched', data };
+      } 
+      catch (err) {
+        throw err;
+      }
+    }
+
     @ApiOperation({ 
       summary: 'Schedule follow-up appointment', 
       description: 'Schedule an appointment for a request with a follow-up service' 

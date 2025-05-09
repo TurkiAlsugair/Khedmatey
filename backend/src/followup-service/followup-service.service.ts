@@ -51,7 +51,7 @@ export class FollowupServiceService {
     }
 
     //verify the request is in FINISHED state
-    if (originalRequest.status !== Status.FINISHED) {
+    if (originalRequest.status !== Status.IN_PROGRESS) {
       throw new BadRequestException('Cannot create follow-up for a request that is not in FINISHED state');
     }
 
@@ -87,6 +87,8 @@ export class FollowupServiceService {
         }
       }
     });
+
+    this.requestService.updateStatus(requestId, user, Status.FINISHED);
 
     return {
       followupService,
