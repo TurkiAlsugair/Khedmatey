@@ -9,10 +9,12 @@ import Option from "../../../components/MoreScreen/Option";
 import { useContext } from "react";
 import { AuthContext } from "../../../context/AuthContext";
 import i18n from "../../../locales/i18n";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function MoreScreen({ navigation }) {
   const { userInfo, logout } = useContext(AuthContext);
   const isArabic = i18n.language === "ar";
+  const insets = useSafeAreaInsets();
 
   const logoutAlertTitle = isArabic ? "تأكيد تسجيل الخروج" : "Confirm Logout";
   const logoutAlertText = isArabic
@@ -35,7 +37,7 @@ export default function MoreScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.mainCont}>
+    <View style={[styles.mainCont, { paddingTop: insets.top }]}>
       <Text style={styles.title}>{userInfo?.username}</Text>
       <View style={styles.contentCont}>
         <View>
@@ -56,6 +58,13 @@ export default function MoreScreen({ navigation }) {
             optionIcon="newspaper"
             otherIcon="chevron-forward-outline"
             onPress={() => console.log("go to terms screen")}
+          />
+
+          <Option
+            optionText="Customer Service"
+            optionIcon="headset"
+            otherIcon="chevron-forward-outline"
+            onPress={() => console.log("go to customer service screen")}
           />
 
           <Option

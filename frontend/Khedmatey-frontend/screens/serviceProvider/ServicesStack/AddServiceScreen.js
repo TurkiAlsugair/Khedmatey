@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import React, { useContext, useState } from "react";
 import { View, Text, StyleSheet, Switch } from "react-native";
 import {
   widthPercentageToDP as wp,
@@ -25,6 +25,7 @@ export default function AddServicesScreen({ navigation }) {
     categoryId: { value: null, isValid: true },
     nameEN: { value: "", isValid: true },
     nameAR: { value: "", isValid: true },
+    workersNeeded: { value: "", isValid: true },
     price: { value: "", isValid: true, isTBD: false },
   });
 
@@ -56,20 +57,35 @@ export default function AddServicesScreen({ navigation }) {
   };
 
   const handleAddService = async () => {
+    // Basic validations
     const isValidCategory = !!formState.categoryId.value;
     const isValidNameEN = formState.nameEN.value.trim().length > 0;
     const isValidNameAR = formState.nameAR.value.trim().length > 0;
+
+    // Validate "workersNeeded" – must be a positive integer >= 1
+    const workersStr = formState.workersNeeded.value.trim();
+    const workersNum = parseInt(workersStr, 10);
+    const isValidWorkers =
+      !isNaN(workersNum) && workersNum >= 1 && /^\d+$/.test(workersStr);
+
+    // For price: either "TBD" or a non-empty string
     const isValidPrice = formState.price.value.trim().length > 0;
 
     const allValid =
-      isValidCategory && isValidNameEN && isValidNameAR && isValidPrice;
+      isValidCategory &&
+      isValidNameEN &&
+      isValidNameAR &&
+      isValidWorkers &&
+      isValidPrice;
 
     if (!allValid) {
+      // Mark invalid fields
       setFormState((prev) => ({
         ...prev,
         categoryId: { ...prev.categoryId, isValid: isValidCategory },
         nameEN: { ...prev.nameEN, isValid: isValidNameEN },
         nameAR: { ...prev.nameAR, isValid: isValidNameAR },
+        workersNeeded: { ...prev.workersNeeded, isValid: isValidWorkers },
         price: { ...prev.price, isValid: isValidPrice },
       }));
       return;
@@ -77,12 +93,17 @@ export default function AddServicesScreen({ navigation }) {
 
     try {
       setLoading(true);
+
+      // Convert the numeric field
+      const workersNeeded = parseInt(formState.workersNeeded.value, 10);
+
       const response = await axios.post(
         `${API_BASE_URL}/service`,
         {
           categoryId: formState.categoryId.value,
           nameEN: formState.nameEN.value,
           nameAR: formState.nameAR.value,
+          workersNeeded: formState.workersNeeded.value,
           price: formState.price.value,
         },
         {
@@ -92,12 +113,15 @@ export default function AddServicesScreen({ navigation }) {
         }
       );
 
+      const newServiceId = response.data.data?.id;
+
       addService({
-        serviceId: response.data.data.id,
+        serviceId: newServiceId,
         categoryId: formState.categoryId.value,
         nameEN: formState.nameEN.value,
         nameAR: formState.nameAR.value,
         price: formState.price.value,
+        workersNeeded: formState.workersNeeded.value,
       });
 
       Toast.show({
@@ -152,6 +176,19 @@ export default function AddServicesScreen({ navigation }) {
           errorMessage="Arabic description is required"
         />
 
+        {/* ---- NEW: number of workers needed ---- */}
+        <Input
+          label="Number of Workers Needed"
+          placeholder="Minimum number of workers needed"
+          keyboardType="numeric"
+          onUpdateValue={(value) => handleInputChange("workersNeeded", value)}
+          value={formState.workersNeeded.value}
+          labelFontSize={wp(3.8)}
+          labelColor="#6F6F6F"
+          isInvalid={!formState.workersNeeded.isValid}
+          errorMessage="Workers needed must be a number ≥ 1"
+        />
+
         <Input
           label="Service price"
           placeholder="Enter price"
@@ -178,7 +215,9 @@ export default function AddServicesScreen({ navigation }) {
         </View>
       </View>
 
-      {backendError && <Text style={styles.backendError}>{backendError}</Text>}
+      {backendError ? (
+        <Text style={styles.backendError}>{backendError}</Text>
+      ) : null}
 
       <Button cusStyles={styles.addServiceButton} onPress={handleAddService}>
         Add Service
@@ -211,5 +250,6 @@ const styles = StyleSheet.create({
     color: "red",
     fontSize: wp(4),
     marginTop: 8,
+    textAlign: "center",
   },
 });

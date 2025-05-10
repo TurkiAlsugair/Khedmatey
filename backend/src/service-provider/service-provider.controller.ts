@@ -124,6 +124,7 @@ export class ServiceProviderController {
 
   @ApiOperation({ summary: 'Get provider schedule', description: 'Retrieve the next 30 days schedule for a service provider' })
   @ApiParam({ name: 'id', description: 'Service Provider ID', type: 'string' })
+  @ApiQuery({ name: 'city', required: false, description: 'Filter schedule by city name' })
   @ApiResponse({ 
     status: 200, 
     description: 'Schedule retrieved successfully',
@@ -152,15 +153,16 @@ export class ServiceProviderController {
       }
     }
   })
+  @ApiResponse({ status: 400, description: 'Bad request - Invalid city parameter' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Service provider not found' })
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard)
   @Get(':id/schedule')
-  async getSchedule(@Param('id') providerId: string): Promise<BaseResponseDto> {
+  async getSchedule(@Param('id') providerId: string, @Query('city') city?: string): Promise<BaseResponseDto> {
     try
     {
-      const schedule = await this.serviceProviderService.getNext30DaysSchedule(providerId);
+      const schedule = await this.serviceProviderService.getNext30DaysSchedule(providerId, city);
       return {
         message: 'List of blocked dates and busy dates', 
         data: schedule, 

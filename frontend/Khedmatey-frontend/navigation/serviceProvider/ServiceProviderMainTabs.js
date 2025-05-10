@@ -1,7 +1,7 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
-import { Platform, SafeAreaView, StyleSheet } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -12,19 +12,25 @@ import DashboardScreen from "../../screens/serviceProvider/tabs/DashboardScreen"
 import ServicesScreen from "../../screens/serviceProvider/tabs/ServicesScreen";
 import WorkersScreen from "../../screens/serviceProvider/tabs/WorkersScreen";
 import MoreScreen from "../../screens/serviceProvider/tabs/MoreScreen";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 const Tab = createBottomTabNavigator();
 
 export default function ServiceProviderMainTabs() {
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["left", "right"]}>
       <Tab.Navigator
         screenOptions={{
           tabBarActiveTintColor: Colors.secondary,
           // tabBarInactiveTintColor: "#aaa",
           tabBarStyle: {
             position: "absolute",
-            // bottom: 10,
+            bottom: insets.bottom,
             marginLeft: 20,
             marginRight: 20,
             height: 60,
@@ -32,7 +38,7 @@ export default function ServiceProviderMainTabs() {
             borderTopWidth: 0, // to remove default tob border
             backgroundColor: "white",
             // paddingBottom: Platform.OS === "ios" ? 10 : 5,
-            elevation: 5, // Android shadow
+            elevation: 5,
             shadowColor: "#000",
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.2,
@@ -116,7 +122,7 @@ export default function ServiceProviderMainTabs() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: Platform.OS === "android" ? hp(2.5) : 0,
+    // marginTop: Platform.OS === "android" ? hp(2.5) : 0,
     backgroundColor: Colors.background,
   },
 });

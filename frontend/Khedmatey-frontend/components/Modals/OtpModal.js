@@ -43,7 +43,6 @@ export default function OtpModal({
   const handleVerifyOtp = async () => {
     setError("");
 
-    // Check if OTP is exactly 4 digits
     if (otp.length !== 4 || isNaN(otp)) {
       setError("OTP must be exactly 4 digits.");
       return;
@@ -59,7 +58,7 @@ export default function OtpModal({
     try {
       const response = await axios.post(`${API_BASE_URL}${verifyUrl}`, {
         phoneNumber,
-        ...extraData, // Include extraData dynamically (e.g., username)
+        ...extraData,
         otpCode: otp,
       });
 

@@ -86,6 +86,7 @@ model Category {
   id       Int       @id @default(autoincrement())
   name     CategoryName    @unique
   services Service[]
+  followupServices FollowupService[]
 }
 
 model Service {
@@ -146,7 +147,7 @@ model Request {
 
   notes           String?
 
-  status  Status  @default(PENDING_BY_SP)
+  status  Status  @default(PENDING)
 
   createdAt      DateTime      @default(now())
 
@@ -156,6 +157,15 @@ model Request {
 
   //the entity of the schedule of the worker
   dailyWorkers    WorkerDay[] @relation("DailyWorkerOnRequest")
+
+  followupService FollowupService?
+
+  //follow-up service relations
+  followUpProviderDayId String?
+  followUpProviderDay   ProviderDay? @relation("FollowUpProviderDay", fields: [followUpProviderDayId], references: [id])
+  followupDailyWorkers  WorkerDay[] @relation("FollowUpDailyWorkerOnRequest")
+
+  invoiceItems    InvoiceItem[]
 }
 
 model Location {
@@ -171,7 +181,6 @@ model Location {
 
 enum Status {
   PENDING // service or sp is pending
-  PENDING_BY_SP
   ACCEPTED
   DECLINED
   CANCELED
@@ -213,6 +222,9 @@ model ProviderDay {
   //requests scheduled on this day
   requests Request[]
 
+  //follow-up requests scheduled on this day
+  followUpRequests Request[] @relation("FollowUpProviderDay")
+
   //compound unique constraint to ensure date + serviceProviderId is unique such that no there is no duplicate days
   @@unique([date, serviceProviderId])
 }
@@ -250,7 +262,40 @@ model WorkerDay {
   //requests the worker works on at this day
   requests Request[] @relation("DailyWorkerOnRequest")
 
+  //follow-up requests the worker works on
+  followUpRequests Request[] @relation("FollowUpDailyWorkerOnRequest")
+
   //compound unique constraint to ensure date + worker is unique such that no there is no duplicate days for the worker
   @@unique([workerId, providerDayId]) 
+}
+
+model FollowupService {
+  id String @id @default(uuid()) @db.Char(36)
+
+  requestId   String   @unique
+  request     Request  @relation(fields: [requestId], references: [id])
+
+  nameAR String 
+  nameEN String
+  
+  categoryId       Int
+  category         Category         @relation(fields: [categoryId], references: [id])
+
+  price String
+
+  requiredNbOfWorkers   Int @default(1)
+
+  createdAt      DateTime      @default(now())
+}
+
+model InvoiceItem {
+  id          String   @id @default(uuid()) @db.Char(36)
+  description String
+  price       Float
+  
+  requestId   String
+  request     Request  @relation(fields: [requestId], references: [id])
+  
+  createdAt   DateTime @default(now())
 }
 

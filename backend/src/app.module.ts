@@ -13,6 +13,8 @@ import { SearchModule } from './search/search.module';
 import { RequestModule } from './request/request.module';
 import { OrderStatusGateway } from './sockets/order-status.gateway';
 import { AdminModule } from './admin/admin.module';
+import { TwilioModule } from './twilio/twilio.module';
+import { FollowupServiceModule } from './followup-service/followup-service.module';
 
 @Module({
   imports: [
@@ -25,9 +27,12 @@ import { AdminModule } from './admin/admin.module';
     ServiceProviderModule,
     ServiceModule,
     AuthAdminModule,
+    AdminModule,
     SearchModule,
     RequestModule,
-    AdminModule],
+    TwilioModule,
+    FollowupServiceModule
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
