@@ -11,22 +11,23 @@ import { GenerateTokenDto } from 'src/auth/dtos/generate-token.dto';
 import { FindUserDto } from 'src/dtos/find-user.dto';
 import { BlacklistCustomerDto } from './dto/blacklist-customer.dto';
 import { LookupUserDto } from './dto/lookup-user.dto';
+import { AllUnhandledRequestsResponseDto } from './dto/unhandled-requests.dto';
 
 @ApiTags('admin')
 @Controller('admin')
 export class AdminController {
-  constructor(private adminService: AdminService) {}
+  constructor(private adminService: AdminService) { }
 
-  @ApiOperation({ 
-    summary: 'Look up users', 
+  @ApiOperation({
+    summary: 'Look up users',
     description: 'Find users by phone number or get all blacklisted/non-blacklisted customers:\n\
     - If phoneNumber is provided: Returns that specific user (blacklisted parameter is ignored)\n\
     - If phoneNumber is not provided: Returns all customers with the specified blacklist status'
   })
   @ApiQuery({ name: 'phoneNumber', description: 'User phone number', type: 'string', required: false })
   @ApiQuery({ name: 'blacklisted', description: 'Filter customers by blacklist status', type: 'boolean', required: false })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'User(s) information retrieved successfully'
   })
   @ApiResponse({ status: 400, description: 'Bad request - No parameters provided' })
@@ -40,8 +41,8 @@ export class AdminController {
   }
 
   @ApiOperation({ summary: 'Blacklist a customer', description: 'Update a customer\'s blacklist status and cancel unpaid requests if blacklisting' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Customer blacklist status updated successfully',
     schema: {
       type: 'object',
@@ -59,15 +60,15 @@ export class AdminController {
   @Patch('customers/blacklist')
   async blacklistCustomer(@Body() blacklistDto: BlacklistCustomerDto) {
     return this.adminService.blacklistCustomer(
-      blacklistDto.customerId, 
+      blacklistDto.customerId,
       blacklistDto.blacklist
     );
   }
 
   @ApiOperation({ summary: 'Delete user', description: 'Delete a user account based on their role' })
   @ApiParam({ name: 'id', description: 'User ID', type: 'string' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'User deleted successfully',
     schema: {
       type: 'object',
@@ -90,5 +91,22 @@ export class AdminController {
     } catch (err) {
       throw err;
     }
+  }
+
+  @ApiOperation({
+    summary: 'Get all unhandled requests',
+    description: 'Returns all unhandled requests (PENDING, PENDING_BY_SP, CANCELED) for all customers, grouped by service provider'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'All unhandled requests retrieved successfully',
+    type: AllUnhandledRequestsResponseDto
+  })
+  @ApiBearerAuth('JWT-auth')
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('requests/unhandled')
+  async getAllUnhandledRequests(): Promise<AllUnhandledRequestsResponseDto> {
+    return this.adminService.getAllUnhandledRequests();
   }
 }

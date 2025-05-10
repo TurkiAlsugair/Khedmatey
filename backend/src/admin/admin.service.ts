@@ -3,7 +3,8 @@ import { DatabaseService } from 'src/database/database.service';
 import { Role, Status } from '@prisma/client';
 import { CustomerService } from 'src/customer/customer.service';
 import { AuthService } from 'src/auth/auth.service';
-import { FindUserDto } from 'src/dtos/find-user.dto';
+import { ServiceProviderRequestsDto, RequestDetailsDto, AllUnhandledRequestsResponseDto } from './dto/unhandled-requests.dto';
+import { format } from 'date-fns';
 
 @Injectable()
 export class AdminService {
@@ -171,5 +172,92 @@ export class AdminService {
     else {
       throw new NotFoundException('User must be a customer or service provider');
     }
+  }
+
+  async getAllUnhandledRequests(): Promise<AllUnhandledRequestsResponseDto> {
+    //get all unhandled requests
+    const unhandledRequests = await this.prisma.request.findMany({
+      where: {
+        status: {
+          in: [Status.PENDING, Status.PENDING_BY_SP, Status.CANCELED]
+        }
+      },
+      include: {
+        service: {
+          include: {
+            serviceProvider: true
+          }
+        },
+        customer: true,
+        location: true,
+        providerDay: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    if (unhandledRequests.length === 0) {
+      return {
+        serviceProviders: []
+      };
+    }
+
+    //group requests by service provider
+    const serviceProviderMap = new Map<string, ServiceProviderRequestsDto>();
+
+    for (const request of unhandledRequests) {
+      const providerId = request.service.serviceProviderId;
+      const providerName = request.service.serviceProvider.username;
+      const providerPhone = request.service.serviceProvider.phoneNumber;
+      const providerEmail = request.service.serviceProvider.email;
+      
+      //add the service provider to the map array if they aren`t already in it
+      if (!serviceProviderMap.has(providerId)) {
+        serviceProviderMap.set(providerId, {
+          serviceProviderId: providerId,
+          serviceProviderName: providerName,
+          serviceProviderPhone: providerPhone,
+          serviceProviderEmail: providerEmail,  
+          requests: []
+        });
+      }
+
+      //create request details with customer information
+      const requestDetails: RequestDetailsDto = {
+        id: request.id,
+        status: request.status,
+        createdAt: request.createdAt,
+        date: format(request.createdAt, 'dd/MM/yyyy'),
+        notes: request.notes || undefined,
+        serviceId: request.serviceId,
+        serviceName: request.service.nameEN,
+        locationId: request.locationId,
+        locationDetails: {
+          city: request.location.city,
+          fullAddress: request.location.fullAddress,
+          miniAddress: request.location.miniAddress,
+          lat: request.location.lat,
+          lng: request.location.lng
+        },
+        scheduledDate: request.providerDay.date,
+        customerId: request.customer.id,
+        customerName: request.customer.username,
+        customerPhone: request.customer.phoneNumber
+      };
+
+      //add request to the service provider's list
+      const spRequests = serviceProviderMap.get(providerId);
+      if (spRequests) {
+        spRequests.requests.push(requestDetails);
+      }
+    }
+
+    const result = {
+      //take the values pairs from the map and put them in an array
+      serviceProviders: Array.from(serviceProviderMap.values()),
+    };
+
+    return result;
   }
 }
