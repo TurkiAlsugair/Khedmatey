@@ -23,7 +23,7 @@ enum Role {
 model Customer {
   id String @id @default(uuid()) @db.Char(36)
 
-  username String 
+  username String
 
   phoneNumber String @unique
 
@@ -34,7 +34,7 @@ model Customer {
   isBlacklisted Boolean @default(false)
 }
 
-model ServiceProvider{
+model ServiceProvider {
   id String @id @default(uuid()) @db.Char(36)
 
   username String
@@ -51,10 +51,16 @@ model ServiceProvider{
 
   services Service[]
 
-  status  Status  @default(PENDING)
+  status Status @default(PENDING)
 
   //schedule of the service provider
   ProviderDays ProviderDay[]
+
+  //feedback-related fields
+  avgRating Float?
+  feedbacks RequestFeedback[]
+  
+  complaints Complaint[]
 }
 
 enum CityName {
@@ -70,7 +76,7 @@ model City {
 
   providers ServiceProvider[]
 
-  workers   Worker[] //workers that work in this city
+  workers Worker[] //workers that work in this city
 }
 
 enum CategoryName {
@@ -81,30 +87,29 @@ enum CategoryName {
   Other
 }
 
-
 model Category {
-  id       Int       @id @default(autoincrement())
-  name     CategoryName    @unique
-  services Service[]
+  id               Int               @id @default(autoincrement())
+  name             CategoryName      @unique
+  services         Service[]
   followupServices FollowupService[]
 }
 
 model Service {
   id String @id @default(uuid()) @db.Char(36)
 
-  nameAR String 
+  nameAR String
   nameEN String
-  
-  categoryId       Int
-  category         Category         @relation(fields: [categoryId], references: [id])
+
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id])
 
   price String
 
-  requiredNbOfWorkers   Int @default(1)
+  requiredNbOfWorkers Int @default(1)
 
-  status  Status  @default(PENDING)
+  status Status @default(PENDING)
 
-  serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id], onDelete: Cascade)
+  serviceProvider   ServiceProvider @relation(fields: [serviceProviderId], references: [id], onDelete: Cascade)
   serviceProviderId String
 
   Requests Request[]
@@ -131,7 +136,6 @@ model Worker {
   //schedule of the worker, which links to the requests the worker worked on 
   WorkerDays WorkerDay[]
 }
-
 
 model Request {
   id String @id @default(uuid()) @db.Char(36)
@@ -165,7 +169,11 @@ model Request {
   followUpProviderDay   ProviderDay? @relation("FollowUpProviderDay", fields: [followUpProviderDayId], references: [id])
   followupDailyWorkers  WorkerDay[] @relation("FollowUpDailyWorkerOnRequest")
 
-  invoiceItems    InvoiceItem[]
+  invoiceItems InvoiceItem[]
+
+  feedback        RequestFeedback?
+  
+  complaint       Complaint?
 }
 
 model Location {
@@ -176,7 +184,7 @@ model Location {
   lat          Float
   lng          Float
 
-  requests     Request[] 
+  requests Request[]
 }
 
 enum Status {
@@ -197,7 +205,6 @@ model Admin {
   phoneNumber String @unique
   role        Role    @default(value: ADMIN)
 }
-
 
 //SCHEDULING MODELS 
 
@@ -266,7 +273,7 @@ model WorkerDay {
   followUpRequests Request[] @relation("FollowUpDailyWorkerOnRequest")
 
   //compound unique constraint to ensure date + worker is unique such that no there is no duplicate days for the worker
-  @@unique([workerId, providerDayId]) 
+  @@unique([workerId, providerDayId])
 }
 
 model FollowupService {
@@ -289,13 +296,42 @@ model FollowupService {
 }
 
 model InvoiceItem {
-  id          String   @id @default(uuid()) @db.Char(36)
+  id          String @id @default(uuid()) @db.Char(36)
   description String
   price       Float
-  
+
   requestId   String
   request     Request  @relation(fields: [requestId], references: [id])
   
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
+model RequestFeedback {
+  id            String   @id @default(uuid()) @db.Char(36)
+  rating        Float    
+  review        String?  
+  
+  requestId     String   @unique
+  request       Request  @relation(fields: [requestId], references: [id])
+  
+  serviceProviderId String
+  serviceProvider   ServiceProvider @relation(fields: [serviceProviderId], references: [id])
+  
+  createdAt     DateTime @default(now())
+}
+
+model Complaint {
+  id            String   @id @default(uuid()) @db.Char(36)
+  description   String
+  
+  // Relation to the request (one-to-one)
+  requestId     String   @unique
+  request       Request  @relation(fields: [requestId], references: [id])
+  
+  // Relation to the service provider (many-to-one)
+  serviceProviderId String
+  serviceProvider   ServiceProvider @relation(fields: [serviceProviderId], references: [id])
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

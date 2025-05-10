@@ -11,6 +11,8 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { UpdateRequestStatusDto } from './dtos/update-status.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { AddInvoiceItemDto } from './dtos/add-invoice-item.dto';
+import { CreateFeedbackDto } from './dtos/feedback.dto';
+import { CreateComplaintDto } from './dtos/complaint.dto';
 
 @ApiTags('request')
 @Controller('request')
@@ -460,6 +462,107 @@ export class RequestController {
           data 
         };
       } catch (error) {
+        throw error;
+      }
+    }
+
+    @ApiOperation({ 
+      summary: 'Add feedback for a request', 
+      description: 'Submit a rating and optional review for a completed request. Only the customer who created the request can submit feedback.' 
+    })
+    @ApiParam({ name: 'id', description: 'Request ID', type: 'string' })
+    @ApiBody({ type: CreateFeedbackDto })
+    @ApiResponse({ 
+      status: 200, 
+      description: 'Feedback submitted successfully',
+      schema: {
+        type: 'object',
+        properties: {
+          message: {
+            type: 'string',
+            example: 'Feedback submitted successfully'
+          },
+          data: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'feedback-uuid' },
+              rating: { type: 'number', example: 4.5 },
+              review: { type: 'string', example: 'Great service!' },
+              requestId: { type: 'string', example: 'request-uuid' },
+              serviceProviderId: { type: 'string', example: 'service-provider-uuid' },
+              createdAt: { type: 'string', format: 'date-time' }
+            }
+          }
+        }
+      }
+    })
+    @ApiResponse({ status: 400, description: 'Bad request - Request not in completed state or feedback already exists' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Not authorized to provide feedback for this request' })
+    @ApiResponse({ status: 404, description: 'Request not found' })
+    @ApiBearerAuth('JWT-auth')
+    @Roles(Role.CUSTOMER)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Post(':id/feedback')
+    async addFeedback(@Param('id') id: string, @Body() feedbackDto: CreateFeedbackDto, @CurrentUser() user: GenerateTokenDto): Promise<BaseResponseDto> {
+      try {
+        const feedback = await this.requestService.addFeedback(id, user.id, feedbackDto);
+        return {
+          message: 'Feedback submitted successfully',
+          data: feedback,
+        };
+      } 
+      catch (error) {
+        throw error;
+      }
+    }
+
+    @ApiOperation({ 
+      summary: 'Submit complaint for a request', 
+      description: 'Submit a complaint for a completed or canceled request. Only the customer who created the request can submit a complaint.' 
+    })
+    @ApiParam({ name: 'id', description: 'Request ID', type: 'string' })
+    @ApiBody({ type: CreateComplaintDto })
+    @ApiResponse({ 
+      status: 200, 
+      description: 'Complaint submitted successfully',
+      schema: {
+        type: 'object',
+        properties: {
+          message: {
+            type: 'string',
+            example: 'Complaint submitted successfully'
+          },
+          data: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'complaint-uuid' },
+              description: { type: 'string', example: 'The service was not completed as expected' },
+              requestId: { type: 'string', example: 'request-uuid' },
+              serviceProviderId: { type: 'string', example: 'service-provider-uuid' },
+              createdAt: { type: 'string', format: 'date-time' }
+            }
+          }
+        }
+      }
+    })
+    @ApiResponse({ status: 400, description: 'Bad request - Request not in completed state or complaint already exists' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Not authorized to submit complaint for this request' })
+    @ApiResponse({ status: 404, description: 'Request not found' })
+    @ApiBearerAuth('JWT-auth')
+    @Roles(Role.CUSTOMER)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Post(':id/complaint')
+    async addComplaint(@Param('id') id: string, @Body() complaintDto: CreateComplaintDto, @CurrentUser() user: GenerateTokenDto): Promise<BaseResponseDto> {
+      try {
+        const complaint = await this.requestService.addComplaint(id, user.id, complaintDto);
+        return {
+          message: 'Complaint submitted successfully',
+          data: complaint,
+        };
+      } 
+      catch (error) {
         throw error;
       }
     }

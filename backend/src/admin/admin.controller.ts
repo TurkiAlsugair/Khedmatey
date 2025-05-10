@@ -91,4 +91,55 @@ export class AdminController {
       throw err;
     }
   }
+
+  @ApiOperation({ 
+    summary: 'Get all complaints', 
+    description: 'Retrieves all complaints submitted for all service providers' 
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Complaints retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Complaints retrieved successfully' },
+        data: { 
+          type: 'array', 
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'complaint-uuid' },
+              description: { type: 'string', example: 'Worker arrived late and was unprofessional' },
+              createdAt: { type: 'string', format: 'date-time' },
+              serviceProvider: { 
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  username: { type: 'string' },
+                  phoneNumber: { type: 'string' }
+                }
+              },
+              request: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  status: { type: 'string' },
+                  customer: { type: 'object' }
+                }
+              }
+            }
+          }
+        },
+        count: { type: 'number', example: 5 }
+      }
+    }
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden - Not authorized to access complaints' })
+  @ApiBearerAuth('JWT-auth')
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('complaints')
+  async getAllComplaints(): Promise<BaseResponseDto> {
+    return this.adminService.getAllComplaints();
+  }
 }
