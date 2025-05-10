@@ -89,125 +89,125 @@ export default function SignupServiceProviderScreen({ navigation }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
-      <ScrollView
-        // contentContainerStyle={{ paddingBottom: hp(10) }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.mainCont}>
-          <View
-            style={[styles.backButtonCont, { alignSelf: isArabic && "flex-end" }]}
-          >
-            <IconButton
-              color={"black"}
-              size={30}
-              icon={isArabic ? "arrow-forward" : "arrow-back"}
-              onPress={() => navigation.goBack()}
-            />
-          </View>
-
-          <View style={styles.contentContainer}>
-            <Text style={[styles.title, { textAlign: isArabic && "right" }]}>
-              {t("SP registration title")}
-            </Text>
-
-            {/* Inputs */}
-            <View style={styles.formCont}>
-              <Input
-                label={t("companyName")}
-                placeholder={t("companyNamePlaceholder")}
-                keyboardType="default"
-                onUpdateValue={(value) => handleInputChange("username", value)}
-                value={formState.username.value}
-                labelFontSize={wp(3.8)}
-                labelColor="#6F6F6F"
-                isInvalid={!formState.username.isValid}
-                errorMessage={"Name cannot be empty"}
-              />
-
-              {/* NEW: Arabic Username Field */}
-              <Input
-                label={t("companyNameAR add on locales")}
-                placeholder={t("companyNamePlaceholderAR add on locales")}
-                keyboardType="default"
-                onUpdateValue={(value) => handleInputChange("usernameAR", value)}
-                value={formState.usernameAR.value}
-                labelFontSize={wp(3.8)}
-                labelColor="#6F6F6F"
-                isInvalid={!formState.usernameAR.isValid}
-                errorMessage={"Arabic name cannot be empty"}
-              />
-
-              <Input
-                label={t("email")}
-                placeholder="email@x.com"
-                keyboardType="email-address"
-                onUpdateValue={(value) => handleInputChange("email", value)}
-                value={formState.email.value}
-                labelFontSize={wp(3.8)}
-                labelColor="#6F6F6F"
-                isInvalid={!formState.email.isValid}
-                errorMessage={"Invalid email address"}
-              />
-
-              <Input
-                label={t("phoneNumber")}
-                placeholder="05XXXXXXXX"
-                keyboardType="phone-pad"
-                onUpdateValue={(value) => handleInputChange("phoneNumber", value)}
-                value={formState.phoneNumber.value}
-                labelFontSize={wp(3.8)}
-                labelColor="#6F6F6F"
-                isInvalid={!formState.phoneNumber.isValid}
-                errorMessage={"Invalid phone format (05XXXXXXXX)"}
-              />
-
-              <MultiSelectInput
-                label={t("selectCities")}
-                placeholder={t("selectCitiesPlaceholder")}
-                data={citiesList}
-                value={formState.cities.value}
-                onChange={(selected) =>
-                  setFormState((prevState) => ({
-                    ...prevState,
-                    cities: { value: selected, isValid: true },
-                  }))
-                }
-                isInvalid={!formState.cities.isValid}
-                errorMessage="Please select at least one city."
-              />
-            </View>
-
-            {/* Show backend error message */}
-            {backendError ? (
-              <Text style={styles.backendError}>{backendError}</Text>
-            ) : null}
-
-            {/* Register Button */}
-            <Button onPress={handleSignup}>{t("register")}</Button>
-
-            {/* OTP Modal */}
-            <OtpModal
-              visible={otpVisible}
-              phoneNumber={formState.phoneNumber.value}
-              extraData={{
-                username: formState.username.value,
-                usernameAR: formState.usernameAR.value, // we pass it
-                email: formState.email.value,
-                cities: formState.cities.value,
-              }}
-              verifyUrl="/auth/serviceProvider/signup/verifyOtp"
-              onClose={() => setOtpVisible(false)}
-              onVerify={(data) => {
-                const { accessToken, user } = data;
-                setOtpVisible(false);
-                // login the user
-                // user has => userRole, plus your new fields
-                login(accessToken, user.userRole, user);
-              }}
-            />
-          </View>
+    <ScrollView
+      // contentContainerStyle={{ paddingBottom: hp(10) }}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.mainCont}>
+        <View
+          style={[styles.backButtonCont, { alignSelf: isArabic && "flex-end" }]}
+        >
+          <IconButton
+            color={"black"}
+            size={30}
+            icon={isArabic ? "arrow-forward" : "arrow-back"}
+            onPress={() => navigation.goBack()}
+          />
         </View>
-      </ScrollView>
+
+        <View style={styles.contentContainer}>
+          <Text style={[styles.title, { textAlign: isArabic && "right" }]}>
+            {t("SP registration title")}
+          </Text>
+
+          {/* Inputs */}
+          <View style={styles.formCont}>
+            <Input
+              label={t("companyName")}
+              placeholder={t("companyNamePlaceholder")}
+              keyboardType="default"
+              onUpdateValue={(value) => handleInputChange("username", value)}
+              value={formState.username.value}
+              labelFontSize={wp(3.8)}
+              labelColor="#6F6F6F"
+              isInvalid={!formState.username.isValid}
+              errorMessage={"Name cannot be empty"}
+            />
+
+            {/* NEW: Arabic Username Field */}
+            <Input
+              label={t("companyNameAR add on locales")}
+              placeholder={t("companyNamePlaceholderAR add on locales")}
+              keyboardType="default"
+              onUpdateValue={(value) => handleInputChange("usernameAR", value)}
+              value={formState.usernameAR.value}
+              labelFontSize={wp(3.8)}
+              labelColor="#6F6F6F"
+              isInvalid={!formState.usernameAR.isValid}
+              errorMessage={"Arabic name cannot be empty"}
+            />
+
+            <Input
+              label={t("email")}
+              placeholder="email@x.com"
+              keyboardType="email-address"
+              onUpdateValue={(value) => handleInputChange("email", value)}
+              value={formState.email.value}
+              labelFontSize={wp(3.8)}
+              labelColor="#6F6F6F"
+              isInvalid={!formState.email.isValid}
+              errorMessage={"Invalid email address"}
+            />
+
+            <Input
+              label={t("phoneNumber")}
+              placeholder="05XXXXXXXX"
+              keyboardType="phone-pad"
+              onUpdateValue={(value) => handleInputChange("phoneNumber", value)}
+              value={formState.phoneNumber.value}
+              labelFontSize={wp(3.8)}
+              labelColor="#6F6F6F"
+              isInvalid={!formState.phoneNumber.isValid}
+              errorMessage={"Invalid phone format (05XXXXXXXX)"}
+            />
+
+            <MultiSelectInput
+              label={t("selectCities")}
+              placeholder={t("selectCitiesPlaceholder")}
+              data={citiesList}
+              value={formState.cities.value}
+              onChange={(selected) =>
+                setFormState((prevState) => ({
+                  ...prevState,
+                  cities: { value: selected, isValid: true },
+                }))
+              }
+              isInvalid={!formState.cities.isValid}
+              errorMessage="Please select at least one city."
+            />
+          </View>
+
+          {/* Show backend error message */}
+          {backendError ? (
+            <Text style={styles.backendError}>{backendError}</Text>
+          ) : null}
+
+          {/* Register Button */}
+          <Button onPress={handleSignup}>{t("register")}</Button>
+
+          {/* OTP Modal */}
+          <OtpModal
+            visible={otpVisible}
+            phoneNumber={formState.phoneNumber.value}
+            extraData={{
+              username: formState.username.value,
+              usernameAR: formState.usernameAR.value, // we pass it
+              email: formState.email.value,
+              cities: formState.cities.value,
+            }}
+            verifyUrl="/auth/serviceProvider/signup/verifyOtp"
+            onClose={() => setOtpVisible(false)}
+            onVerify={(data) => {
+              const { accessToken, user } = data;
+              setOtpVisible(false);
+              // login the user
+              // user has => userRole, plus your new fields
+              login(accessToken, user.userRole, user);
+            }}
+          />
+        </View>
+      </View>
+    </ScrollView>
     </View>
   );
 }

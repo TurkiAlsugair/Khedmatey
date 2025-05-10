@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
         if (savedToken) {
           setToken(savedToken);
           setUserRole(savedRole);
-          // setUserRole("customer");
+          setUserRole("customer");
           if (savedUserInfo) {
             setUserInfo(JSON.parse(savedUserInfo));
           }

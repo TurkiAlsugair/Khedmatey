@@ -6,6 +6,9 @@ import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-nat
 import { Colors, ORDER_STATUS_STYLES } from "../../../constants/styles";
 import Button from "../../../components/UI/Button";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import FeedbackModal from "../../../components/Modals/FeedbackModal";
+import ComplaintModal from "../../../components/Modals/ComplaintModal";
 
 export default function PreviousOrderScreen({ navigation, route }) {
   const { orderId } = route.params;
@@ -13,6 +16,8 @@ export default function PreviousOrderScreen({ navigation, route }) {
   const [error, setError] = useState("");
   const [order, setOrder] = useState(null);
   const insets = useSafeAreaInsets();
+  const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
+  const [complaintModalVisible, setComplaintModalVisible] = useState(false);
 
   useEffect(() => {
     navigation.setOptions({
@@ -36,6 +41,31 @@ export default function PreviousOrderScreen({ navigation, route }) {
     fetchDetails();
   }, [orderId]);
 
+  const handleFeedbackSuccess = (feedback) => {
+    setOrder(prev => ({
+      ...prev,
+      Feedback: feedback
+    }));
+  };
+
+  const handleComplaintSuccess = (complaint) => {
+    setOrder(prev => ({
+      ...prev,
+      complaint: complaint
+    }));
+  };
+
+  // Check if bottom container should be shown
+  const shouldShowBottomContainer = () => {
+    if (!order) return false;
+    
+    // Always show bottom container for INVOICED (for payment option)
+    if (order.status !== "PAID") return true;
+    
+    // If status is PAID, only show if feedback or complaint options are available
+    return (!order.Feedback || !order.complaint);
+  };
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -58,7 +88,7 @@ export default function PreviousOrderScreen({ navigation, route }) {
   const detailsTitle = status === "PAID" ? "Receipt Details" : "Invoice Details";
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.background, paddingBottom: hp(15) }}>
+    <View style={{ flex: 1, backgroundColor: Colors.background, paddingBottom: shouldShowBottomContainer() ? hp(15) : 0 }}>
       <ScrollView contentContainerStyle={{ flexGrow: 1, ...styles.container }}>
         <Text style={[styles.invoiceTitle, { color: statusStyles.text, backgroundColor: statusStyles.bg, borderRadius: 8, padding: 8 }]}> 
           {status}
@@ -115,16 +145,124 @@ export default function PreviousOrderScreen({ navigation, route }) {
             <Price price={total.toFixed(2)} size={wp(4)} header="Total" />
             <Text style={styles.dateLabel}>Date: {order.date}</Text>
           </View>
+          
+          {/* Feedback Section (if exists) */}
+          {order.Feedback && (
+            <>
+              <View style={styles.seperator}></View>
+              <Text style={styles.sectionTitle}>Your Feedback</Text>
+              <View style={styles.feedbackContainer}>
+                <View style={styles.ratingRow}>
+                  <Text style={styles.feedbackLabel}>Rating:</Text>
+                  <View style={styles.starsContainer}>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Ionicons 
+                        key={i}
+                        name="star" 
+                        size={18} 
+                        color={i < parseInt(order.Feedback.rate) ? '#FFD700' : '#ddd'} 
+                        style={{ marginHorizontal: 2 }}
+                      />
+                    ))}
+                  </View>
+                </View>
+                <View style={styles.reviewContainer}>
+                  <Text style={styles.feedbackLabel}>Review:</Text>
+                  <Text style={styles.reviewText}>{order.Feedback.review}</Text>
+                </View>
+                <Text style={styles.feedbackDate}>Submitted on: {order.Feedback.date}</Text>
+              </View>
+            </>
+          )}
+          
+          {/* Complaint Section (if exists) */}
+          {order.complaint && (
+            <>
+              <View style={styles.seperator}></View>
+              <Text style={styles.sectionTitle}>Your Complaint</Text>
+              <View style={styles.complaintContainer}>
+                <View style={styles.complaintContent}>
+                  <Text style={styles.complaintText}>{order.complaint.description}</Text>
+                </View>
+                <Text style={styles.complaintDate}>Submitted on: {order.complaint.date}</Text>
+              </View>
+            </>
+          )}
         </View>
       </ScrollView>
-      {status === "INVOICED" && (
+      
+      {shouldShowBottomContainer() && (
         <View style={[styles.bottomContainer, { paddingBottom: insets.bottom + hp(1) }]}>
-          <Price price={total.toFixed(2)} size={wp(5)} header="Total" cusStyles={styles.bottomPrice} />
-          <Button cusStyles={styles.payNowBtn} onPress={() => {/* handle pay now */}}>
-            Pay Now
-          </Button>
+         
+         {status !== "PAID" && (
+            <View style={styles.bottomActionRow}>
+              <Price price={total.toFixed(2)} size={wp(5)} header="Total" cusStyles={styles.bottomPrice} />
+              <Button cusStyles={styles.payNowBtn} onPress={() => {/* handle pay now */}}>
+                Pay Now
+              </Button>
+            </View>
+          )}
+
+          {/* Show feedback and complaint options for both PAID and INVOICED statuses */}
+          {(!order.Feedback || !order.complaint) && (
+            <View style={styles.actionsContainer}>
+              {!order.Feedback && !order.complaint && (
+                <>
+                  <Button 
+                    cusStyles={styles.feedbackBtn} 
+                    onPress={() => setFeedbackModalVisible(true)}
+                  >
+                    Rate & Review
+                  </Button>
+                  
+                  <Button 
+                    cusStyles={styles.complaintBtn} 
+                    onPress={() => setComplaintModalVisible(true)}
+                  >
+                    Raise Complaint
+                  </Button>
+                </>
+              )}
+              
+              {!order.Feedback && order.complaint && (
+                <Button 
+                  cusStyles={[styles.singleBtn, { backgroundColor: Colors.primary }]} 
+                  onPress={() => setFeedbackModalVisible(true)}
+                >
+                  Rate & Review
+                </Button>
+              )}
+              
+              {order.Feedback && !order.complaint && (
+                <Button 
+                  cusStyles={styles.singleBtn} 
+                  onPress={() => setComplaintModalVisible(true)}
+                >
+                  Raise Complaint
+                </Button>
+              )}
+            </View>
+          )}
+
+
+
         </View>
       )}
+      
+      {/* Modals */}
+      <FeedbackModal 
+        visible={feedbackModalVisible}
+        onClose={() => setFeedbackModalVisible(false)}
+        orderId={orderId}
+        onSuccess={handleFeedbackSuccess}
+      />
+      
+      <ComplaintModal 
+        visible={complaintModalVisible}
+        onClose={() => setComplaintModalVisible(false)}
+        orderId={orderId}
+        onSuccess={handleComplaintSuccess}
+      />
     </View>
   );
 }
@@ -274,9 +412,87 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   bottomPrice: {
-    marginBottom: hp(2),
+    marginBottom: hp(1.5),
   },
   payNowBtn: {
     width: "100%",
+    marginBottom: hp(1),
+    backgroundColor: ORDER_STATUS_STYLES["PAID"].text,
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  feedbackBtn: {
+    flex: 1,
+    marginRight: 8,
+    backgroundColor: Colors.primary,
+  },
+  complaintBtn: {
+    flex: 1,
+    marginLeft: 8,
+    backgroundColor: '#777777',
+  },
+  singleBtn: {
+    width: '100%',
+    backgroundColor: '#777777',
+  },
+  // Feedback styles
+  feedbackContainer: {
+    backgroundColor: '#f0f8ff',
+    borderRadius: 8,
+    padding: 12,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  starsContainer: {
+    flexDirection: 'row',
+    marginLeft: 8,
+  },
+  feedbackLabel: {
+    fontWeight: 'bold',
+    fontSize: wp(3.7),
+    color: '#444',
+  },
+  reviewContainer: {
+    marginBottom: 8,
+  },
+  reviewText: {
+    fontSize: wp(3.5),
+    color: '#555',
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  feedbackDate: {
+    fontSize: wp(3.2),
+    color: '#777',
+    textAlign: 'right',
+  },
+  // Complaint styles
+  complaintContainer: {
+    backgroundColor: '#fff0f0',
+    borderRadius: 8,
+    padding: 12,
+  },
+  complaintContent: {
+    marginBottom: 8,
+  },
+  complaintText: {
+    fontSize: wp(3.5),
+    color: '#555',
+    fontStyle: 'italic',
+  },
+  complaintDate: {
+    fontSize: wp(3.2),
+    color: '#777',
+    textAlign: 'right',
+  },
+  bottomActionRow: {
+    width: '100%',
+    marginBottom: hp(1),
   },
 });
