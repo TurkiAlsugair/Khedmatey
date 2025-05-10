@@ -76,105 +76,105 @@ export default function SignupCustomerScreen({ navigation }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
-      <ScrollView
-        contentContainerStyle={{ flex: 1 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.mainContainer}>
-          <View style={styles.logoCont}>
-            <Text>Logo !!</Text>
-          </View>
-          <View style={styles.cont1}>
-            <Text style={[styles.title, { textAlign: isArabic && "right" }]}>
-              {t("signupTitle")}
-            </Text>
-
-            <View style={styles.formCont}>
-              <Input
-                label={t("username")}
-                placeholder={t("usernamePlaceholder")}
-                keyboardType="default"
-                onUpdateValue={(value) => handleInputChange("username", value)}
-                value={formState.username.value}
-                labelFontSize={wp(3.8)}
-                labelColor="#6F6F6F"
-                isInvalid={!formState.username.isValid} // Red border only on submit
-                errorMessage={
-                  !formState.username.isValid ? "Username cannot be empty" : ""
-                }
-              />
-              <Input
-                label={t("phoneNumber")}
-                placeholder="05XXXXXXXX"
-                keyboardType="phone-pad"
-                onUpdateValue={(value) => handleInputChange("phoneNumber", value)}
-                value={formState.phoneNumber.value}
-                labelFontSize={wp(3.8)}
-                labelColor="#6F6F6F"
-                isInvalid={!formState.phoneNumber.isValid} // Red border only on submit
-                errorMessage={
-                  !formState.phoneNumber.isValid
-                    ? "Invalid phone format (05XXXXXXXX)"
-                    : ""
-                }
-              />
-            </View>
-
-            {/* Show backend error message */}
-            {backendError ? (
-              <Text style={styles.backendError}>{backendError}</Text>
-            ) : null}
-
-            <Button onPress={handleSignup}>{t("signup")}</Button>
-
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <View style={{ flex: 1, height: 2, backgroundColor: "#6F6F6F" }} />
-              <View>
-                <Text style={{ width: 50, textAlign: "center" }}>{t("OR")}</Text>
-              </View>
-              <View style={{ flex: 1, height: 2, backgroundColor: "#6F6F6F" }} />
-            </View>
-
-            <View style={styles.loginCont}>
-              <Text style={{ color: "#6F6F6F", fontSize: wp(4.5) }}>
-                {t("You have")}{" "}
-                <Text
-                  style={{ color: Colors.primary, fontWeight: "bold" }}
-                  onPress={() => navigation.navigate("Login")}
-                >
-                  {t("login")}
-                </Text>
-              </Text>
-            </View>
-
-            <Button
-              onPress={() => navigation.navigate("SignupServiceProvider")}
-              cusStyles={{
-                paddingVertical: 20,
-                paddingHorizontal: 20,
-                backgroundColor: "#478a37",
-              }}
-            >
-              {t("Register as sp")}
-            </Button>
-          </View>
-
-          {/* OTP Modal */}
-          <OtpModal
-            visible={otpVisible}
-            phoneNumber={formState.phoneNumber.value}
-            extraData={{ username: formState.username.value }}
-            // here i can control what to return as a response by adding params ********
-            verifyUrl="/auth/customer/signup/verifyOtp"
-            onClose={() => setOtpVisible(false)}
-            onVerify={(data) => {
-              const { accessToken, user } = data;
-              setOtpVisible(false);
-              login(accessToken, user.userRole, user);
-            }}
-          />
+    <ScrollView
+      contentContainerStyle={{ flex: 1 }}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.mainContainer}>
+        <View style={styles.logoCont}>
+          <Text>Logo !!</Text>
         </View>
-      </ScrollView>
+        <View style={styles.cont1}>
+          <Text style={[styles.title, { textAlign: isArabic && "right" }]}>
+            {t("signupTitle")}
+          </Text>
+
+          <View style={styles.formCont}>
+            <Input
+              label={t("username")}
+              placeholder={t("usernamePlaceholder")}
+              keyboardType="default"
+              onUpdateValue={(value) => handleInputChange("username", value)}
+              value={formState.username.value}
+              labelFontSize={wp(3.8)}
+              labelColor="#6F6F6F"
+              isInvalid={!formState.username.isValid} // Red border only on submit
+              errorMessage={
+                !formState.username.isValid ? "Username cannot be empty" : ""
+              }
+            />
+            <Input
+              label={t("phoneNumber")}
+              placeholder="05XXXXXXXX"
+              keyboardType="phone-pad"
+              onUpdateValue={(value) => handleInputChange("phoneNumber", value)}
+              value={formState.phoneNumber.value}
+              labelFontSize={wp(3.8)}
+              labelColor="#6F6F6F"
+              isInvalid={!formState.phoneNumber.isValid} // Red border only on submit
+              errorMessage={
+                !formState.phoneNumber.isValid
+                  ? "Invalid phone format (05XXXXXXXX)"
+                  : ""
+              }
+            />
+          </View>
+
+          {/* Show backend error message */}
+          {backendError ? (
+            <Text style={styles.backendError}>{backendError}</Text>
+          ) : null}
+
+          <Button onPress={handleSignup}>{t("signup")}</Button>
+
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={{ flex: 1, height: 2, backgroundColor: "#6F6F6F" }} />
+            <View>
+              <Text style={{ width: 50, textAlign: "center" }}>{t("OR")}</Text>
+            </View>
+            <View style={{ flex: 1, height: 2, backgroundColor: "#6F6F6F" }} />
+          </View>
+
+          <View style={styles.loginCont}>
+            <Text style={{ color: "#6F6F6F", fontSize: wp(4.5) }}>
+              {t("You have")}{" "}
+              <Text
+                style={{ color: Colors.primary, fontWeight: "bold" }}
+                onPress={() => navigation.navigate("Login")}
+              >
+                {t("login")}
+              </Text>
+            </Text>
+          </View>
+
+          <Button
+            onPress={() => navigation.navigate("SignupServiceProvider")}
+            cusStyles={{
+              paddingVertical: 20,
+              paddingHorizontal: 20,
+              backgroundColor: "#478a37",
+            }}
+          >
+            {t("Register as sp")}
+          </Button>
+        </View>
+
+        {/* OTP Modal */}
+        <OtpModal
+          visible={otpVisible}
+          phoneNumber={formState.phoneNumber.value}
+          extraData={{ username: formState.username.value }}
+          // here i can control what to return as a response by adding params ********
+          verifyUrl="/auth/customer/signup/verifyOtp"
+          onClose={() => setOtpVisible(false)}
+          onVerify={(data) => {
+            const { accessToken, user } = data;
+            setOtpVisible(false);
+            login(accessToken, user.userRole, user);
+          }}
+        />
+      </View>
+    </ScrollView>
     </View>
   );
 }

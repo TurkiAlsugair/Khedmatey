@@ -58,7 +58,7 @@ export const updateStatus = async (token, orderId, newStatus) => {
 export const prevOrderDetails = async (requestId) => {
   try {
     const response = await axios.get(
-      `${API_BASE_URL}/previousOrderDetails?requestId=${requestId}`
+      `${API_BASE_URL}/previousOrderDetails/fc?requestId=${requestId}`
     );
     return response.data.data;
   } catch (err) {

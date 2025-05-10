@@ -122,6 +122,40 @@ export default function InProgressContent({
     );
   };
 
+  const handleCancelOrder = () => {
+    Alert.alert(
+      "Cancel Order",
+      "Are you sure you want to cancel this order?",
+      [
+        { text: "No", style: "cancel" },
+        {
+          text: "Yes", 
+          style: "default",
+          onPress: async () => {
+            try {
+              await updateStatus(token, order.id, "CANCELLED");
+              changeStatus("CANCELLED");
+              Toast.show({
+                type: "success",
+                text1: "Order cancelled successfully",
+                visibilityTime: 2000,
+                topOffset: hp(7),
+              });
+            } catch (err) {
+              Toast.show({
+                type: "error",
+                text1: "Error",
+                text2: err.response?.data?.message || "Failed to cancel order.",
+                visibilityTime: 2000,
+                topOffset: hp(7),
+              });
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View style={styles.cont}>
       <Text style={styles.topText}>Finished? Generate an Invoice Below.</Text>
@@ -274,6 +308,14 @@ export default function InProgressContent({
         </View>
       )}
 
+      {/* Cancel Order Button */}
+      <Button 
+        onPress={handleCancelOrder} 
+        cusStyles={[styles.cancelButton, !invoice && {     width: wp(45)        }]}
+      >
+        Cancel Order
+      </Button>
+
       <GenerateInvoiceModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
@@ -354,7 +396,11 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   invoiceButton: {
-    alignSelf: "flex-start",
+    width: wp(45) 
+  },
+  cancelButton: {
+    backgroundColor: "#ff4d4d",
+    marginTop: hp(3),
   },
   fuoLabel: {
     textAlign: "center",

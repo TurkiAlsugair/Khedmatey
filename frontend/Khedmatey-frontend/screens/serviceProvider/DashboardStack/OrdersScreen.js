@@ -77,7 +77,7 @@ export default function OrdersScreen({ route, navigation }) {
           combined.push(...cityGroup.requests);
         }
       });
-      
+
       // Sort by ID for now (could be changed to date if needed)
       combined.sort((a, b) => a.id - b.id);
       return combined;
