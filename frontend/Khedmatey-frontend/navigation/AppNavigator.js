@@ -5,7 +5,7 @@ import { AuthContext } from "../context/AuthContext";
 import AuthNavigator from "./AuthNavigator";
 import CustomerNavigator from "./customer/CustomerNavigator";
 import ServiceProviderNavigator from "./serviceProvider/ServiceProviderNavigator";
-import WorkerNavigator from "./WorkerNavigator";
+import WorkerNavigator from "./worker/WorkerNavigator";
 import AdminNavigator from "./admin/AdminNavigator";
 import SplashScreen from "../screens/SplashScreen";
 import i18n from "../locales/i18n";

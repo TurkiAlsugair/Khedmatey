@@ -1,14 +1,15 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateRequestDto } from './dtos/create-request.dto';
 import { DatabaseService } from 'src/database/database.service';
 import { CityName, Status, Request, Customer, Role, WorkerDay, Worker, Service, Location } from '@prisma/client';
 import { isBefore, isAfter, addDays, format, startOfDay } from 'date-fns';
 import { ServiceService } from 'src/service/service.service';
 import { GenerateTokenDto } from 'src/auth/dtos/generate-token.dto';
-import { error } from 'console';
 import { OrderStatusGateway } from 'src/sockets/order-status.gateway';
+import { ServiceProviderService } from 'src/service-provider/service-provider.service';
+import { forwardRef } from '@nestjs/common';
+import { AddInvoiceItemDto } from './dtos/add-invoice-item.dto';
 
-// Add type definition at the top of the file, after imports
 type RequestWithRelations = Request & {
   customer: Customer;
   providerDay: {
@@ -20,13 +21,31 @@ type RequestWithRelations = Request & {
   }>;
   service: Service;
   location: Location;
+  followupService?: {
+    id: string;
+    nameAR: string;
+    nameEN: string;
+    price: string;
+    requiredNbOfWorkers: number;
+    categoryId: number;
+  };
+  followupDailyWorkers?: Array<WorkerDay & {
+    worker: Worker;
+  }>;
+  followUpProviderDay?: {
+    serviceProviderId: string;
+    date: Date;
+  };
 };
 
 @Injectable()
 export class RequestService {
-  private orderStatusSocket: OrderStatusGateway
-  
-    constructor(private prisma: DatabaseService, private serviceService: ServiceService) {}
+  constructor(
+    private prisma: DatabaseService, 
+    private serviceService: ServiceService, 
+    @Inject(forwardRef(() => ServiceProviderService)) private spService: ServiceProviderService,
+    private orderStatusSocket: OrderStatusGateway
+  ) {}
 
     async createRequest(createRequestDto: CreateRequestDto, userId: string) 
     {
@@ -110,7 +129,7 @@ export class RequestService {
 
           //get all workers of provider who are in the same city of the request (each Worker belongs to exactly 1 city)
           const providerWorkersByCity = providerWorkers.filter(
-            (w) => w.city.name === (location.city as CityName)
+            (w) => w.city.name === (city)
           ); 
 
           //find schedule of each worker, if not exist create it
@@ -171,7 +190,7 @@ export class RequestService {
           const newRequest = await tx.request.create({
             data: 
             {
-              status: Status.PENDING_BY_SP,
+              status: Status.PENDING,
               providerDayId: providerDay.id,
               serviceId: service.id,
               customerId: customerId,
@@ -289,38 +308,39 @@ export class RequestService {
             ))
           }
 
+          //unnesseary check because every service requires only 1 worker
           //other wise, check every service if enouph workers are available for it, else, close it for the day.
           //this does not check the avaialbity of a service based on city, that happens on the getService function of the service
-          else 
-          {
-            const services = await tx.service.findMany({
-              where: { serviceProviderId: providerId },
-              select: { id: true, requiredNbOfWorkers: true },
-            });
+          // else 
+          // {
+          //   const services = await tx.service.findMany({
+          //     where: { serviceProviderId: providerId },
+          //     select: { id: true, requiredNbOfWorkers: true },
+          //   });
             
-            await Promise.all(
-              services.map(({ id: svcId, requiredNbOfWorkers }) => {
-                const shouldClose = freeWorkersCount < requiredNbOfWorkers;
+          //   await Promise.all(
+          //     services.map(({ id: svcId, requiredNbOfWorkers }) => {
+          //       const shouldClose = freeWorkersCount < requiredNbOfWorkers;
                 
-                return tx.serviceDay.upsert({
-                  where: {
-                    serviceId_providerDayId: {
-                      serviceId:      svcId,
-                      providerDayId:  providerDay.id,
-                    },
-                  },
-                  update: {
-                    isClosed: shouldClose,
-                  },
-                  create: {
-                    serviceId:       svcId,
-                    providerDayId:   providerDay.id,
-                    isClosed:        shouldClose,
-                  },
-                });
-              }),
-            );
-          }    
+          //       return tx.serviceDay.upsert({
+          //         where: {
+          //           serviceId_providerDayId: {
+          //             serviceId:      svcId,
+          //             providerDayId:  providerDay.id,
+          //           },
+          //         },
+          //         update: {
+          //           isClosed: shouldClose,
+          //         },
+          //         create: {
+          //           serviceId:       svcId,
+          //           providerDayId:   providerDay.id,
+          //           isClosed:        shouldClose,
+          //         },
+          //       });
+          //     }),
+          //   );
+          // }      
           return newRequest;
         });
 
@@ -328,10 +348,10 @@ export class RequestService {
 
     /*
     returns the requests that belongs to the requester.
-    if no status filter provided, returns requests filtered by status, otherwise return one array of requests.
+    For service providers, requests are grouped by city instead of status.
     */
     async getRequests(
-      user: GenerateTokenDto,status?: Status): Promise<Request[] | Record<Status, Request[]>> {
+      user: GenerateTokenDto, statuses?: Status[]): Promise<Request[] | Record<Status, Request[]> | Record<string, Request[]>> {
 
       //1- build the base filter by role
       const where: any = {};
@@ -354,28 +374,89 @@ export class RequestService {
       }
   
       //2- add optional status filter
-      if (status) {
-        where.status = status;
+      if (statuses && statuses.length > 0) {
+        where.status = { in: statuses };
       }
   
       //3- fetch with all relevant relations
       const requests = await this.prisma.request.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          status: true,
+          notes: true,
+          createdAt: true,
+          // Excluding: customerId, serviceId, locationId, providerDayId, followUpProviderDayId
           customer: true,
-          providerDay: { select: { date: true, serviceProviderId: true } },
-          dailyWorkers: { include: { worker: true } },
+          providerDay: { 
+            select: { 
+              date: true, 
+              serviceProviderId: true 
+            } 
+          },
+          dailyWorkers: { 
+            include: { 
+              worker: true 
+            } 
+          },
+          service: {
+            include: {
+              serviceProvider: {
+                select: {
+                  id: true,
+                  username: true
+                }
+              }
+            }
+          },
+          location: true,
+          followupService: true,
+          followupDailyWorkers: {
+            include: {
+              worker: true
+            }
+          },
+          followUpProviderDay: { 
+            select: {
+              date: true,
+              serviceProviderId: true
+            }
+          },
+          invoiceItems: true,
+          feedback: {
+            select: {
+              rating: true,
+              review: true
+            }
+          },
+          complaint: {
+            select: {
+              description: true,
+              createdAt: true
+            }
+          }
         },
         orderBy: { createdAt: 'desc' },
-      });
-      console.log(requests)
+      }) as unknown as Request[];
+
+      //5- group request
   
-      //4- if specific status, return requests as is 
-      if (status) {
-        return requests;
+      //if user is service provider, group by city instead of status
+      if (user.role === Role.SERVICE_PROVIDER) {
+        const groupedByCity: Record<string, Request[]> = {};
+        
+        for (const req of requests) {
+          const location = (req as any).location;
+          const city = location.city;
+          if (!groupedByCity[city]) {
+            groupedByCity[city] = [];
+          }
+          groupedByCity[city].push(req);
+        }
+        
+        return groupedByCity;
       }
-  
-      //5- otherwise group by status
+      
       const grouped = Object.values(Status).reduce((acc, s) => {
         acc[s] = [];
         return acc;
@@ -385,6 +466,18 @@ export class RequestService {
         grouped[req.status].push(req);
       }
       return grouped;
+    }
+
+    // Helper method to check if worker is assigned to a request (either original or follow-up)
+    private isWorkerAssignedToRequest(request: RequestWithRelations, workerId: string): boolean {
+      // If request has a follow-up service, only follow-up workers can change status
+      if (request.followupService) {
+        // Only allow follow-up workers to change status
+        return request.followupDailyWorkers?.some(dw => dw.worker.id === workerId) || false;
+      }
+      
+      // If no follow-up service, check regular assignment
+      return request.dailyWorkers?.some(dw => dw.worker.id === workerId) || false;
     }
 
     async updateStatus(id: string, user: GenerateTokenDto, newStatus: Status) {
@@ -406,7 +499,19 @@ export class RequestService {
             } 
           },
           service: true,
-          location: true
+          location: true,
+          followupService: true,
+          followupDailyWorkers: {
+            include: {
+              worker: true
+            }
+          },
+          followUpProviderDay: {
+            select: {
+              serviceProviderId: true,
+              date: true
+            }
+          }
         },
       }) as RequestWithRelations;
       
@@ -461,7 +566,7 @@ export class RequestService {
       const tenMinutesMs = 10 * 60 * 1000;
       const age = nowMs - request.createdAt.getTime();
 
-      if(request.status !== Status.PENDING_BY_SP){
+      if(request.status !== Status.PENDING){
         return false;
       }
 
@@ -477,9 +582,9 @@ export class RequestService {
     }
 
     async handleAccepted(request: RequestWithRelations, user: GenerateTokenDto, serviceProviderId: string){
-      //validate current status - can only accept from PENDING_BY_SP
-      if (request.status !== Status.PENDING_BY_SP) {
-        throw new BadRequestException(`Cannot accept a request that is not in PENDING_BY_SP status (current: ${request.status})`);
+      //validate current status - can only accept from PENDING
+      if (request.status !== Status.PENDING) {
+        throw new BadRequestException(`Cannot accept a request that is not in PENDING status (current: ${request.status})`);
       }
 
       //validate role
@@ -494,7 +599,6 @@ export class RequestService {
         );
       }
       
-
       return this.prisma.request.update({
         where: { id: request.id },
         data: { status: Status.ACCEPTED },
@@ -502,9 +606,9 @@ export class RequestService {
     }
 
     async handleDeclined(request: RequestWithRelations, user: GenerateTokenDto, serviceProviderId: string){
-      //validate current status - can only decline from PENDING_BY_SP
-      if (request.status !== Status.PENDING_BY_SP) {
-        throw new BadRequestException(`Cannot decline a request that is not in PENDING_BY_SP status (current: ${request.status})`);
+      //validate current status - can only decline from PENDING
+      if (request.status !== Status.PENDING) {
+        throw new BadRequestException(`Cannot decline a request that is not in PENDING status (current: ${request.status})`);
       }
 
       //validate role
@@ -530,9 +634,9 @@ export class RequestService {
       //validate current status based on role
       if (user.role === Role.CUSTOMER)
       {
-        //customers can cancel PENDING_BY_SP or ACCEPTED requests
-        if (request.status !== Status.PENDING_BY_SP && request.status !== Status.ACCEPTED) {
-          throw new BadRequestException(`Customers can only cancel requests in PENDING_BY_SP or ACCEPTED status (current: ${request.status})`);
+        //customers can cancel PENDING or ACCEPTED requests
+        if (request.status !== Status.PENDING && request.status !== Status.ACCEPTED && request.status !== Status.FINISHED) {
+          throw new BadRequestException(`Customers can only cancel requests in PENDING or ACCEPTED status (current: ${request.status})`);
         }
 
         //verify ownership
@@ -543,9 +647,9 @@ export class RequestService {
 
       else if (user.role === Role.SERVICE_PROVIDER) 
       {
-        //service providers can only cancel PENDING_BY_SP requests
-        if (request.status !== Status.PENDING_BY_SP) {
-          throw new BadRequestException(`Service providers can only cancel requests in PENDING_BY_SP status (current: ${request.status})`);
+        //service providers can only cancel PENDING requests
+        if (request.status !== Status.PENDING) {
+          throw new BadRequestException(`Service providers can only cancel requests in PENDING status (current: ${request.status})`);
         }
 
         //verify ownership
@@ -560,20 +664,40 @@ export class RequestService {
           throw new BadRequestException(`Workers can only cancel requests in ACCEPTED, COMING, or IN_PROGRESS status (current: ${request.status})`);
         }
 
-        //verify assignment
-        const isWorkerAssigned = request.dailyWorkers.some(dw => dw.worker.id === user.id);
-        if (!isWorkerAssigned) {
-          throw new ForbiddenException('You are not assigned to this request');
+        //verify assignment - check if authorized to change this request
+        if (!this.isWorkerAssignedToRequest(request, user.id)) {
+          if (request.followupService) {
+            throw new ForbiddenException('This request has a follow-up service. Only follow-up workers can change its status.');
+          } 
+          else {
+            throw new ForbiddenException('You are not assigned to this request');
+          }
         }
       } 
       else {
         throw new ForbiddenException('Your role cannot cancel requests');
       }
       
-      return this.prisma.request.update({
-        where: { id: request.id },
-        data: { status: Status.CANCELED },
+      // Check if the request has invoice items
+      const invoiceItems = await this.prisma.invoiceItem.findMany({
+        where: { requestId: request.id }
       });
+
+      // If request has invoice items, set status to INVOICED instead of CANCELED
+      const newStatus = invoiceItems.length > 0 ? Status.INVOICED : Status.CANCELED;
+      
+      const updatedRequest = await this.prisma.request.update({
+        where: { id: request.id },
+        data: { status: newStatus },
+      });
+
+      if (newStatus === Status.INVOICED) {
+        this.orderStatusSocket.emitOrderStatusUpdate(updatedRequest.id, Status.INVOICED);
+      } else {
+        this.orderStatusSocket.emitOrderStatusUpdate(updatedRequest.id, Status.CANCELED);
+      }
+
+      return updatedRequest;
     }
 
     async handleComing(request: RequestWithRelations, user: GenerateTokenDto){
@@ -587,10 +711,13 @@ export class RequestService {
         throw new ForbiddenException('Only workers can mark a request as coming');
       }
       
-      //check if this worker is assigned to this request
-      const isWorkerAssigned = request.dailyWorkers.some(dw => dw.worker.id === user.id);
-      if (!isWorkerAssigned) {
-        throw new ForbiddenException('You are not assigned to this request');
+      //check if this worker is authorized to change this request
+      if (!this.isWorkerAssignedToRequest(request, user.id)) {
+        if (request.followupService) {
+          throw new ForbiddenException('This request has a follow-up service. Only follow-up workers can change its status.');
+        } else {
+          throw new ForbiddenException('You are not assigned to this request');
+        }
       }
       
       return this.prisma.request.update({
@@ -610,10 +737,13 @@ export class RequestService {
         throw new ForbiddenException('Only workers can mark a request as in progress');
       }
       
-      //check if this worker is assigned to this request
-      const isWorkerAssigned = request.dailyWorkers.some(dw => dw.worker.id === user.id);
-      if (!isWorkerAssigned) {
-        throw new ForbiddenException('You are not assigned to this request');
+      //check if this worker is authorized to change this request
+      if (!this.isWorkerAssignedToRequest(request, user.id)) {
+        if (request.followupService) {
+          throw new ForbiddenException('This request has a follow-up service. Only follow-up workers can change its status.');
+        } else {
+          throw new ForbiddenException('You are not assigned to this request');
+        }
       }
       
       return this.prisma.request.update({
@@ -633,10 +763,13 @@ export class RequestService {
         throw new ForbiddenException('Only workers can mark a request as finished');
       }
       
-      //check if this worker is assigned to this request
-      const isWorkerAssigned = request.dailyWorkers.some(dw => dw.worker.id === user.id);
-      if (!isWorkerAssigned) {
-        throw new ForbiddenException('You are not assigned to this request');
+      //check if this worker is authorized to change this request
+      if (!this.isWorkerAssignedToRequest(request, user.id)) {
+        if (request.followupService) {
+          throw new ForbiddenException('This request has a follow-up service. Only follow-up workers can change its status.');
+        } else {
+          throw new ForbiddenException('You are not assigned to this request');
+        }
       }
       
       return this.prisma.request.update({
@@ -646,8 +779,8 @@ export class RequestService {
     }
 
     async handleInvoiced(request: RequestWithRelations, user: GenerateTokenDto){
-      //validate current status - can only transition to INVOICED from FINISHED
-      if (request.status !== Status.FINISHED) {
+      //validate current status - can only transition to INVOICED from IN_PROGRESS
+      if (request.status !== Status.IN_PROGRESS) {
         throw new BadRequestException(`Can only set to INVOICED from FINISHED status (current: ${request.status})`);
       }
 
@@ -656,10 +789,13 @@ export class RequestService {
         throw new ForbiddenException('Only workers can mark a request as invoiced');
       }
       
-      //check if this worker is assigned to this request
-      const isWorkerAssigned = request.dailyWorkers.some(dw => dw.worker.id === user.id);
-      if (!isWorkerAssigned) {
-        throw new ForbiddenException('You are not assigned to this request');
+      //check if this worker is authorized to change this request
+      if (!this.isWorkerAssignedToRequest(request, user.id)) {
+        if (request.followupService) {
+          throw new ForbiddenException('This request has a follow-up service. Only follow-up workers can change its status.');
+        } else {
+          throw new ForbiddenException('You are not assigned to this request');
+        }
       }
       
       return this.prisma.request.update({
@@ -751,5 +887,590 @@ export class RequestService {
         parsed.getMonth() === month - 1 &&
         parsed.getDate() === day
       );
+    }
+
+    async scheduleFollowupAppointment(requestId: string, date: string, userId: string) {
+
+      //1- Basic checks
+
+      //validate the request exists and has a follow-up service
+      const request = await this.prisma.request.findUnique({
+        where: { id: requestId },
+        include: {
+          service: {
+            include: { 
+              serviceProvider: true,
+              category: true
+            }
+          },
+          followupService: true,
+          customer: true,
+          location: true
+        }
+      });
+
+      if (!request) {
+        throw new NotFoundException('Request not found');
+      }
+
+      if (!request.followupService) {
+        throw new BadRequestException('This request does not have a follow-up service');
+      }
+
+      //verify the request belongs to the customer
+      if (request.customerId !== userId) {
+        throw new ForbiddenException('You do not have permission to schedule this follow-up appointment');
+      }
+
+      //verify the request is in the correct state
+      if (request.status !== Status.FINISHED) {
+        throw new BadRequestException('Cannot schedule follow-up for a request that is not in FINISHED state');
+      }
+
+      //validate and format the date
+      const requestDate = this.validateDate(date);
+
+      const providerId = request.service.serviceProviderId;
+
+      //2- Check if date is available
+      const { busyDates, blockedDates } = await this.spService.getNext30DaysSchedule(providerId, request.location.city);
+      console.log("busyDates", busyDates)
+      console.log("blockedDates", blockedDates)
+      if(busyDates.includes(format(requestDate, 'yyyy-MM-dd')) || blockedDates.includes(format(requestDate, 'yyyy-MM-dd'))){
+        throw new BadRequestException("This service is closed for that day");
+      }
+
+      const providerDay = await this.prisma.providerDay.upsert({
+        where: {
+          date_serviceProviderId: {
+            date: requestDate,              
+            serviceProviderId: providerId,
+          },
+        },
+        update: {},
+        create: {                           
+          date: requestDate,
+          serviceProviderId: providerId,
+          isClosed: false,                  
+          isBusy: false,
+        },
+        include: {
+          serviceProvider: true
+        }
+      });
+
+      //update the request with the follow-up date and change status
+      return this.prisma.$transaction(async (tx) => {
+
+        //get workers from the same city as the original request
+        const providerWorkers = await tx.worker.findMany({
+          where: {
+            serviceProviderId: providerId,
+          },
+          select: { id: true, city: true },
+        });
+
+        const city = await this.serviceService.parseCity(request.location.city);
+        const providerWorkersByCity = providerWorkers.filter(
+          (w) => w.city.name === city
+        );
+
+        const dayWorkers = await Promise.all(
+          providerWorkersByCity.map((w) =>
+            tx.workerDay.upsert({
+              where: {
+                workerId_providerDayId: 
+                { 
+                  workerId: w.id, 
+                  providerDayId: providerDay.id 
+                },
+              },
+              update: {}, 
+              create: {
+                workerId: w.id,
+                providerDayId: providerDay.id,
+                nbOfAssignedRequests: 0,
+                capacity: 2,         
+              },
+              include: {
+                worker: true
+              }
+            }),
+          ),
+        );
+
+        const availableDayWorkers = dayWorkers.filter(
+          (dw) => dw.nbOfAssignedRequests < dw.capacity,
+        );
+
+        const neededWorkers = request.followupService!.requiredNbOfWorkers;
+
+        if (availableDayWorkers.length < neededWorkers) {
+          throw new BadRequestException('Not enough workers available for this follow-up service in the selected city');
+        }
+
+        const chosenWorkers = availableDayWorkers.slice(0, neededWorkers);
+
+        //update the original request
+        const updatedRequest = await tx.request.update({
+          where: { id: requestId },
+          data: {
+            status: Status.PENDING,
+            followUpProviderDayId: providerDay.id,
+            followupDailyWorkers: {
+              connect: chosenWorkers.map(dw => ({ id: dw.id }))
+            }
+          },
+          include: {
+            service: true,
+            followupService: true,
+            location: true,
+            customer: true,
+            dailyWorkers: {
+              include: {
+                worker: true
+              }
+            },
+            followupDailyWorkers: {
+              include: {
+                worker: true
+              }
+            },
+            providerDay: true,
+            followUpProviderDay: true
+          }
+        });
+
+        //update counts  
+        await Promise.all(
+          chosenWorkers.map(worker => 
+            tx.workerDay.update({
+              where: { id: worker.id },
+              data: { nbOfAssignedRequests: { increment: 1 } }
+            })
+          )
+        );
+        await tx.providerDay.update({
+          where: { id: providerDay.id },
+          data: { totalRequestsCount: { increment: 1 } }
+        });
+
+        //update schedules
+        const updatedDayWorkers = await Promise.all(
+          providerWorkers.map((w) =>
+            tx.workerDay.upsert(
+            {
+              where: 
+              {
+                workerId_providerDayId: 
+                {
+                  workerId:      w.id,
+                  providerDayId: providerDay.id,
+                },
+              },
+              update: {},
+              create: 
+              {
+                workerId:             w.id,
+                providerDayId:        providerDay.id,
+                nbOfAssignedRequests: 0,
+                capacity:             2,
+              },
+              select: 
+              {
+                id:                   true,
+                workerId:             true,
+                nbOfAssignedRequests: true,
+                capacity:             true,
+              },
+            }),
+          ),
+        );
+
+        //get number of free workers to check if we should close the provider day
+        const freeWorkersCount = updatedDayWorkers.filter(dw => dw.nbOfAssignedRequests < dw.capacity).length;
+        
+        //close entire day for service provider if no workers are left
+        if (freeWorkersCount === 0) 
+        {
+          await tx.providerDay.update({
+            where: { id: providerDay.id },
+            data: { isBusy: true }
+          });
+
+          //close all services for this day
+          const services = await tx.service.findMany({
+            where: { serviceProviderId: providerId },
+            select: { id: true, requiredNbOfWorkers: true },
+          });
+          await Promise.all(services.map(({ id: svcId }) => 
+            tx.serviceDay.upsert(
+            { 
+              where: 
+              {
+                serviceId_providerDayId: {
+                  serviceId:      svcId,
+                  providerDayId:  providerDay.id,
+                },
+              },
+              update: {
+                isClosed: true,
+              },
+              create: {
+                serviceId:       svcId,
+                providerDayId:   providerDay.id,
+                isClosed:        true,
+              },
+            })
+          ));
+        }
+        //unnecssary code now because every service needs only 1 worker
+        // // Otherwise check each service if enough workers are available
+        // else 
+        // {
+        //   const services = await tx.service.findMany({
+        //     where: { serviceProviderId: providerId },
+        //     select: { id: true, requiredNbOfWorkers: true },
+        //   });
+          
+        //   await Promise.all(
+        //     services.map(({ id: svcId, requiredNbOfWorkers }) => {
+        //       const shouldClose = freeWorkersCount < requiredNbOfWorkers;
+              
+        //       return tx.serviceDay.upsert({
+        //         where: {
+        //           serviceId_providerDayId: {
+        //             serviceId:      svcId,
+        //             providerDayId:  providerDay.id,
+        //           },
+        //         },
+        //         update: {
+        //           isClosed: shouldClose,
+        //         },
+        //         create: {
+        //           serviceId:       svcId,
+        //           providerDayId:   providerDay.id,
+        //           isClosed:        shouldClose,
+        //         },
+        //       });
+        //     }),
+        //   );
+        // }      
+
+        return updatedRequest;
+      });
+    }
+
+    async getRequestById(id: string, user: GenerateTokenDto): Promise<Request> {
+      //Build a where object based on user role and request ID
+      const where: any = { id };
+      
+      switch (user.role) {
+        case Role.SERVICE_PROVIDER:
+          // The provider is the same for both original and follow-up services
+          where.providerDay = {
+            is: {
+              serviceProviderId: user.id,
+            },
+          };
+          break;
+        case Role.CUSTOMER:
+          where.customerId = user.id;
+          break;
+        case Role.WORKER:
+          where.OR = [
+            { dailyWorkers: { some: { workerId: user.id } } },
+            { followupDailyWorkers: { some: { workerId: user.id } } }
+          ];
+          break;
+        case Role.ADMIN:
+          break;
+        default:
+          throw new ForbiddenException('Invalid role');
+      }
+
+      const request = await this.prisma.request.findFirst({
+        where,
+        select: {
+          id: true,
+          status: true,
+          notes: true,
+          createdAt: true,
+          customer: true,
+          providerDay: { 
+            select: { 
+              date: true, 
+              serviceProviderId: true 
+            } 
+          },
+          dailyWorkers: { 
+            include: { 
+              worker: true 
+            } 
+          },
+          service: {
+            include: {
+              serviceProvider: {
+                select: {
+                  id: true,
+                  username: true
+                }
+              }
+            }
+          },
+          location: true,
+          followupService: true,
+          followupDailyWorkers: {
+            include: {
+              worker: true
+            }
+          },
+          followUpProviderDay: { 
+            select: {
+              date: true,
+              serviceProviderId: true
+            }
+          },
+          invoiceItems: true,
+          feedback: {
+            select: {
+              rating: true,
+              review: true
+            }
+          },
+          complaint: {
+            select: {
+              description: true,
+              createdAt: true
+            }
+          }
+        },
+      }) as unknown as Request;
+
+      if (!request) {
+        throw new NotFoundException(`Request with id ${id} not found or you don't have permission to access it`);
+      }
+
+      return request;
+    }
+
+    async addInvoiceItem(requestId: string, userId: string, addInvoiceItemDto: AddInvoiceItemDto) {
+      try {
+        const request = await this.prisma.request.findUnique({
+          where: { id: requestId },
+          include: {
+            service: {
+              include: {
+                serviceProvider: true
+              }
+            },
+            customer: true,
+            dailyWorkers: { 
+              include: { 
+                worker: true 
+              } 
+            },
+            followupService: true,
+            followupDailyWorkers: {
+              include: {
+                worker: true
+              }
+            }
+          }
+        });
+
+        if (!request) {
+          throw new NotFoundException('Request not found');
+        }
+
+        const service = await this.prisma.service.findUnique({
+          where: { id: request.serviceId },
+          include: { serviceProvider: true }
+        });
+
+        if (!service) {
+          throw new NotFoundException('Service not found');
+        }
+
+        //check permissions
+        const user = await this.prisma.serviceProvider.findUnique({
+          where: { id: userId }
+        });
+        const worker = await this.prisma.worker.findUnique({
+          where: { id: userId }
+        });
+
+        if (!user && !worker) {
+          throw new ForbiddenException('Only service providers and workers can add invoice items');
+        }
+
+        //if user is service provider, check if request belongs to their service
+        if (user && service.serviceProviderId !== userId) {
+          throw new ForbiddenException('You can only add invoice items to your own service requests');
+        }
+
+        //if user is worker, check if worker is assigned to the request
+        if (worker) 
+        {
+          //for requests with follow-up service, check if the worker is assigned to the follow-up
+          if (request.followupService) 
+          {
+            const isFollowupWorker = request.followupDailyWorkers?.some(
+              dw => dw.worker.id === userId
+            );
+            if (!isFollowupWorker) {
+              throw new ForbiddenException('You are not assigned to this follow-up request');
+            }
+          } 
+          else 
+          {
+            // For regular requests, check if worker is in the daily workers
+            const isAssignedWorker = request.dailyWorkers?.some(
+              dw => dw.worker.id === userId
+            );
+            if (!isAssignedWorker) {
+              throw new ForbiddenException('You are not assigned to this request');
+            }
+          }
+        }
+
+        //create the invoice item
+        await this.prisma.invoiceItem.create({
+          data: {
+            description: addInvoiceItemDto.description,
+            price: addInvoiceItemDto.price,
+            requestId: requestId
+          }
+        });
+
+        //get all invoice items
+        const invoiceItems = await this.prisma.invoiceItem.findMany({
+          where: { requestId }
+        });
+
+        return {
+          ...request,
+          invoiceItems
+        };
+      } 
+      catch (error) {
+        throw error;
+      }
+    }
+
+    
+    async addFeedback(requestId: string, userId: string, data: { rating: number, review?: string }) {
+
+      const request = await this.prisma.request.findUnique({
+        where: { id: requestId },
+        include: {
+          service: {
+            include: {
+              serviceProvider: true,
+            },
+          },
+          feedback: true,
+        },
+      });
+
+      if (!request) {
+        throw new NotFoundException('Request not found');
+      }
+
+      if (request.customerId !== userId) {
+        throw new ForbiddenException('You can only provide feedback for your own requests');
+      }
+
+      const allowedStatuses = ['PAID'];
+      if (!allowedStatuses.includes(request.status)) {
+        throw new BadRequestException('Feedback can only be provided for completed requests');
+      }
+
+      if (request.feedback) {
+        throw new BadRequestException('Feedback has already been provided for this request');
+      }
+
+      const serviceProviderId = request.service.serviceProvider.id;
+
+      const feedback = await this.prisma.requestFeedback.create({
+        data: {
+          rating: data.rating,
+          review: data.review,
+          request: { connect: { id: requestId } },
+          serviceProvider: { connect: { id: serviceProviderId } },
+        },
+      });
+
+      //update the service provider's average rating
+      await this.updateServiceProviderRating(serviceProviderId);
+
+      return feedback;
+    }
+
+    /**
+     * Calculate and update the average rating for a service provider
+     */
+    private async updateServiceProviderRating(serviceProviderId: string) {
+      
+      //get all feedbacks for the service provider
+      const feedbacks = await this.prisma.requestFeedback.findMany({
+        where: { serviceProviderId },
+        select: { rating: true },
+      });
+
+      if (feedbacks.length > 0) {
+        const avgRating = feedbacks.reduce((sum, fb) => sum + fb.rating, 0) / feedbacks.length;
+        
+        await this.prisma.serviceProvider.update({
+          where: { id: serviceProviderId },
+          data: { avgRating },
+        });
+
+        return avgRating;
+      }
+
+      return null;
+    }
+
+    /**
+     * Add a complaint for a request
+     */
+    async addComplaint(requestId: string, userId: string, data: { description: string }) {
+
+      const request = await this.prisma.request.findUnique({
+        where: { id: requestId },
+        include: {
+          service: {
+            include: {
+              serviceProvider: true,
+            },
+          },
+          complaint: true,
+        },
+      });
+
+      if (!request) {
+        throw new NotFoundException('Request not found');
+      }
+
+      if (request.customerId !== userId) {
+        throw new ForbiddenException('You can only provide complaints for your own requests');
+      }
+
+      if (request.complaint) {
+        throw new BadRequestException('A complaint has already been submitted for this request');
+      }
+
+      const serviceProviderId = request.service.serviceProvider.id;
+
+      const complaint = await this.prisma.complaint.create({
+        data: {
+          description: data.description,
+          request: { connect: { id: requestId } },
+          serviceProvider: { connect: { id: serviceProviderId } },
+        },
+      });
+
+      return complaint;
     }
 }

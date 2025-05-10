@@ -35,7 +35,7 @@ export class AuthService {
       throw new NotFoundException("User not found");
     }
 
-    //verify otp
+    // //verify otp
     // try {
     //   await this.twilio.verifyOtp(userPhoneNumber, code);
     //   } catch (err) {

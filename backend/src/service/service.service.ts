@@ -22,10 +22,10 @@ export class ServiceService {
       throw new NotFoundException('Service provider not found');
     }
     
-    // // Check if the provider is ACCEPTED
-    // if (serviceProvider.status !== 'ACCEPTED') {
-    //   throw new BadRequestException('Only ACCEPTED service providers can create services');
-    // }
+    // Check if the provider is ACCEPTED
+    if (serviceProvider.status !== 'ACCEPTED') {
+      throw new BadRequestException('Only ACCEPTED service providers can create services');
+    }
 
     //validate category exists
     const category = await this.prisma.category.findUnique({
@@ -155,6 +155,8 @@ export class ServiceService {
         category: true,
       },
     });
+
+    console.log(services);
 
     const grouped = services.reduce<
     {
@@ -337,18 +339,18 @@ export class ServiceService {
 
       //city specific close (not enough workers in city)
       if(cityFilter)
-        {
-          const dayWorkers = r.WorkerDays ?? [];
-          // count how many are fully booked
-          const closedWorkersCount = dayWorkers.filter(
-            (dw) => dw.nbOfAssignedRequests >= dw.capacity).length;
-          
-          const freeWorkersCount = (totalCityWorkers! - closedWorkersCount);
-          if (freeWorkersCount < service.requiredNbOfWorkers) {
-            unavailableMap.set(key, true);
-            continue;
-          }
+      {
+        const dayWorkers = r.WorkerDays ?? [];
+        // count how many are fully booked
+        const closedWorkersCount = dayWorkers.filter(
+          (dw) => dw.nbOfAssignedRequests >= dw.capacity).length;
+        
+        const freeWorkersCount = (totalCityWorkers! - closedWorkersCount);
+        if (freeWorkersCount < service.requiredNbOfWorkers) {
+          unavailableMap.set(key, true);
+          continue;
         }
+      }
     }
 
     //walk each day in the interval and collect ISO strings for unavailable ones

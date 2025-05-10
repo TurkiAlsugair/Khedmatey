@@ -8,9 +8,11 @@ import { Colors } from "../../../constants/styles";
 import Option from "../../../components/MoreScreen/Option";
 import { useContext } from "react";
 import { AuthContext } from "../../../context/AuthContext";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function MoreScreen({ navigation }) {
   const { userInfo, logout } = useContext(AuthContext);
+  const insets = useSafeAreaInsets();
 
   const handleLogout = () => {
     Alert.alert("Confirm Logout", "Are you sure you want to log out?", [
@@ -29,7 +31,7 @@ export default function MoreScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.mainCont}>
+    <View style={[styles.mainCont, { paddingTop: insets.top + hp(1.5) }]}>
       <Text style={styles.title}>{userInfo?.username}</Text>
       <View style={styles.contentCont}>
         <View>
@@ -57,6 +59,7 @@ export default function MoreScreen({ navigation }) {
             otherIcon="chevron-forward-outline"
             onPress={() => console.log("go to language screen")}
           />
+
           <Option
             optionText="Logout"
             optionIcon="log-out-outline"
@@ -74,7 +77,7 @@ export default function MoreScreen({ navigation }) {
 const styles = StyleSheet.create({
   mainCont: {
     flex: 1,
-    paddingTop: hp(1.7),
+    // paddingTop: hp(1.7),
     backgroundColor: Colors.background,
   },
   title: {

@@ -174,6 +174,44 @@ export class AdminService {
     }
   }
 
+  async getAllComplaints() {
+    const complaints = await this.prisma.complaint.findMany({
+      include: {
+        request: {
+          include: {
+            customer: true,
+            service: true,
+            location: true,
+          }
+        },
+        serviceProvider: {
+          select: {
+            id: true,
+            username: true,
+            phoneNumber: true,
+            email: true,
+            avgRating: true,
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    if (complaints.length === 0) {
+      return {
+        message: 'No complaints found',
+        data: []
+      };
+    }
+
+    return {
+      message: 'Complaints retrieved successfully',
+      data: complaints,
+    };
+  }
+
   async getAllUnhandledRequests(): Promise<AllUnhandledRequestsResponseDto> {
     //get all unhandled requests
     const unhandledRequests = await this.prisma.request.findMany({

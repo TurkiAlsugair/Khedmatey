@@ -31,15 +31,33 @@ export const ServicesProvider = ({ children }) => {
   const fetchServices = async () => {
     try {
       setLoadingServices(true);
+
       const response = await axios.get(`${API_BASE_URL}/services`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const fetched = response.data.data.services;
-      setServicesData(fetched);
+      // rawCategories has { id, categoryName, services: [ { id, … }, … ] }
+      const rawCategories = response.data.data.services;
 
-      if (!activeCategoryId && fetched.length > 0) {
-        setActiveCategoryId(fetched[0].categoryId);
+      // remap ids into the shape your UI expects
+      const shaped = rawCategories.map((cat) => ({
+        categoryId: cat.id, // ← rename here
+        categoryName: cat.categoryName,
+        services: cat.services.map((svc) => ({
+          serviceId: svc.id, // ← and here
+          nameEN: svc.nameEN,
+          nameAR: svc.nameAR,
+          price: svc.price,
+          workersNeeded: svc.workersNeeded,
+          // ...any other svc fields you use
+        })),
+      }));
+
+      setServicesData(shaped);
+
+      // pick a default activeCategoryId as before
+      if (!activeCategoryId && shaped.length > 0) {
+        setActiveCategoryId(shaped[0].categoryId);
       }
 
       setError("");
