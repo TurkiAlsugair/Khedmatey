@@ -11,6 +11,7 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { UpdateRequestStatusDto } from './dtos/update-status.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { AddInvoiceItemDto } from './dtos/add-invoice-item.dto';
+import { CreateFeedbackDto } from './dtos/feedback.dto';
 
 @ApiTags('request')
 @Controller('request')
@@ -460,6 +461,57 @@ export class RequestController {
           data 
         };
       } catch (error) {
+        throw error;
+      }
+    }
+
+    @ApiOperation({ 
+      summary: 'Add feedback for a request', 
+      description: 'Submit a rating and optional review for a completed request. Only the customer who created the request can submit feedback.' 
+    })
+    @ApiParam({ name: 'id', description: 'Request ID', type: 'string' })
+    @ApiBody({ type: CreateFeedbackDto })
+    @ApiResponse({ 
+      status: 200, 
+      description: 'Feedback submitted successfully',
+      schema: {
+        type: 'object',
+        properties: {
+          message: {
+            type: 'string',
+            example: 'Feedback submitted successfully'
+          },
+          data: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'feedback-uuid' },
+              rating: { type: 'number', example: 4.5 },
+              review: { type: 'string', example: 'Great service!' },
+              requestId: { type: 'string', example: 'request-uuid' },
+              serviceProviderId: { type: 'string', example: 'service-provider-uuid' },
+              createdAt: { type: 'string', format: 'date-time' }
+            }
+          }
+        }
+      }
+    })
+    @ApiResponse({ status: 400, description: 'Bad request - Request not in completed state or feedback already exists' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Not authorized to provide feedback for this request' })
+    @ApiResponse({ status: 404, description: 'Request not found' })
+    @ApiBearerAuth('JWT-auth')
+    @Roles(Role.CUSTOMER)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Post(':id/feedback')
+    async addFeedback(@Param('id') id: string, @Body() feedbackDto: CreateFeedbackDto, @CurrentUser() user: GenerateTokenDto): Promise<BaseResponseDto> {
+      try {
+        const feedback = await this.requestService.addFeedback(id, user.id, feedbackDto);
+        return {
+          message: 'Feedback submitted successfully',
+          data: feedback,
+        };
+      } 
+      catch (error) {
         throw error;
       }
     }

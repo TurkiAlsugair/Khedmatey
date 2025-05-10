@@ -422,7 +422,13 @@ export class RequestService {
               serviceProviderId: true
             }
           },
-          invoiceItems: true
+          invoiceItems: true,
+          feedback: {
+            select: {
+              rating: true,
+              review: true
+            }
+          }
         },
         orderBy: { createdAt: 'desc' },
       }) as unknown as Request[];
@@ -1219,7 +1225,13 @@ export class RequestService {
               serviceProviderId: true
             }
           },
-          invoiceItems: true
+          invoiceItems: true,
+          feedback: {
+            select: {
+              rating: true,
+              review: true
+            }
+          }
         },
       }) as unknown as Request;
 
@@ -1332,5 +1344,79 @@ export class RequestService {
       catch (error) {
         throw error;
       }
+    }
+
+    
+    async addFeedback(requestId: string, userId: string, data: { rating: number, review?: string }) {
+
+      const request = await this.prisma.request.findUnique({
+        where: { id: requestId },
+        include: {
+          service: {
+            include: {
+              serviceProvider: true,
+            },
+          },
+          feedback: true,
+        },
+      });
+
+      if (!request) {
+        throw new NotFoundException('Request not found');
+      }
+
+      if (request.customerId !== userId) {
+        throw new ForbiddenException('You can only provide feedback for your own requests');
+      }
+
+      const allowedStatuses = ['PAID'];
+      if (!allowedStatuses.includes(request.status)) {
+        throw new BadRequestException('Feedback can only be provided for completed requests');
+      }
+
+      if (request.feedback) {
+        throw new BadRequestException('Feedback has already been provided for this request');
+      }
+
+      const serviceProviderId = request.service.serviceProvider.id;
+
+      const feedback = await this.prisma.requestFeedback.create({
+        data: {
+          rating: data.rating,
+          review: data.review,
+          request: { connect: { id: requestId } },
+          serviceProvider: { connect: { id: serviceProviderId } },
+        },
+      });
+
+      //update the service provider's average rating
+      await this.updateServiceProviderRating(serviceProviderId);
+
+      return feedback;
+    }
+
+    /**
+     * Calculate and update the average rating for a service provider
+     */
+    private async updateServiceProviderRating(serviceProviderId: string) {
+      
+      //get all feedbacks for the service provider
+      const feedbacks = await this.prisma.requestFeedback.findMany({
+        where: { serviceProviderId },
+        select: { rating: true },
+      });
+
+      if (feedbacks.length > 0) {
+        const avgRating = feedbacks.reduce((sum, fb) => sum + fb.rating, 0) / feedbacks.length;
+        
+        await this.prisma.serviceProvider.update({
+          where: { id: serviceProviderId },
+          data: { avgRating },
+        });
+
+        return avgRating;
+      }
+
+      return null;
     }
 }
