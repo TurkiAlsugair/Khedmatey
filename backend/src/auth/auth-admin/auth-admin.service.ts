@@ -6,7 +6,7 @@ import { AuthService } from '../auth.service';
 import { TwilioService } from 'src/twilio/twilio.service';
 
 @Injectable()
-export class AdminService {
+export class AuthAdminService {
 
 constructor(private prisma: DatabaseService,private twilio: TwilioService, private authService: AuthService ) {}
 
