@@ -1,9 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from "@nestjs/common";
 import { DatabaseService } from "src/database/database.service";
 import { TwilioService } from "src/twilio/twilio.service";
 import { JwtService } from "@nestjs/jwt";
 import { GenerateTokenDto } from "./dtos/generate-token.dto";
-import { FindUserDto } from "./dtos/find-user.dto";
+import { FindUserDto } from "../dtos/find-user.dto";
 
 @Injectable()
 export class AuthService {
@@ -42,9 +42,16 @@ export class AuthService {
     //     throw new BadRequestException("Wrong OTP");
     //   }
 
+    //check if customer is blacklisted
+    if (user.role === 'CUSTOMER') {
+      const customer = await this.checkBlacklist(user.id);
+      if (customer && customer.isBlacklisted) {
+        throw new ForbiddenException('Sorry, your account has been suspended.');
+      }
+    }
+
     let userWithCities = user;
-
-
+    
     //if role is SP, include service provider's cities and email in user object
     if (user.role === 'SERVICE_PROVIDER') 
     {
@@ -105,5 +112,14 @@ export class AuthService {
       SELECT * FROM UserView WHERE phoneNumber = ${phoneNumber} LIMIT 1`) as any[]; 
     return  user || null;
 
+  }
+
+  async checkBlacklist(customerId: string) {
+    const customer = await this.prisma.customer.findUnique({
+      where: { id: customerId },
+      select: { isBlacklisted: true }
+    });
+    
+    return customer;
   }
 }

@@ -1,57 +1,22 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { CustomerService } from './customer.service';
-import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
+import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { OwnerGuard } from 'src/auth/guards/owner.guard';
+import { BaseResponseDto } from 'src/dtos/base-reposnse.dto';
+
 
 @ApiTags('customer')
 @Controller('customer')
 export class CustomerController {
   constructor(private readonly customerService: CustomerService) {}
 
-  @ApiOperation({ summary: 'Get all customers', description: 'Retrieve a list of all customers' })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'List of customers retrieved successfully',
-    schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', example: 'customer-uuid' },
-          username: { type: 'string', example: 'customerName' },
-          phoneNumber: { type: 'string', example: '+123456789' }
-        }
-      }
-    }
-  })
-  @Get()
-  findAll() {
-    return this.customerService.findAll();
-  }
-
-  @ApiOperation({ summary: 'Get customer by ID', description: 'Retrieve customer information by ID' })
-  @ApiParam({ name: 'id', description: 'Customer ID', type: 'string' })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Customer information retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', example: 'customer-uuid' },
-        username: { type: 'string', example: 'customerName' },
-        phoneNumber: { type: 'string', example: '+123456789' }
-      }
-    }
-  })
-  @ApiResponse({ status: 404, description: 'Customer not found' })
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.customerService.findOne(+id);
-  }
-
-  @ApiOperation({ summary: 'Update customer', description: 'Update customer information' })
-  @ApiParam({ name: 'id', description: 'Customer ID', type: 'string' })
+  @ApiOperation({ summary: 'Update customer', description: 'Update an existing customer account' })
+  @ApiParam({ name: 'id', type: 'string', description: 'Customer ID' })
   @ApiBody({ type: UpdateCustomerDto })
   @ApiResponse({ 
     status: 200, 
@@ -59,35 +24,88 @@ export class CustomerController {
     schema: {
       type: 'object',
       properties: {
-        id: { type: 'string', example: 'customer-uuid' },
-        username: { type: 'string', example: 'updatedCustomerName' },
-        phoneNumber: { type: 'string', example: '+123456789' }
+        message: {
+          type: 'string',
+          example: 'Customer updated successfully'
+        },
+        data: {
+          type: 'object',
+          properties: {
+            updateDto: {
+              type: 'object',
+              properties: {
+                username: { type: 'string', example: 'updatedUsername' },
+                phoneNumber: { type: 'string', example: '+123456789' }
+              }
+            }
+          }
+        }
       }
     }
   })
   @ApiResponse({ status: 400, description: 'Bad request' })
-  @ApiResponse({ status: 404, description: 'Customer not found' })
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCustomerDto: UpdateCustomerDto) {
-    return this.customerService.update(+id, updateCustomerDto);
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Not a customer or not the owner' })
+  @ApiBearerAuth('JWT-auth')
+  @Roles(Role.CUSTOMER) //set metadata
+  @UseGuards(JwtAuthGuard, RolesGuard, OwnerGuard)
+  @Patch(":id/account")
+  async updateCustomer(@Body() updateDto: UpdateCustomerDto): Promise<BaseResponseDto> {
+
+    try{
+
+      // updateDto: { "phoneNumber": "...", "username": "..." }
+      const result = await this.customerService.updateCustomer(updateDto);
+      return{
+        message: "Customer updated successfully ",
+        data: {updateDto}
+      }
+      
+    }catch(err){
+      throw err
+    }
   }
 
-  @ApiOperation({ summary: 'Delete customer', description: 'Delete a customer account' })
-  @ApiParam({ name: 'id', description: 'Customer ID', type: 'string' })
+  @ApiOperation({ summary: 'Delete customer', description: 'Delete an existing customer account' })
+  @ApiParam({ name: 'id', type: 'string', description: 'Customer ID' })
   @ApiResponse({ 
     status: 200, 
     description: 'Customer deleted successfully',
     schema: {
       type: 'object',
       properties: {
-        id: { type: 'string', example: 'customer-uuid' },
-        username: { type: 'string', example: 'customerName' }
+        message: {
+          type: 'string',
+          example: 'Customer deleted successfully'
+        },
+        data: {
+          type: 'string',
+          example: '+123456789'
+        }
       }
     }
   })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Not a customer or not the owner' })
   @ApiResponse({ status: 404, description: 'Customer not found' })
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.customerService.remove(+id);
+  @ApiBearerAuth('JWT-auth')
+  @Roles(Role.CUSTOMER) //set metadata
+  @UseGuards(JwtAuthGuard, RolesGuard, OwnerGuard)
+  @Delete(":id/account")
+  async deleteCustomer(@Param('id') id: string): Promise<BaseResponseDto>{
+    
+    try{
+
+      const result = await this.customerService.deleteCustomer(id)
+      return{
+        message: "Customer deleted successfully ",
+        data: id
+      }
+
+    }catch(err){
+      throw err
+    }
   }
+
 }
