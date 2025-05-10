@@ -59,6 +59,8 @@ model ServiceProvider {
   //feedback-related fields
   avgRating Float?
   feedbacks RequestFeedback[]
+  
+  complaints Complaint[]
 }
 
 enum CityName {
@@ -170,6 +172,8 @@ model Request {
   invoiceItems InvoiceItem[]
 
   feedback        RequestFeedback?
+  
+  complaint       Complaint?
 }
 
 model Location {
@@ -314,4 +318,20 @@ model RequestFeedback {
   serviceProvider   ServiceProvider @relation(fields: [serviceProviderId], references: [id])
   
   createdAt     DateTime @default(now())
+}
+
+model Complaint {
+  id            String   @id @default(uuid()) @db.Char(36)
+  description   String
+  
+  // Relation to the request (one-to-one)
+  requestId     String   @unique
+  request       Request  @relation(fields: [requestId], references: [id])
+  
+  // Relation to the service provider (many-to-one)
+  serviceProviderId String
+  serviceProvider   ServiceProvider @relation(fields: [serviceProviderId], references: [id])
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }

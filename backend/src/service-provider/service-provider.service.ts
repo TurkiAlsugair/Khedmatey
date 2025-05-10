@@ -314,4 +314,40 @@ export class ServiceProviderService {
   
       return newDates
     }
+
+    /**
+     * Get all complaints for a service provider
+     */
+    async getComplaints(serviceProviderId: string) {
+
+      const serviceProvider = await this.prisma.serviceProvider.findUnique({
+        where: { id: serviceProviderId },
+      });
+
+      if (!serviceProvider) {
+        throw new NotFoundException('Service provider not found');
+      }
+
+      const complaints = await this.prisma.complaint.findMany({
+        where: { serviceProviderId },
+        include: {
+          request: {
+            select: {
+              id: true,
+              status: true,
+              createdAt: true,
+              customer: {
+                select: {
+                  id: true,
+                  username: true,
+                }
+              }
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      return complaints;
+    }
 }

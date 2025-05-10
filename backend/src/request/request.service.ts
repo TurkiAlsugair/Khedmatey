@@ -428,6 +428,12 @@ export class RequestService {
               rating: true,
               review: true
             }
+          },
+          complaint: {
+            select: {
+              description: true,
+              createdAt: true
+            }
           }
         },
         orderBy: { createdAt: 'desc' },
@@ -1231,6 +1237,12 @@ export class RequestService {
               rating: true,
               review: true
             }
+          },
+          complaint: {
+            select: {
+              description: true,
+              createdAt: true
+            }
           }
         },
       }) as unknown as Request;
@@ -1418,5 +1430,47 @@ export class RequestService {
       }
 
       return null;
+    }
+
+    /**
+     * Add a complaint for a request
+     */
+    async addComplaint(requestId: string, userId: string, data: { description: string }) {
+
+      const request = await this.prisma.request.findUnique({
+        where: { id: requestId },
+        include: {
+          service: {
+            include: {
+              serviceProvider: true,
+            },
+          },
+          complaint: true,
+        },
+      });
+
+      if (!request) {
+        throw new NotFoundException('Request not found');
+      }
+
+      if (request.customerId !== userId) {
+        throw new ForbiddenException('You can only provide complaints for your own requests');
+      }
+
+      if (request.complaint) {
+        throw new BadRequestException('A complaint has already been submitted for this request');
+      }
+
+      const serviceProviderId = request.service.serviceProvider.id;
+
+      const complaint = await this.prisma.complaint.create({
+        data: {
+          description: data.description,
+          request: { connect: { id: requestId } },
+          serviceProvider: { connect: { id: serviceProviderId } },
+        },
+      });
+
+      return complaint;
     }
 }
