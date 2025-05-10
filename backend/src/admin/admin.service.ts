@@ -217,7 +217,7 @@ export class AdminService {
     const unhandledRequests = await this.prisma.request.findMany({
       where: {
         status: {
-          in: [Status.PENDING, Status.PENDING_BY_SP, Status.CANCELED]
+          in: [Status.PENDING, Status.CANCELED]
         }
       },
       include: {
