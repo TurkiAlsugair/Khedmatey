@@ -35,7 +35,7 @@ export class RequestController {
               serviceId: { type: 'string', example: 'service-uuid' },
               customerId: { type: 'string', example: 'customer-uuid' },
               notes: { type: 'string', example: 'Please come before noon' },
-              status: { type: 'string', example: 'PENDING' },
+              status: { type: 'string', example: 'PENDING_BY_SP' },
               date: { type: 'string', example: '2023-01-15' },
               location: {
                 type: 'object',
@@ -75,7 +75,16 @@ export class RequestController {
       }
     }
 
-    @ApiOperation({ summary: 'Update request status', description: 'Update the status of a service request' })
+    @ApiOperation({ 
+      summary: 'Update request status', 
+      description: `Update the status of a service request. Status transitions follow these rules:
+      - PENDING_BY_SP → ACCEPTED/DECLINED (by service provider) or CANCELLED (by customer)
+      - ACCEPTED → COMING (by worker) or CANCELLED (by customer)
+      - COMING → IN_PROGRESS or CANCELLED (by worker)
+      - IN_PROGRESS → CANCELLED or FINISHED (by worker)
+      - FINISHED → INVOICED (by worker)
+      - INVOICED → PAID (by customer)` 
+    })
     @ApiParam({ name: 'id', description: 'Request ID', type: 'string' })
     @ApiBody({ type: UpdateRequestStatusDto })
     @ApiResponse({ 
@@ -139,7 +148,7 @@ export class RequestController {
                 serviceId: { type: 'string', example: 'service-uuid' },
                 customerId: { type: 'string', example: 'customer-uuid' },
                 notes: { type: 'string', example: 'Please come before noon' },
-                status: { type: 'string', example: 'PENDING' },
+                status: { type: 'string', example: 'PENDING_BY_SP' },
                 date: { type: 'string', example: '2023-01-15' },
                 service: {
                   type: 'object',

@@ -1,14 +1,30 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateRequestDto } from './dtos/create-request.dto';
 import { DatabaseService } from 'src/database/database.service';
-import { CityName, Status, Request, Customer, Role } from '@prisma/client';
+import { CityName, Status, Request, Customer, Role, WorkerDay, Worker, Service, Location } from '@prisma/client';
 import { isBefore, isAfter, addDays, format, startOfDay } from 'date-fns';
 import { ServiceService } from 'src/service/service.service';
 import { GenerateTokenDto } from 'src/auth/dtos/generate-token.dto';
 import { error } from 'console';
+import { OrderStatusGateway } from 'src/sockets/order-status.gateway';
+
+// Add type definition at the top of the file, after imports
+type RequestWithRelations = Request & {
+  customer: Customer;
+  providerDay: {
+    serviceProviderId: string;
+    date: Date;
+  };
+  dailyWorkers: Array<WorkerDay & {
+    worker: Worker;
+  }>;
+  service: Service;
+  location: Location;
+};
 
 @Injectable()
 export class RequestService {
+  private orderStatusSocket: OrderStatusGateway
   
     constructor(private prisma: DatabaseService, private serviceService: ServiceService) {}
 
@@ -155,7 +171,7 @@ export class RequestService {
           const newRequest = await tx.request.create({
             data: 
             {
-              status: Status.PENDING,
+              status: Status.PENDING_BY_SP,
               providerDayId: providerDay.id,
               serviceId: service.id,
               customerId: customerId,
@@ -304,7 +320,7 @@ export class RequestService {
                 });
               }),
             );
-          }      
+          }    
           return newRequest;
         });
 
@@ -373,36 +389,71 @@ export class RequestService {
 
     async updateStatus(id: string, user: GenerateTokenDto, newStatus: Status) {
 
+      // Fetch the request with all necessary relations in one query
       const request = await this.prisma.request.findUnique({ 
         where: { id },
         include: {
-          providerDay: { select: { serviceProviderId: true } },
+          providerDay: { 
+            select: { 
+              serviceProviderId: true,
+              date: true
+            } 
+          },
           customer: true,
-          dailyWorkers: { include: { worker: true } },
+          dailyWorkers: { 
+            include: { 
+              worker: true 
+            } 
+          },
+          service: true,
+          location: true
         },
-      });
-      const serviceProviderId = request?.providerDay.serviceProviderId
-
+      }) as RequestWithRelations;
+      
       if (!request) {
         throw new NotFoundException(`Request with id ${id} not found`);
       }
       
-      let result: Request 
-      switch (newStatus) 
-      {
-        case Status.ACCEPTED:
-          result = await this.handleAccepted(request, user, serviceProviderId as string);
-          break;
-
-        case Status.DECLINED:
-          result = await this.handledDeclined(request, user, serviceProviderId as string);
-          break;
-        
-        default:
-          throw new BadRequestException("Unknown status")
+      const serviceProviderId = request.providerDay.serviceProviderId;
+      
+      //check if the request is pending and has been created for more than 10 min
+      if (await this.autoCancel(request, Date.now())) {
+        throw new ForbiddenException('Request automatically cancelled due to time limit');
       }
-
-      return result
+      
+      let result: Request;
+      
+      //handle each status transition with appropriate handler method
+      switch (newStatus) {
+        case Status.ACCEPTED:
+          result = await this.handleAccepted(request, user, serviceProviderId);
+          break;
+        case Status.DECLINED:
+          result = await this.handleDeclined(request, user, serviceProviderId);
+          break;
+        case Status.CANCELED:
+          result = await this.handleCanceled(request, user, serviceProviderId);
+          break;
+        case Status.COMING:
+          result = await this.handleComing(request, user);
+          break;
+        case Status.IN_PROGRESS:
+          result = await this.handleInProgress(request, user);
+          break;
+        case Status.FINISHED:
+          result = await this.handleFinished(request, user);
+          break;
+        case Status.INVOICED:
+          result = await this.handleInvoiced(request, user);
+          break;
+        case Status.PAID:
+          result = await this.handlePaid(request, user);
+          break;
+        default:
+          throw new BadRequestException("Unknown status transition");
+      }
+      this.orderStatusSocket.emitOrderStatusUpdate(result.id, result.status)
+      return result;
     }
 
     //returns true and update request's status to cancelled if it has been created for more than 10 min, otherwise return false.
@@ -410,8 +461,8 @@ export class RequestService {
       const tenMinutesMs = 10 * 60 * 1000;
       const age = nowMs - request.createdAt.getTime();
 
-      if(request.status !== Status.PENDING){
-        return false
+      if(request.status !== Status.PENDING_BY_SP){
+        return false;
       }
 
       if (age > tenMinutesMs) {
@@ -419,16 +470,24 @@ export class RequestService {
           where: { id: request.id },
           data: { status: Status.CANCELED },
         });
+        this.orderStatusSocket.emitOrderStatusUpdate(request.id, Status.CANCELED)
         return true;
       }
       return false;
     }
 
-    async handleAccepted(request: Request, user: GenerateTokenDto, serviceProviderId: string){
-
-      if (user.role !== Role.SERVICE_PROVIDER) {
-        throw new ForbiddenException('Only service providers may accept');
+    async handleAccepted(request: RequestWithRelations, user: GenerateTokenDto, serviceProviderId: string){
+      //validate current status - can only accept from PENDING_BY_SP
+      if (request.status !== Status.PENDING_BY_SP) {
+        throw new BadRequestException(`Cannot accept a request that is not in PENDING_BY_SP status (current: ${request.status})`);
       }
+
+      //validate role
+      if (user.role !== Role.SERVICE_PROVIDER) {
+        throw new ForbiddenException('Only service providers may accept requests');
+      }
+
+      //validate ownership
       if (serviceProviderId !== user.id) {
         throw new ForbiddenException(
           'You can only accept requests assigned to your services',
@@ -436,38 +495,198 @@ export class RequestService {
       }
       
 
-      if (await this.autoCancel(request, Date.now())) {
-        throw new ForbiddenException(
-          'Request automatically cancelled due to time limit',
-        );
-      }
-  
       return this.prisma.request.update({
         where: { id: request.id },
         data: { status: Status.ACCEPTED },
       });
     }
 
-    async handledDeclined(request: Request, user: GenerateTokenDto, serviceProviderId: string){
-      if (user.role !== Role.SERVICE_PROVIDER) {
-        throw new ForbiddenException('Only service providers may accept');
-      }
-      if (serviceProviderId !== user.id) 
-      {
-        throw new ForbiddenException(
-          'You can only decline requests assigned to your services',
-        );
+    async handleDeclined(request: RequestWithRelations, user: GenerateTokenDto, serviceProviderId: string){
+      //validate current status - can only decline from PENDING_BY_SP
+      if (request.status !== Status.PENDING_BY_SP) {
+        throw new BadRequestException(`Cannot decline a request that is not in PENDING_BY_SP status (current: ${request.status})`);
       }
 
-      if (await this.autoCancel(request, Date.now())) {
+      //validate role
+      if (user.role !== Role.SERVICE_PROVIDER) {
+        throw new ForbiddenException('Only service providers may decline requests');
+      }
+
+      //validate ownership
+      if (serviceProviderId !== user.id) {
         throw new ForbiddenException(
-          'Request automatically cancelled due to time limit',
+          'You can only decline requests assigned to your services',
         );
       }
   
       return this.prisma.request.update({
         where: { id: request.id },
         data: { status: Status.DECLINED },
+      });
+    }
+
+    async handleCanceled(request: RequestWithRelations, user: GenerateTokenDto, serviceProviderId: string){
+ 
+      //validate current status based on role
+      if (user.role === Role.CUSTOMER)
+      {
+        //customers can cancel PENDING_BY_SP or ACCEPTED requests
+        if (request.status !== Status.PENDING_BY_SP && request.status !== Status.ACCEPTED) {
+          throw new BadRequestException(`Customers can only cancel requests in PENDING_BY_SP or ACCEPTED status (current: ${request.status})`);
+        }
+
+        //verify ownership
+        if (request.customerId !== user.id) {
+          throw new ForbiddenException('You can only cancel your own requests');
+        }
+      } 
+
+      else if (user.role === Role.SERVICE_PROVIDER) 
+      {
+        //service providers can only cancel PENDING_BY_SP requests
+        if (request.status !== Status.PENDING_BY_SP) {
+          throw new BadRequestException(`Service providers can only cancel requests in PENDING_BY_SP status (current: ${request.status})`);
+        }
+
+        //verify ownership
+        if (serviceProviderId !== user.id) {
+          throw new ForbiddenException('You can only cancel requests assigned to your services');
+        }
+      } 
+
+      else if (user.role === Role.WORKER) {
+        //workers can cancel ACCEPTED, COMING, or IN_PROGRESS requests
+        if (request.status !== Status.ACCEPTED && request.status !== Status.COMING && request.status !== Status.IN_PROGRESS) {
+          throw new BadRequestException(`Workers can only cancel requests in ACCEPTED, COMING, or IN_PROGRESS status (current: ${request.status})`);
+        }
+
+        //verify assignment
+        const isWorkerAssigned = request.dailyWorkers.some(dw => dw.worker.id === user.id);
+        if (!isWorkerAssigned) {
+          throw new ForbiddenException('You are not assigned to this request');
+        }
+      } 
+      else {
+        throw new ForbiddenException('Your role cannot cancel requests');
+      }
+      
+      return this.prisma.request.update({
+        where: { id: request.id },
+        data: { status: Status.CANCELED },
+      });
+    }
+
+    async handleComing(request: RequestWithRelations, user: GenerateTokenDto){
+      //validate current status - can only transition to COMING from ACCEPTED
+      if (request.status !== Status.ACCEPTED) {
+        throw new BadRequestException(`Can only set to COMING from ACCEPTED status (current: ${request.status})`);
+      }
+
+      //validate role
+      if (user.role !== Role.WORKER) {
+        throw new ForbiddenException('Only workers can mark a request as coming');
+      }
+      
+      //check if this worker is assigned to this request
+      const isWorkerAssigned = request.dailyWorkers.some(dw => dw.worker.id === user.id);
+      if (!isWorkerAssigned) {
+        throw new ForbiddenException('You are not assigned to this request');
+      }
+      
+      return this.prisma.request.update({
+        where: { id: request.id },
+        data: { status: Status.COMING },
+      });
+    }
+
+    async handleInProgress(request: RequestWithRelations, user: GenerateTokenDto){
+      //validate current status - can only transition to IN_PROGRESS from COMING
+      if (request.status !== Status.COMING) {
+        throw new BadRequestException(`Can only set to IN_PROGRESS from COMING status (current: ${request.status})`);
+      }
+
+      //validate role
+      if (user.role !== Role.WORKER) {
+        throw new ForbiddenException('Only workers can mark a request as in progress');
+      }
+      
+      //check if this worker is assigned to this request
+      const isWorkerAssigned = request.dailyWorkers.some(dw => dw.worker.id === user.id);
+      if (!isWorkerAssigned) {
+        throw new ForbiddenException('You are not assigned to this request');
+      }
+      
+      return this.prisma.request.update({
+        where: { id: request.id },
+        data: { status: Status.IN_PROGRESS },
+      });
+    }
+
+    async handleFinished(request: RequestWithRelations, user: GenerateTokenDto){
+      //validate current status - can only transition to FINISHED from IN_PROGRESS
+      if (request.status !== Status.IN_PROGRESS) {
+        throw new BadRequestException(`Can only set to FINISHED from IN_PROGRESS status (current: ${request.status})`);
+      }
+
+      //validate role
+      if (user.role !== Role.WORKER) {
+        throw new ForbiddenException('Only workers can mark a request as finished');
+      }
+      
+      //check if this worker is assigned to this request
+      const isWorkerAssigned = request.dailyWorkers.some(dw => dw.worker.id === user.id);
+      if (!isWorkerAssigned) {
+        throw new ForbiddenException('You are not assigned to this request');
+      }
+      
+      return this.prisma.request.update({
+        where: { id: request.id },
+        data: { status: Status.FINISHED },
+      });
+    }
+
+    async handleInvoiced(request: RequestWithRelations, user: GenerateTokenDto){
+      //validate current status - can only transition to INVOICED from FINISHED
+      if (request.status !== Status.FINISHED) {
+        throw new BadRequestException(`Can only set to INVOICED from FINISHED status (current: ${request.status})`);
+      }
+
+      //validate role
+      if (user.role !== Role.WORKER) {
+        throw new ForbiddenException('Only workers can mark a request as invoiced');
+      }
+      
+      //check if this worker is assigned to this request
+      const isWorkerAssigned = request.dailyWorkers.some(dw => dw.worker.id === user.id);
+      if (!isWorkerAssigned) {
+        throw new ForbiddenException('You are not assigned to this request');
+      }
+      
+      return this.prisma.request.update({
+        where: { id: request.id },
+        data: { status: Status.INVOICED },
+      });
+    }
+
+    async handlePaid(request: RequestWithRelations, user: GenerateTokenDto){
+      //validate current status - can only transition to PAID from INVOICED
+      if (request.status !== Status.INVOICED) {
+        throw new BadRequestException(`Can only set to PAID from INVOICED status (current: ${request.status})`);
+      }
+
+      //validate role
+      if (user.role !== Role.CUSTOMER) {
+        throw new ForbiddenException('Only customers can mark a request as paid');
+      }
+      
+      //ensure the customer owns this request
+      if (request.customerId !== user.id) {
+        throw new ForbiddenException('You can only mark your own requests as paid');
+      }
+      
+      return this.prisma.request.update({
+        where: { id: request.id },
+        data: { status: Status.PAID },
       });
     }
 
