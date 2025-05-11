@@ -156,6 +156,8 @@ export class ServiceService {
       },
     });
 
+    console.log(services);
+
     const grouped = services.reduce<
     {
       categoryId:   string;

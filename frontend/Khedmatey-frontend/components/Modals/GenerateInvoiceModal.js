@@ -157,62 +157,62 @@ export default function GenerateInvoiceModal({
               onPress={onClose}
             />
           </View>
-          {isFollowUpOrder && previousInvoice?.details?.length > 0 && (
-            <View style={styles.prevDetailsBox}>
+        {isFollowUpOrder && previousInvoice?.details?.length > 0 && (
+          <View style={styles.prevDetailsBox}>
               <Text style={styles.prevTitle}>Previous Invoice Details</Text>
-              {previousInvoice.details.map((item, idx) => (
-                <View key={idx} style={styles.invoiceRow}>
-                  <Text style={styles.prevSectionText}>
-                    {item.nameEN} - {item.nameAR}
-                  </Text>
-                  <Price price={item.Price} size={wp(3.5)} />
-                </View>
-              ))}
-              <View style={styles.bottomSummaryRow}>
+            {previousInvoice.details.map((item, idx) => (
+              <View key={idx} style={styles.invoiceRow}>
                 <Text style={styles.prevSectionText}>
-                  <Price
-                    price={previousInvoice.details
-                      .reduce((acc, item) => acc + parseFloat(item.Price), 0)
-                      .toFixed(2)}
-                    size={wp(3.5)}
-                    header="Total"
-                  />
+                  {item.nameEN} - {item.nameAR}
                 </Text>
-                <Text style={styles.prevSectionText}>
-                  <Text style={styles.bold}>Date:</Text> {previousInvoice.date}
-                </Text>
+                <Price price={item.Price} size={wp(3.5)} />
               </View>
+            ))}
+            <View style={styles.bottomSummaryRow}>
+              <Text style={styles.prevSectionText}>
+                <Price
+                  price={previousInvoice.details
+                    .reduce((acc, item) => acc + parseFloat(item.Price), 0)
+                    .toFixed(2)}
+                  size={wp(3.5)}
+                  header="Total"
+                />
+              </Text>
+              <Text style={styles.prevSectionText}>
+                <Text style={styles.bold}>Date:</Text> {previousInvoice.date}
+              </Text>
             </View>
-          )}
+          </View>
+        )}
 
           <Text style={styles.sectionTitle}>
             {editingIndex !== null ? "Edit Invoice Item" : "Add Invoice Item"}
           </Text>
-          <Input
-            label="Service description (English)"
-            placeholder="Enter description in English"
-            onUpdateValue={(value) => handleInputChange("nameEN", value)}
-            value={formState.nameEN.value}
-            isInvalid={!formState.nameEN.isValid}
-            errorMessage="Required"
-          />
-          <Input
-            label="Service description (Arabic)"
-            placeholder="Enter description in Arabic"
-            onUpdateValue={(value) => handleInputChange("nameAR", value)}
-            value={formState.nameAR.value}
-            isInvalid={!formState.nameAR.isValid}
-            errorMessage="Required"
-          />
-          <Input
-            label="Price"
-            placeholder="Enter price"
-            keyboardType="numeric"
-            onUpdateValue={(value) => handleInputChange("price", value)}
-            value={formState.price.value}
-            isInvalid={!formState.price.isValid}
-            errorMessage="Price must be a number"
-          />
+        <Input
+          label="Service description (English)"
+          placeholder="Enter description in English"
+          onUpdateValue={(value) => handleInputChange("nameEN", value)}
+          value={formState.nameEN.value}
+          isInvalid={!formState.nameEN.isValid}
+          errorMessage="Required"
+        />
+        <Input
+          label="Service description (Arabic)"
+          placeholder="Enter description in Arabic"
+          onUpdateValue={(value) => handleInputChange("nameAR", value)}
+          value={formState.nameAR.value}
+          isInvalid={!formState.nameAR.isValid}
+          errorMessage="Required"
+        />
+        <Input
+          label="Price"
+          placeholder="Enter price"
+          keyboardType="numeric"
+          onUpdateValue={(value) => handleInputChange("price", value)}
+          value={formState.price.value}
+          isInvalid={!formState.price.isValid}
+          errorMessage="Price must be a number"
+        />
 
           <View style={styles.buttonRow}>
             {editingIndex !== null && (
@@ -231,7 +231,7 @@ export default function GenerateInvoiceModal({
               cusStyles={{ flex: 1 }}
             >
               {editingIndex !== null ? "Update Item" : "Add Item"}
-            </Button>
+        </Button>
           </View>
 
           {invoiceItems.length > 0 && (
@@ -278,15 +278,15 @@ export default function GenerateInvoiceModal({
           )}
 
           <View style={styles.buttonRow}>
-            <Button
-              onPress={onClose}
-              cusStyles={{
+        <Button
+          onPress={onClose}
+          cusStyles={{
                 width: wp(30),
-                backgroundColor: "rgba(224, 1, 1, 0.71)",
-              }}
-            >
-              Cancel
-            </Button>
+            backgroundColor: "rgba(224, 1, 1, 0.71)",
+          }}
+        >
+          Cancel
+        </Button>
             <Button onPress={handleSubmit} cusStyles={{ flex: 1 }}>
               Submit Invoice
             </Button>

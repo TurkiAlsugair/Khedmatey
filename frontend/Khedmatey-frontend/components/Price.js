@@ -11,13 +11,14 @@ export default function Price({
   color = "#666",
   isBold = true,
   header = "Price",
+  cusStyles={},
 }) {
   // Calculate riyal logo size based on font size
   const riyalWidth = size * 1.3; // 2x the font size
   const riyalHeight = size * 0.8; // 80% of font size for proper proportions
 
   return (
-    <View style={styles.priceCont}>
+    <View style={[styles.priceCont, cusStyles]}>
       <Text
         style={[
           styles.price,
