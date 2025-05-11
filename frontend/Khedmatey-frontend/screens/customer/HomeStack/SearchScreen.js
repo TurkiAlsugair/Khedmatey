@@ -80,8 +80,8 @@ export default function SearchScreen({ navigation }) {
     setLoading(true);
     setBackendError("");
     try {
-      const res = await axios.get(`${API_BASE_URL}/customer`, {
-        params: { search: text.trim(), city: location?.city || "" },
+      const res = await axios.get(`${API_BASE_URL}/search`, {
+        params: { searchTerm: text.trim(), city: location?.city || "" },
       });
       const data = res.data.data || {};
       setServices(data.services || []);

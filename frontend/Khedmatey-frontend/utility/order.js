@@ -16,7 +16,7 @@ export const fetchAllOrders = async (token, role) => {
     // // Get the appropriate API path based on the role
     // const apiPath = rolePathMap[role] || role.toLowerCase();
     
-    const response = await axios.get(`${API_BASE_URL}/${role}/requests`, {
+    const response = await axios.get(`${API_BASE_URL}/requests`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -31,7 +31,7 @@ export const fetchAllOrders = async (token, role) => {
 // Fetch details of a single order by request ID
 export const fetchOrderDetails = async (token, requestId) => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/request/f?request=${requestId}`, {
+    const response = await axios.get(`${API_BASE_URL}/requests/${requestId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -47,9 +47,8 @@ export const fetchOrderDetails = async (token, requestId) => {
 export const updateStatus = async (token, orderId, newStatus) => {
   try {
     const response = await axios.patch(
-      `${API_BASE_URL}/request?status=${newStatus}`,
+      `${API_BASE_URL}/requests/${orderId}`,
       {
-        orderId: orderId,
         status: newStatus,
       },
       {
@@ -68,7 +67,7 @@ export const updateStatus = async (token, orderId, newStatus) => {
 export const prevOrderDetails = async (requestId) => {
   try {
     const response = await axios.get(
-      `${API_BASE_URL}/previousOrderDetails/fc?requestId=${requestId}`
+      `${API_BASE_URL}/requests/${requestId}`
     );
     return response.data.data;
   } catch (err) {
