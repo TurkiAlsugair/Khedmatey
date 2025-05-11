@@ -5,7 +5,7 @@ import { CreateCustomerDto } from "./dtos/create-customer.dto";
 import { TwilioService } from "src/twilio/twilio.service";
 import { AuthService } from "../auth.service";
 import { UpdateCustomerDto } from "./dtos/update-customer.dto";
-import { FindUserDto } from "../dtos/find-user.dto";
+import { FindUserDto } from "../../dtos/find-user.dto";
 
 
 @Injectable()

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards, ForbiddenException } from '@nestjs/common';
 import { ServiceProviderService } from './service-provider.service';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
@@ -217,5 +217,63 @@ export class ServiceProviderController {
       throw err
     }
   }
-  
+
+  @ApiOperation({ summary: 'Get complaints', description: 'Retrieve all complaints submitted for a service provider' })
+  @ApiParam({ name: 'id', description: 'Service Provider ID', type: 'string' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Complaints retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Complaints retrieved'
+        },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'complaint-uuid' },
+              description: { type: 'string', example: 'The service was not completed as expected' },
+              createdAt: { type: 'string', format: 'date-time' },
+              request: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', example: 'request-uuid' },
+                  status: { type: 'string', example: 'FINISHED' },
+                  createdAt: { type: 'string', format: 'date-time' }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Not authorized to view these complaints' })
+  @ApiResponse({ status: 404, description: 'Service provider not found' })
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard, OwnerGuard)
+  @Get(':id/complaints')
+  async getComplaints(@Param('id') id: string, @CurrentUser() user: GenerateTokenDto): Promise<BaseResponseDto> {
+    try {
+      // Only allow service providers to see their own complaints or admins to see any complaints
+      if (user.role !== Role.ADMIN && (user.role !== Role.SERVICE_PROVIDER || user.id !== id)) {
+        throw new ForbiddenException('You can only view your own complaints');
+      }
+
+      const complaints = await this.serviceProviderService.getComplaints(id);
+      
+      return {
+        message: 'Complaints retrieved',
+        data: complaints
+      };
+    } 
+    catch (error) {
+      throw error;
+    }
+  }
 }

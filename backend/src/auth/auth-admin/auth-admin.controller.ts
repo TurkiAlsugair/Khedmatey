@@ -4,7 +4,7 @@ import { Roles } from "src/auth/decorators/roles.decorator";
 import { JwtAuthGuard } from "src/auth/guards/jwt.guard";
 import { RolesGuard } from "src/auth/guards/roles.guard";
 import { UpdateStatusDto } from "./dto/update-status.dto";
-import { AdminService } from "./admin.service";
+import { AuthAdminService } from "./auth-admin.service";
 import { CreateAdminDto } from "./dto/create-admin.dto";
 import { Message } from "twilio/lib/twiml/MessagingResponse";
 import { BaseResponseDto } from "src/dtos/base-reposnse.dto";
@@ -12,8 +12,8 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiParam } 
 
 @ApiTags('auth:admin')
 @Controller("auth/admin")
-export class AdminController {
-  constructor(private adminService: AdminService) {}
+export class AuthAdminController {
+  constructor(private adminService: AuthAdminService) {}
 
   @ApiOperation({ summary: 'Admin signup', description: 'Register a new admin account' })
   @ApiBody({ type: CreateAdminDto })

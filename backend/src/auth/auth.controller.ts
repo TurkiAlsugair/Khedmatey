@@ -107,6 +107,7 @@ export class AuthController {
     }
   })
   @ApiResponse({ status: 400, description: 'Bad request - Wrong OTP' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Account is blacklisted' })
   @ApiResponse({ status: 404, description: 'User not found' })
   @Post("/signin")
   async signIn(@Body() body: signinDto): Promise<BaseResponseDto> {
@@ -114,6 +115,7 @@ export class AuthController {
 
     try {
       const result = await this.authService.signin(phoneNumber, otpCode);
+      
       return {
         message: "Signed in successfully ",
         data: {
