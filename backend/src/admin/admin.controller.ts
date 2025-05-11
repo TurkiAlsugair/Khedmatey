@@ -12,6 +12,7 @@ import { FindUserDto } from 'src/dtos/find-user.dto';
 import { BlacklistCustomerDto } from './dto/blacklist-customer.dto';
 import { LookupUserDto } from './dto/lookup-user.dto';
 import { AllUnhandledRequestsResponseDto } from './dto/unhandled-requests.dto';
+import { DashboardStatsDto } from './dto/dashboard-stats.dto';
 
 @ApiTags('admin')
 @Controller('admin')
@@ -159,5 +160,22 @@ export class AdminController {
   @Get('requests/unhandled')
   async getAllUnhandledRequests(): Promise<AllUnhandledRequestsResponseDto> {
     return this.adminService.getAllUnhandledRequests();
+  }
+
+  @ApiOperation({
+    summary: 'Get dashboard statistics',
+    description: 'Returns platform statistics including counts of service providers, customers, services, requests, and workers'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Dashboard statistics retrieved successfully',
+    type: DashboardStatsDto
+  })
+  @ApiBearerAuth('JWT-auth')
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('dashboard/stats')
+  async getDashboardStats(): Promise<DashboardStatsDto> {
+    return this.adminService.getDashboardStats();
   }
 }
