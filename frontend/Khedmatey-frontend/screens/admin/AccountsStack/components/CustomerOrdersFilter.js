@@ -8,14 +8,14 @@ import {
   Pressable,
   ScrollView
 } from 'react-native';
-import { Colors, ORDER_STATUS_STYLES } from '../../constants/styles';
+import { Colors, ORDER_STATUS_STYLES } from '../../../../constants/styles';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import { Ionicons } from '@expo/vector-icons';
 
-const FilterCustomerOrdersModal = ({ visible, onClose, onApply, initialFilters }) => {
+const CustomerOrdersFilter = ({ visible, onClose, onApply, initialFilters }) => {
   const [statusFilter, setStatusFilter] = useState(initialFilters?.statusFilter || 'default');
 
   const handleApply = () => {
@@ -37,7 +37,9 @@ const FilterCustomerOrdersModal = ({ visible, onClose, onApply, initialFilters }
     { value: 'IN_PROGRESS', label: 'IN_PROGRESS' },
     { value: 'FINISHED', label: 'FINISHED' },
     { value: 'DECLINED', label: 'DECLINED' },
-    { value: 'CANCELLED', label: 'CANCELLED' }
+    { value: 'CANCELLED', label: 'CANCELLED' },
+    { value: 'INVOICED', label: 'INVOICED' },
+    { value: 'PAID', label: 'PAID' }
   ];
 
   // Create pairs for grid layout
@@ -289,4 +291,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default FilterCustomerOrdersModal; 
+export default CustomerOrdersFilter; 

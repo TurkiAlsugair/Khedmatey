@@ -153,14 +153,14 @@ export default function CheckoutScreenFUS({ navigation, route }) {
                       <Text style={styles.invoiceItem}>
                         {item.nameEN} - {item.nameAR}
                       </Text>
-                      <Price price={item.Price} size={wp(3.5)} />
+                      <Price price={item.price} size={wp(3.5)} />
                     </View>
                   ))}
                   <View style={styles.totalRow}>
                     <Text style={styles.invoiceItem}>
                       <Price 
                         price={order.invoice.details.reduce(
-                          (sum, item) => sum + Number(item.Price || 0),
+                          (sum, item) => sum + Number(item.price || 0),
                           0
                         ).toFixed(2)} 
                         size={wp(3.5)} 

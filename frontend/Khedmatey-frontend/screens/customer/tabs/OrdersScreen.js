@@ -54,7 +54,7 @@ export default function OrdersScreen() {
       isRefresh ? setRefreshing(true) : setLoading(true);
       setBackendError("");
       try {
-        const data = await fetchAllOrders(token, "customer");
+        const data = await fetchAllOrders(token, "CUSTOMER");
         const flattenedOrders = flatten(data);
         setOrders(flattenedOrders);
         setFilteredOrders(flattenedOrders);
@@ -65,7 +65,7 @@ export default function OrdersScreen() {
         isRefresh ? setRefreshing(false) : setLoading(false);
       }
     },
-    [token, userInfo.userRole, activeFilters]
+    [token, userInfo.role, activeFilters]
   );
 
   // Apply filters whenever activeFilters change

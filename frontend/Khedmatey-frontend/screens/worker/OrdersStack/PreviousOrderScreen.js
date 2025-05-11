@@ -43,7 +43,7 @@ export default function PreviousOrderScreen({ navigation, route }) {
     );
   }
 
-  const total = order.details.reduce((sum, item) => sum + parseFloat(item.Price), 0);
+  const total = order.details.reduce((sum, item) => sum + parseFloat(item.price), 0);
   const status = order.status === "PAID" ? "PAID" : "INVOICED";
   const statusStyles = ORDER_STATUS_STYLES[status] || {};
   const mainTitle = status === "PAID" ? "Receipt" : "Invoice";
@@ -101,7 +101,7 @@ export default function PreviousOrderScreen({ navigation, route }) {
           {order.details.map((item, idx) => (
             <View key={idx} style={styles.invoiceRow}>
               <Text style={styles.detailText}>{item.nameEN} - {item.nameAR}</Text>
-              <Price price={item.Price} size={wp(3.5)} />
+              <Price price={item.price} size={wp(3.5)} />
             </View>
           ))}
           <View style={styles.bottomSummaryRow}>

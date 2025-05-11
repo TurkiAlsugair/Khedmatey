@@ -39,7 +39,7 @@ export default function SignupServiceProviderScreen({ navigation }) {
 
   // **Validation functions**
   const validateName = (input) => input.trim().length > 0;
-  const validatePhoneNumber = (input) => /^05\d{8}$/.test(input); // Must start with 05 + 8 digits
+  const validatePhoneNumber = (input) => /^\+9665\d{8}$/.test(input); // Must start with +9665 followed by 8 digits
   const validateEmail = (input) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input);
 
   // **Handle input changes**
@@ -151,14 +151,14 @@ export default function SignupServiceProviderScreen({ navigation }) {
 
             <Input
               label={t("phoneNumber")}
-              placeholder="05XXXXXXXX"
+              placeholder="+9665XXXXXXXX"
               keyboardType="phone-pad"
               onUpdateValue={(value) => handleInputChange("phoneNumber", value)}
               value={formState.phoneNumber.value}
               labelFontSize={wp(3.8)}
               labelColor="#6F6F6F"
               isInvalid={!formState.phoneNumber.isValid}
-              errorMessage={"Invalid phone format (05XXXXXXXX)"}
+              errorMessage={"Invalid phone format (+9665XXXXXXXX)"}
             />
 
             <MultiSelectInput
@@ -201,8 +201,8 @@ export default function SignupServiceProviderScreen({ navigation }) {
               const { accessToken, user } = data;
               setOtpVisible(false);
               // login the user
-              // user has => userRole, plus your new fields
-              login(accessToken, user.userRole, user);
+              // user has => role, plus your new fields
+              login(accessToken, user.role, user);
             }}
           />
         </View>

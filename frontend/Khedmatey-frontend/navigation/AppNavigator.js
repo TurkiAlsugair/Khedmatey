@@ -19,13 +19,13 @@ export default function AppNavigator() {
 
   return (
     <NavigationContainer>
-      {userRole === "customer" ? (
+      {userRole === "CUSTOMER" ? (
         <CustomerNavigator isArabic={isArabic} />
-      ) : userRole === "serviceProvider" ? (
+      ) : userRole === "SERVICE_PROVIDER" ? (
         <ServiceProviderNavigator isArabic={isArabic} />
-      ) : userRole === "worker" ? (
+      ) : userRole === "WORKER" ? (
         <WorkerNavigator isArabic={isArabic} />
-      ) : userRole === "admin" ? (
+      ) : userRole === "ADMIN" ? (
         <AdminNavigator isArabic={isArabic} />
       ) : (
         // Default: Show login/signup

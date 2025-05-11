@@ -93,12 +93,12 @@ export default function DashboardScreen({ navigation }) {
                   style={[
                     styles.gridText,
                     {
-                      backgroundColor: ORDER_STATUS_STYLES["IN-PROGRESS"].bg,
-                      color: ORDER_STATUS_STYLES["IN-PROGRESS"].text,
+                      backgroundColor: ORDER_STATUS_STYLES["IN_PROGRESS"].bg,
+                      color: ORDER_STATUS_STYLES["IN_PROGRESS"].text,
                     },
                   ]}
                 >
-                  IN-PROGRESS: 8
+                  IN_PROGRESS: 8
                 </Text>
               </View>
               
@@ -216,7 +216,7 @@ export default function DashboardScreen({ navigation }) {
             
             <TouchableOpacity
               style={styles.optionCont}
-              onPress={() => navigateToOrders("IN-PROGRESS")}
+              onPress={() => navigateToOrders("IN_PROGRESS")}
             >
               <Text style={styles.optionText}>In Progress Orders</Text>
             </TouchableOpacity>
