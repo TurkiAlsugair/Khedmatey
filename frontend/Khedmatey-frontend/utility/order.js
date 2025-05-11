@@ -3,9 +3,19 @@ import axios from "axios";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
 
-// Fetch a list of orders for a given role ("customer", "worker", "service-provider")
+// Fetch a list of orders for a given role ("CUSTOMER", "WORKER", "SERVICE_PROVIDER")
 export const fetchAllOrders = async (token, role) => {
   try {
+    // // Map the uppercase role names to the corresponding API paths
+    // const rolePathMap = {
+    //   "CUSTOMER": "customer",
+    //   "WORKER": "worker",
+    //   "SERVICE_PROVIDER": "service-provider"
+    // };
+    
+    // // Get the appropriate API path based on the role
+    // const apiPath = rolePathMap[role] || role.toLowerCase();
+    
     const response = await axios.get(`${API_BASE_URL}/${role}/requests`, {
       headers: {
         Authorization: `Bearer ${token}`,

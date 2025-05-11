@@ -37,7 +37,7 @@ export default function AddWorkerScreen({ navigation }) {
   // Validation
   const validateUsername = (input) => input.trim().length > 0;
   const validatePhoneNumber = (input) => {
-    const phoneRegex = /^05\d{8}$/; // Must start with "05" and be 10 digits
+    const phoneRegex = /^\+9665\d{8}$/; // Must start with "+9665" and be followed by 8 digits
     return phoneRegex.test(input);
   };
   const validateCity = (input) => input.trim().length > 0; // simple check for non-empty
@@ -116,7 +116,7 @@ export default function AddWorkerScreen({ navigation }) {
 
         <Input
           label="Phone Number"
-          placeholder="05XXXXXXXX"
+          placeholder="+9665XXXXXXXX"
           keyboardType="phone-pad"
           onUpdateValue={(val) => handleInputChange("phoneNumber", val)}
           value={formState.phoneNumber.value}
@@ -125,7 +125,7 @@ export default function AddWorkerScreen({ navigation }) {
           isInvalid={!formState.phoneNumber.isValid}
           errorMessage={
             !formState.phoneNumber.isValid
-              ? "Invalid phone format (05XXXXXXXX)"
+              ? "Invalid phone format (+9665XXXXXXXX)"
               : ""
           }
         />

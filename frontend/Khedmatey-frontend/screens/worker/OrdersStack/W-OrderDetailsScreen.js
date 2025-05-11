@@ -33,14 +33,14 @@ import DeclinedContent from "../../../components/Orders/W-Orders/OrderDetails/De
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
 
-const MAIN_STATUSES = ["PENDING", "ACCEPTED", "COMING", "IN-PROGRESS"];
+const MAIN_STATUSES = ["PENDING", "ACCEPTED", "COMING", "IN_PROGRESS"];
 const FINAL_STATUSES = ["FINISHED", "INVOICED", "CANCELLED", "DECLINED"];
 
 const ICONS = {
   PENDING: "time-outline",
   ACCEPTED: "checkmark-circle-outline",
   COMING: "car-outline",
-  "IN-PROGRESS": "hammer-outline",
+  "IN_PROGRESS": "hammer-outline",
 };
 
 export default function OrderDetailsScreen({ navigation, route }) {
@@ -182,7 +182,7 @@ export default function OrderDetailsScreen({ navigation, route }) {
                 isFollowUpOrder={isFollowUpOrder}
               />
             )}
-            {status === "IN-PROGRESS" && (
+            {status === "IN_PROGRESS" && (
               <InProgressContent
                 order={orderData}
                 changeStatus={changeStatus}

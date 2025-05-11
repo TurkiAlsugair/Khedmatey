@@ -25,7 +25,7 @@ export default function AdminNavigator() {
           <Ionicons
             name="menu"
             size={wp(6)}
-            color={Colors.secondary}
+            color={Colors.primary}
             style={{ marginLeft: wp(5) }}
             onPress={() => navigation.toggleDrawer()}
           />

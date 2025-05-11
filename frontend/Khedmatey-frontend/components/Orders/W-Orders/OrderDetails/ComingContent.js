@@ -77,7 +77,7 @@ export default function ComingContent({
   const calculateTotal = () => {
     if (!invoice?.details?.length) return 0;
     return invoice.details.reduce(
-      (sum, item) => sum + Number(item.Price || 0),
+      (sum, item) => sum + Number(item.price || 0),
       0
     );
   };
@@ -90,7 +90,7 @@ export default function ComingContent({
 
       <View style={styles.changeStatusCont}>
         <Text style={styles.changeStatusText}>
-          Ready to Work? Change Status to In-Progress
+          Ready to Work? Change Status to In Progress
         </Text>
         <View style={styles.buttonsCont}>
           <Button
@@ -103,11 +103,11 @@ export default function ComingContent({
           </Button>
           <Button
             cusStyles={styles.InProgressOrderButton}
-            onPress={() => updateStatusHandler("IN-PROGRESS")}
-            disabled={loadingStatus === "IN-PROGRESS"}
-            loading={loadingStatus === "IN-PROGRESS"}
+            onPress={() => updateStatusHandler("IN_PROGRESS")}
+            disabled={loadingStatus === "IN_PROGRESS"}
+            loading={loadingStatus === "IN_PROGRESS"}
           >
-            In-Progress
+            In Progress
           </Button>
         </View>
       </View>
@@ -139,7 +139,7 @@ export default function ComingContent({
                 <Text style={styles.prevSectionText}>
                   {item.nameEN} - {item.nameAR}
                 </Text>
-                <Price price={item.Price} size={wp(3.5)} />
+                <Price price={item.price} size={wp(3.5)} />
               </View>
             ))}
             <View style={styles.totalRow}>

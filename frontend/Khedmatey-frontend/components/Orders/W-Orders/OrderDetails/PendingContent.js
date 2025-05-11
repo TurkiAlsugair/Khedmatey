@@ -16,7 +16,7 @@ export default function PendingContent({ order, isFollowUpOrder = false }) {
   const calculateTotal = () => {
     if (!invoice?.details?.length) return 0;
     return invoice.details.reduce(
-      (sum, item) => sum + Number(item.Price || 0),
+      (sum, item) => sum + Number(item.price || 0),
       0
     );
   };
@@ -54,7 +54,7 @@ export default function PendingContent({ order, isFollowUpOrder = false }) {
                 <Text style={styles.prevSectionText}>
                   {item.nameEN} - {item.nameAR}
                 </Text>
-                <Price price={item.Price} size={wp(3.5)} />
+                <Price price={item.price} size={wp(3.5)} />
               </View>
             ))}
             <View style={styles.totalRow}>

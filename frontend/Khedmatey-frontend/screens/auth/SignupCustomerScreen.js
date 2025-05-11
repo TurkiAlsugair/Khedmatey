@@ -36,7 +36,7 @@ export default function SignupCustomerScreen({ navigation }) {
   };
 
   const validatePhoneNumber = (input) => {
-    const phoneRegex = /^05\d{8}$/;
+    const phoneRegex = /^\+9665\d{8}$/;
     return phoneRegex.test(input);
   };
 
@@ -105,7 +105,7 @@ export default function SignupCustomerScreen({ navigation }) {
             />
             <Input
               label={t("phoneNumber")}
-              placeholder="05XXXXXXXX"
+              placeholder="+9665XXXXXXXX"
               keyboardType="phone-pad"
               onUpdateValue={(value) => handleInputChange("phoneNumber", value)}
               value={formState.phoneNumber.value}
@@ -114,7 +114,7 @@ export default function SignupCustomerScreen({ navigation }) {
               isInvalid={!formState.phoneNumber.isValid} // Red border only on submit
               errorMessage={
                 !formState.phoneNumber.isValid
-                  ? "Invalid phone format (05XXXXXXXX)"
+                  ? "Invalid phone format (+9665XXXXXXXX)"
                   : ""
               }
             />
@@ -170,7 +170,7 @@ export default function SignupCustomerScreen({ navigation }) {
           onVerify={(data) => {
             const { accessToken, user } = data;
             setOtpVisible(false);
-            login(accessToken, user.userRole, user);
+            login(accessToken, user.role, user);
           }}
         />
       </View>

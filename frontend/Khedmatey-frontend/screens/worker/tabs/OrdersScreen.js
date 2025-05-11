@@ -24,7 +24,7 @@ const BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
 
 const GROUPS = {
   ASSIGNED: ["ACCEPTED", "PENDING"],
-  CURRENT: ["COMING", "IN-PROGRESS"],
+  CURRENT: ["COMING", "IN_PROGRESS"],
   PREVIOUS: ["INVOICED", "PAID"],
 };
 
@@ -42,7 +42,7 @@ export default function OrdersScreen() {
     try {
       setError("");
       setLoading(true);
-      const res = await fetchAllOrders(token, "worker");
+      const res = await fetchAllOrders(token, "WORKER");
       setRawData(res);
     } catch (e) {
       setError(e.response?.data?.message || "Failed to fetch orders.");

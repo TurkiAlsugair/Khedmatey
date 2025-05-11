@@ -165,14 +165,14 @@ export default function GenerateInvoiceModal({
                 <Text style={styles.prevSectionText}>
                   {item.nameEN} - {item.nameAR}
                 </Text>
-                <Price price={item.Price} size={wp(3.5)} />
+                <Price price={item.price} size={wp(3.5)} />
               </View>
             ))}
             <View style={styles.bottomSummaryRow}>
               <Text style={styles.prevSectionText}>
                 <Price
                   price={previousInvoice.details
-                    .reduce((acc, item) => acc + parseFloat(item.Price), 0)
+                    .reduce((acc, item) => acc + parseFloat(item.price), 0)
                     .toFixed(2)}
                   size={wp(3.5)}
                   header="Total"

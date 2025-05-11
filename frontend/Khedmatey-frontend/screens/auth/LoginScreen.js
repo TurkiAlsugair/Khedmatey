@@ -33,7 +33,7 @@ export default function LoginScreen({ navigation }) {
   };
 
   const validatePhoneNumber = (input) => {
-    const phoneRegex = /^05\d{8}$/;
+    const phoneRegex = /^\+9665\d{8}$/;
     return phoneRegex.test(input);
   };
 
@@ -69,7 +69,7 @@ export default function LoginScreen({ navigation }) {
 
         <Input
           label={t("phoneNumber")}
-          placeholder="05XXXXXXXX"
+          placeholder="+9665XXXXXXXX"
           keyboardType="phone-pad"
           onUpdateValue={handleInputChange}
           value={formState.phoneNumber.value}
@@ -79,8 +79,8 @@ export default function LoginScreen({ navigation }) {
           errorMessage={
             !formState.phoneNumber.isValid
               ? isArabic
-                ? "(05XXXXXXXX) الرقم يجب ان يكون بصيغة "
-                : "Invalid phone format (05XXXXXXXX)"
+                ? "(+9665XXXXXXXX) الرقم يجب ان يكون بصيغة "
+                : "Invalid phone format (+9665XXXXXXXX)"
               : ""
           }
         />
@@ -126,7 +126,7 @@ export default function LoginScreen({ navigation }) {
         onVerify={(data) => {
           const { accessToken, user } = data;
           setOtpVisible(false);
-          login(accessToken, user.userRole, user);
+          login(accessToken, user.role, user);
         }}
       />
     </View>

@@ -38,7 +38,7 @@ export default function InProgressContent({
   const renderPreviousDetailsBox = () => {
     const details = order.invoice?.details || [];
     const total = details.reduce(
-      (acc, item) => acc + parseFloat(item.Price),
+      (acc, item) => acc + parseFloat(item.price),
       0
     );
 
@@ -49,7 +49,7 @@ export default function InProgressContent({
             <Text style={styles.prevSectionText}>
               {item.nameEN} - {item.nameAR}
             </Text>
-            <Price price={item.Price} size={wp(3.5)} />
+            <Price price={item.price} size={wp(3.5)} />
           </View>
         ))}
         <View style={styles.bottomSummaryRow}>
