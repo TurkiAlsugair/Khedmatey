@@ -3,7 +3,14 @@ import { DatabaseService } from 'src/database/database.service';
 import { Role, Status } from '@prisma/client';
 import { CustomerService } from 'src/customer/customer.service';
 import { AuthService } from 'src/auth/auth.service';
-import { FindUserDto } from 'src/dtos/find-user.dto';
+import { ServiceProviderRequestsDto, RequestDetailsDto, AllUnhandledRequestsResponseDto } from './dto/unhandled-requests.dto';
+import { format } from 'date-fns';
+import { DashboardStatsDto } from './dto/dashboard-stats.dto';
+
+// Utility function to format date to DD/MM/YYYY
+const toDDMMYYYY = (date: Date): string => {
+  return format(date, 'dd/MM/yyyy');
+};
 
 @Injectable()
 export class AdminService {
@@ -31,7 +38,9 @@ export class AdminService {
             Requests: {
               include: {
                 service: true,
-                location: true
+                location: true,
+                followupService: true,
+                invoiceItems: true
               }
             }
           }
@@ -83,7 +92,9 @@ export class AdminService {
           Requests: {
             include: {
               service: true,
-              location: true
+              location: true,
+              followupService: true,
+              invoiceItems: true
             }
           }
         }
@@ -105,9 +116,6 @@ export class AdminService {
         };
       });
     }
-    
-    //if no parameters are provided, throw an error
-    throw new BadRequestException('At least one of phoneNumber or blacklisted must be provided');
   }
 
   async blacklistCustomer(customerId: string, blacklist: boolean) {
@@ -208,6 +216,204 @@ export class AdminService {
     return {
       message: 'Complaints retrieved successfully',
       data: complaints,
+    };
+  }
+
+  async getAllUnhandledRequests(): Promise<AllUnhandledRequestsResponseDto> {
+    //get all unhandled requests
+    const unhandledRequests = await this.prisma.request.findMany({
+      where: {
+        status: {
+          in: [Status.PENDING, Status.CANCELED]
+        }
+      },
+      include: {
+        service: {
+          include: {
+            serviceProvider: true
+          }
+        },
+        customer: true,
+        location: true,
+        providerDay: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    if (unhandledRequests.length === 0) {
+      return {
+        serviceProviders: []
+      };
+    }
+
+    //group requests by service provider
+    const serviceProviderMap = new Map<string, ServiceProviderRequestsDto>();
+
+    for (const request of unhandledRequests) {
+      const providerId = request.service.serviceProviderId;
+      const providerName = request.service.serviceProvider.username;
+      const providerPhone = request.service.serviceProvider.phoneNumber;
+      const providerEmail = request.service.serviceProvider.email;
+      
+      //add the service provider to the map array if they aren`t already in it
+      if (!serviceProviderMap.has(providerId)) {
+        serviceProviderMap.set(providerId, {
+          serviceProviderId: providerId,
+          serviceProviderName: providerName,
+          serviceProviderPhone: providerPhone,
+          serviceProviderEmail: providerEmail,  
+          requests: []
+        });
+      }
+
+      //create request details with customer information
+      const requestDetails: RequestDetailsDto = {
+        id: request.id,
+        status: request.status,
+        createdAt: request.createdAt,
+        date: format(request.createdAt, 'dd/MM/yyyy'),
+        notes: request.notes || undefined,
+        serviceId: request.serviceId,
+        serviceName: request.service.nameEN,
+        locationId: request.locationId,
+        locationDetails: {
+          city: request.location.city,
+          fullAddress: request.location.fullAddress,
+          miniAddress: request.location.miniAddress,
+          lat: request.location.lat,
+          lng: request.location.lng
+        },
+        scheduledDate: request.providerDay.date,
+        customerId: request.customer.id,
+        customerName: request.customer.username,
+        customerPhone: request.customer.phoneNumber
+      };
+
+      //add request to the service provider's list
+      const spRequests = serviceProviderMap.get(providerId);
+      if (spRequests) {
+        spRequests.requests.push(requestDetails);
+      }
+    }
+
+    const result = {
+      //take the values pairs from the map and put them in an array
+      serviceProviders: Array.from(serviceProviderMap.values()),
+    };
+
+    return result;
+  }
+
+  async getDashboardStats(): Promise<DashboardStatsDto> {
+    
+    //define relevant status for each entity type
+    const serviceProviderStatus = [Status.PENDING, Status.ACCEPTED, Status.DECLINED];
+    const serviceStatus = [Status.PENDING, Status.ACCEPTED, Status.DECLINED];
+    const allStatus = Object.values(Status); // Requests can have all statuses
+    
+    
+    //get service provider counts by status
+    const serviceProvidersCount = await this.prisma.serviceProvider.groupBy({
+      by: ['status'],
+      _count: {
+        id: true
+      }
+    });
+
+    //format service provider status count
+    const serviceProviderStats: Record<string, number> = {};
+
+    //initialize relevant status with 0 count
+    // the goal of initialization is to ensure even status with 0 count will be in the array 
+    // because the database will not return it if it has 0 count
+    serviceProviderStatus.forEach(status => {
+      serviceProviderStats[status] = 0;
+    });
+
+    //update with actual counts from database
+    for (const item of serviceProvidersCount) {
+      serviceProviderStats[item.status] = item._count.id;
+    }
+    
+    //get total customers count
+    const totalCustomers = await this.prisma.customer.count();
+
+    //get service counts by status
+    const servicesCount = await this.prisma.service.groupBy({
+      by: ['status'],
+      _count: {
+        id: true
+      }
+    });
+
+    //format service status count
+    const serviceStats: Record<string, number> = {};
+
+    //initialize relevant status with 0 count
+    // the goal of initialization is to ensure even status with 0 count will be in the array 
+    // because the database will not return it if it has 0 count
+    serviceStatus.forEach(status => {
+      serviceStats[status] = 0;
+    });
+
+    //update with actual counts from database
+    for (const item of servicesCount) {
+      serviceStats[item.status] = item._count.id;
+    }
+
+    //get request counts by status
+    const requestsCount = await this.prisma.request.groupBy({
+      by: ['status'],
+      _count: {
+        id: true
+      }
+    });
+
+    //format request status count
+    const requestStats: Record<string, number> = {};
+
+    //initialize all status with 0 count
+    // the goal of initialization is to ensure even status with 0 count will be in the array 
+    // because the database will not return it if it has 0 count
+    allStatus.forEach(status => {
+      requestStats[status] = 0;
+    });
+    
+    //update with actual counts from database
+    for (const item of requestsCount) {
+      requestStats[item.status] = item._count.id;
+    }
+
+    //get total workers count
+    const totalWorkers = await this.prisma.worker.count();
+
+    //calculate total counts
+    const totalServiceProviders = Object.values(serviceProviderStats).reduce((a: number, b: number) => a + b, 0);
+    const totalServices = Object.values(serviceStats).reduce((a: number, b: number) => a + b, 0);
+    const totalRequests = Object.values(requestStats).reduce((a: number, b: number) => a + b, 0);
+
+    //return formatted status counts
+    return {
+      serviceProviders: {
+        total: totalServiceProviders,
+        byStatus: serviceProviderStats
+      },
+      customers: {
+        total: totalCustomers
+      },
+      services: {
+        total: totalServices,
+        byStatus: serviceStats
+      },
+      requests: {
+        total: totalRequests,
+        byStatus: requestStats
+      },
+      workers: {
+        total: totalWorkers
+      }
     };
   }
 }
