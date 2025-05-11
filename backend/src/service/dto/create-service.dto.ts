@@ -21,6 +21,24 @@ export class CreateServiceDto {
   nameEN: string;
 
   @ApiProperty({
+    description: 'Service description in Arabic',
+    example: 'خدمة سباكة ممتازة وصيانة الحمامات',
+    required: true
+  })
+  @IsString()
+  @IsNotEmpty()
+  descriptionAR: string;
+
+  @ApiProperty({
+    description: 'Service description in English',
+    example: 'Excellent plumbing service and bathroom maintenance',
+    required: true
+  })
+  @IsString()
+  @IsNotEmpty()
+  descriptionEN: string;
+
+  @ApiProperty({
     description: 'Service price',
     example: '100',
     required: true

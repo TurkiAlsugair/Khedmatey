@@ -99,6 +99,9 @@ model Service {
 
   nameAR String
   nameEN String
+  
+  descriptionAR String
+  descriptionEN String
 
   categoryId Int
   category   Category @relation(fields: [categoryId], references: [id])
@@ -285,6 +288,9 @@ model FollowupService {
   nameAR String 
   nameEN String
   
+  descriptionAR String
+  descriptionEN String
+  
   categoryId       Int
   category         Category         @relation(fields: [categoryId], references: [id])
 
@@ -297,7 +303,8 @@ model FollowupService {
 
 model InvoiceItem {
   id          String @id @default(uuid()) @db.Char(36)
-  description String
+  nameAR      String
+  nameEN      String
   price       Float
 
   requestId   String

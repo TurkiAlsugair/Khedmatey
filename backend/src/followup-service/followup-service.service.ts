@@ -13,7 +13,7 @@ export class FollowupServiceService {
   ) {}
 
   async createFollowupService(dto: CreateFollowupServiceDto, user: GenerateTokenDto) {
-    const { requestId, nameAR, nameEN, categoryId, price, requiredNbOfWorkers = 1, notes } = dto;
+    const { requestId, nameAR, nameEN, descriptionAR, descriptionEN, categoryId, price, requiredNbOfWorkers = 1, notes } = dto;
 
     //validate the request exists
     const originalRequest = await this.prisma.request.findUnique({
@@ -68,6 +68,8 @@ export class FollowupServiceService {
       data: {
         nameAR,
         nameEN,
+        descriptionAR,
+        descriptionEN,
         price,
         requiredNbOfWorkers,
         category: {

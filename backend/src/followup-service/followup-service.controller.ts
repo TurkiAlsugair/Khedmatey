@@ -36,6 +36,8 @@ export class FollowupServiceController {
                 id: { type: 'string', example: 'followup-uuid' },
                 nameAR: { type: 'string', example: 'خدمة متابعة التنظيف' },
                 nameEN: { type: 'string', example: 'Cleaning Follow-up Service' },
+                descriptionAR: { type: 'string', example: 'خدمة متابعة لتنظيف المنزل والتأكد من جودة العمل' },
+                descriptionEN: { type: 'string', example: 'Follow-up service to clean the house and ensure quality of work' },
                 price: { type: 'string', example: '150' },
                 requestId: { type: 'string', example: 'request-uuid' }
               }

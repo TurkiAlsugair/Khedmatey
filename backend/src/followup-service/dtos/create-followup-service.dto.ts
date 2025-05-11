@@ -31,6 +31,24 @@ export class CreateFollowupServiceDto {
   nameEN: string;
 
   @ApiProperty({
+    description: 'Description of the follow-up service in Arabic',
+    example: 'خدمة متابعة لتنظيف المنزل والتأكد من جودة العمل',
+    required: true
+  })
+  @IsNotEmpty()
+  @IsString()
+  descriptionAR: string;
+
+  @ApiProperty({
+    description: 'Description of the follow-up service in English',
+    example: 'Follow-up service to clean the house and ensure quality of work',
+    required: true
+  })
+  @IsNotEmpty()
+  @IsString()
+  descriptionEN: string;
+
+  @ApiProperty({
     description: 'ID of the category for this follow-up service',
     example: 1,
     required: true

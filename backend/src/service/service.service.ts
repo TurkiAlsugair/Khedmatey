@@ -11,7 +11,7 @@ export class ServiceService {
   constructor(private prisma: DatabaseService) {}
   
   async create(dto: CreateServiceDto, serviceProviderId: string) {
-    const { nameAR, nameEN, price, categoryId } = dto;
+    const { nameAR, nameEN, descriptionAR, descriptionEN, price, categoryId } = dto;
 
     // search the service provider know it status 
     const serviceProvider = await this.prisma.serviceProvider.findUnique({
@@ -42,6 +42,8 @@ export class ServiceService {
       data: {
         nameAR,
         nameEN,
+        descriptionAR,
+        descriptionEN,
         price,
         categoryId,
         serviceProviderId,

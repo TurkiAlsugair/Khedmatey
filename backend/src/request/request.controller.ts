@@ -436,7 +436,8 @@ export class RequestController {
                   type: 'object',
                   properties: {
                     id: { type: 'string', example: 'invoice-item-uuid' },
-                    description: { type: 'string', example: 'Service call fee' },
+                    nameAR: { type: 'string', example: 'رسوم الخدمة' },
+                    nameEN: { type: 'string', example: 'Service call fee' },
                     price: { type: 'number', example: 50.00 },
                     createdAt: { type: 'string', example: '2023-05-15T10:30:00Z' }
                   }
