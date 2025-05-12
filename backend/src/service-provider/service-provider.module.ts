@@ -11,7 +11,7 @@ import { AuthModule } from 'src/auth/auth.module';
     DatabaseModule,
     TwilioModule,
     forwardRef(() => RequestModule), //needed bacuse of the circular dependency
-    ServiceModule,
+    forwardRef(() => ServiceModule),
     AuthModule
   ],
   controllers: [ServiceProviderController],

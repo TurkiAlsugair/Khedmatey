@@ -42,7 +42,7 @@ type RequestWithRelations = Request & {
 export class RequestService {
   constructor(
     private prisma: DatabaseService, 
-    private serviceService: ServiceService, 
+    @Inject(forwardRef(() => ServiceService)) private serviceService: ServiceService, 
     @Inject(forwardRef(() => ServiceProviderService)) private spService: ServiceProviderService,
     private orderStatusSocket: OrderStatusGateway
   ) {}
@@ -93,8 +93,8 @@ export class RequestService {
         }
         
         // 2- Check if date is available 
-        const closedServiceDates = await this.serviceService.getServiceSchedule(serviceId, location.city as CityName)
-        if(closedServiceDates.includes(format(requestDate, 'yyyy-MM-dd'))){
+        const closedServiceDates = await this.serviceService.getSchedule(serviceId, location.city as CityName)
+        if(closedServiceDates.includes(format(requestDate, 'dd/MM/yyyy'))){
           throw new BadRequestException("This service is closed for that day")
         }
 
@@ -200,26 +200,6 @@ export class RequestService {
               notes,
               locationId:loc.id, 
             },
-            include: 
-            {
-              dailyWorkers: 
-              {
-                select: 
-                {
-                  id: true,
-                  workerId: true,
-                }
-              },
-              location: true,
-              providerDay:
-              {
-                select: 
-                {
-                  id: true,
-                  date: true,
-                }
-              }
-            }
           });
           
           //increment number of requests for the day
@@ -341,6 +321,7 @@ export class RequestService {
           //     }),
           //   );
           // }      
+          
           return newRequest;
         });
 
@@ -350,8 +331,7 @@ export class RequestService {
     returns the requests that belongs to the requester.
     For service providers, requests are grouped by city instead of status.
     */
-    async getRequests(
-      user: GenerateTokenDto, statuses?: Status[]): Promise<Request[] | Record<Status, Request[]> | Record<string, Request[]>> {
+    async getRequests(user: GenerateTokenDto, statuses?: Status[]): Promise<Request[] | Record<string, Request[]> | any> {
 
       //1- build the base filter by role
       const where: any = {};
@@ -386,12 +366,11 @@ export class RequestService {
           status: true,
           notes: true,
           createdAt: true,
-          // Excluding: customerId, serviceId, locationId, providerDayId, followUpProviderDayId
           customer: true,
           providerDay: { 
             select: { 
               date: true, 
-              serviceProviderId: true 
+              serviceProvider:true
             } 
           },
           dailyWorkers: { 
@@ -404,71 +383,95 @@ export class RequestService {
               serviceProvider: {
                 select: {
                   id: true,
-                  username: true
+                  username: true,
+                  usernameAR: true
                 }
               }
             }
           },
           location: true,
-          followupService: true,
-          followupDailyWorkers: {
-            include: {
-              worker: true
-            }
-          },
-          followUpProviderDay: { 
-            select: {
-              date: true,
-              serviceProviderId: true
-            }
-          },
           invoiceItems: true,
-          feedback: {
-            select: {
-              rating: true,
-              review: true
-            }
-          },
-          complaint: {
-            select: {
-              description: true,
-              createdAt: true
-            }
-          }
+          feedback: true,
+          complaint: true
         },
         orderBy: { createdAt: 'desc' },
       }) as unknown as Request[];
 
-      //5- group request
-  
-      //if user is service provider, group by city instead of status
-      if (user.role === Role.SERVICE_PROVIDER) {
-        const groupedByCity: Record<string, Request[]> = {};
+      //5- group and restructure the requests
+
+      //determine whether to group by status or city based on user role
+      const isProvider = user.role as Role === Role.SERVICE_PROVIDER;
+      const groupingKey = isProvider
+        ? (req: any) => req.location?.city
+        : (req: any) => req.status;
+
+      const groupingsSet = new Set(requests.map(groupingKey));
+      const result = Array.from(groupingsSet).map(grouping => {
+        const filteredRequests = requests.filter(req => 
+          groupingKey(req) === grouping
+        );
         
-        for (const req of requests) {
-          const location = (req as any).location;
-          const city = location.city;
-          if (!groupedByCity[city]) {
-            groupedByCity[city] = [];
+        //format each request to include date and service provider info
+        const formattedRequests = filteredRequests.map(req => {
+          const date = this.toDDMMYYYY((req as any).providerDay?.date).formatted;
+          
+          //extract needed properties without duplicating 'id'
+          const { id, status, notes } = req;
+          
+          //calculate total price from invoice items if they exist
+          const invoiceItems = (req as any).invoiceItems || [];
+          const totalPrice = invoiceItems.reduce((sum: number, item: any) => sum + Number(item.price), 0).toString();
+          
+          //format invoice data if items exist
+          let invoice: { date: string; details: any[] } | null = null;
+          if (invoiceItems.length > 0) {
+            // Find the most recent invoice item date
+            const sortedItems = [...invoiceItems].sort((a, b) => 
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+            const latestDate = sortedItems[0]?.createdAt 
+              ? format(new Date(sortedItems[0].createdAt), 'dd/MM/yyyy') 
+              : format(new Date(), 'dd/MM/yyyy');
+            
+            //format invoice items details
+            const details = invoiceItems.map((item: any) => ({
+              nameAR: item.nameAR,
+              nameEN: item.nameEN,
+              price: item.price
+            }));
+            
+            invoice = {
+              date: latestDate,
+              details
+            };
           }
-          groupedByCity[city].push(req);
-        }
-        
-        return groupedByCity;
-      }
+          
+          return {
+            id,
+            date,
+            totalPrice: totalPrice || "NA",
+            serviceProvider: {
+              username: (req as any).service?.serviceProvider?.username || '',
+              usernameAR: (req as any).service?.serviceProvider?.usernameAR || ''
+            },
+            invoice,
+            status,
+            notes,
+            feedback: (req as any).feedback,
+            complaint: (req as any).complaint
+          };
+        });
+        const groupingField = isProvider ? 'city' : 'status';
+        return {
+          [groupingField]: grouping,
+          requests: formattedRequests
+        };
+      });
       
-      const grouped = Object.values(Status).reduce((acc, s) => {
-        acc[s] = [];
-        return acc;
-      }, {} as Record<Status, Request[]>);
-  
-      for (const req of requests) {
-        grouped[req.status].push(req);
-      }
-      return grouped;
+      return result;
     }
 
-    // Helper method to check if worker is assigned to a request (either original or follow-up)
+    //helper method to check if worker is assigned to a request (either original or follow-up)
     private isWorkerAssignedToRequest(request: RequestWithRelations, workerId: string): boolean {
       // If request has a follow-up service, only follow-up workers can change status
       if (request.followupService) {
@@ -482,7 +485,7 @@ export class RequestService {
 
     async updateStatus(id: string, user: GenerateTokenDto, newStatus: Status) {
 
-      // Fetch the request with all necessary relations in one query
+      //fetch the request with all necessary relations in one query
       const request = await this.prisma.request.findUnique({ 
         where: { id },
         include: {
@@ -562,7 +565,7 @@ export class RequestService {
     }
 
     //returns true and update request's status to cancelled if it has been created for more than 10 min, otherwise return false.
-    private async autoCancel(request: Request, nowMs: number): Promise<boolean> {
+    private async autoCancel(request: RequestWithRelations, nowMs: number): Promise<boolean> {
       const tenMinutesMs = 10 * 60 * 1000;
       const age = nowMs - request.createdAt.getTime();
 
@@ -930,16 +933,17 @@ export class RequestService {
       //validate and format the date
       const requestDate = this.validateDate(date);
 
-      const providerId = request.service.serviceProviderId;
+      //doesnt matter which service id we use because we are using the same function for both services and followup services
+      const serviceId = request.service.id;
 
       //2- Check if date is available
-      const { busyDates, blockedDates } = await this.spService.getNext30DaysSchedule(providerId, request.location.city);
-      console.log("busyDates", busyDates)
-      console.log("blockedDates", blockedDates)
-      if(busyDates.includes(format(requestDate, 'yyyy-MM-dd')) || blockedDates.includes(format(requestDate, 'yyyy-MM-dd'))){
+      const blockedDates  = await this.serviceService.getSchedule(serviceId, request.location.city);
+      
+      if(blockedDates.includes(format(requestDate, 'dd/MM/yyyy'))){
         throw new BadRequestException("This service is closed for that day");
       }
 
+      const providerId = request.service.serviceProviderId
       const providerDay = await this.prisma.providerDay.upsert({
         where: {
           date_serviceProviderId: {
@@ -1161,7 +1165,8 @@ export class RequestService {
       });
     }
 
-    async getRequestById(id: string, user: GenerateTokenDto): Promise<Request> {
+    async getRequestById(id: string, user: GenerateTokenDto)
+    {
       //Build a where object based on user role and request ID
       const where: any = { id };
       
@@ -1196,7 +1201,12 @@ export class RequestService {
           status: true,
           notes: true,
           createdAt: true,
-          customer: true,
+          customer: {
+            select: {
+              username: true,
+              phoneNumber: true
+            }
+          },
           providerDay: { 
             select: { 
               date: true, 
@@ -1209,13 +1219,13 @@ export class RequestService {
             } 
           },
           service: {
-            include: {
-              serviceProvider: {
-                select: {
-                  id: true,
-                  username: true
-                }
-              }
+            select: {
+              nameAR: true,
+              nameEN: true,
+              category: true,
+              descriptionAR: true,
+              descriptionEN: true,
+              serviceProvider: true
             }
           },
           location: true,
@@ -1235,7 +1245,8 @@ export class RequestService {
           feedback: {
             select: {
               rating: true,
-              review: true
+              review: true,
+              createdAt: true,
             }
           },
           complaint: {
@@ -1245,13 +1256,85 @@ export class RequestService {
             }
           }
         },
-      }) as unknown as Request;
+      });
 
       if (!request) {
         throw new NotFoundException(`Request with id ${id} not found or you don't have permission to access it`);
       }
 
-      return request;
+      const date = this.toDDMMYYYY((request as any).providerDay?.date).formatted;
+          
+      //extract needed properties without duplicating 'id'
+      const { status, notes } = request;
+      
+      //calculate total price from invoice items if they exist
+      const invoiceItems = (request as any).invoiceItems || [];
+      const totalPrice = invoiceItems.reduce((sum: number, item: any) => sum + Number(item.price), 0).toString();
+      
+      //format invoice data if items exist
+      let invoice: { date: string; details: any[] } | null = null;
+      if (invoiceItems.length > 0) {
+        // Find the most recent invoice item date
+        const sortedItems = [...invoiceItems].sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        const latestDate = sortedItems[0]?.createdAt 
+          ? format(new Date(sortedItems[0].createdAt), 'dd/MM/yyyy') 
+          : format(new Date(), 'dd/MM/yyyy');
+        
+        //format invoice items details
+        const details = invoiceItems.map((item: any) => ({
+          nameAR: item.nameAR,
+          nameEN: item.nameEN,
+          price: item.price
+        }));
+        
+        invoice = {
+          date: latestDate,
+          details
+        };
+      }
+
+      //extract worker
+      //extrat only first element because all services now only have one worker
+      const worker = request.dailyWorkers[0]
+      const followUpWorker = request.followupDailyWorkers[0]
+      
+      return {
+        id,
+        date,
+        totalPrice: totalPrice || "NA",
+        customer: {
+          username: request.customer.username,
+          phoneNumber: request.customer.phoneNumber,
+        },
+        serviceProvider: {
+          username: request.service.serviceProvider.username || '',
+          usernameAR: request.service.serviceProvider.usernameAR || ''
+        },
+        location: request.location,
+        service: {
+          nameAR: request.service.nameAR,
+          nameEN: request.service.nameEN,
+          category: request.service.category,
+          descriptionAR: request.service.descriptionAR,
+          descriptionEN: request.service.descriptionEN,
+        },
+        worker: {
+          username: worker.worker.username,
+          phonenumber: worker.worker.phoneNumber
+        },
+        followUpWorker: followUpWorker ? {
+          username: followUpWorker.worker.username,
+          phonenumber: followUpWorker.worker.phoneNumber
+        } : null,
+        invoice,
+        status,
+        notes, 
+        followUpService: request.followupService,
+        feedback: request.feedback,
+        complaint: request.complaint
+      };
     }
 
     async addInvoiceItem(requestId: string, userId: string, addInvoiceItemDto: AddInvoiceItemDto) {

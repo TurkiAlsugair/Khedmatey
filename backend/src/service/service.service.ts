@@ -1,14 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from "src/database/database.service";
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { cleanObject } from 'src/utils/cleanObject';
 import { CityName, Prisma, Status } from '@prisma/client';
 import { addDays, eachDayOfInterval, format, startOfDay } from 'date-fns';
-
+import { ServiceProviderService } from 'src/service-provider/service-provider.service';
 @Injectable()
 export class ServiceService {
-  constructor(private prisma: DatabaseService) {}
+  constructor(private prisma: DatabaseService, 
+    @Inject(forwardRef(() => ServiceProviderService)) private serviceProviderService: ServiceProviderService) {}
   
   async create(dto: CreateServiceDto, serviceProviderId: string) {
     const { nameAR, nameEN, descriptionAR, descriptionEN, price, categoryId } = dto;
@@ -259,13 +260,8 @@ export class ServiceService {
     return services;
   }
 
-  /**
-   * Returns an array of ISO‑dates (yyyy-MM-dd) over the next 30 days
-   * on which the given service is unavailable because:
-   * - providerDay.isClosed (manually blocked)
-   * - providerDay.isBusy   (no worker capacity)
-   * - providerDayService.isClosed (service‑specific closure)
-   */
+  //returns schedule for a specific service
+  //not used now because services all have one worker and cant be closed invdiviually
   async getServiceSchedule(serviceId: string, city?: string): Promise<string[]> {
 
     //find the service to get its provider
@@ -360,11 +356,56 @@ export class ServiceService {
     eachDayOfInterval({ start: today, end }).forEach((d) => {
       const key = d.toDateString();
       if (unavailableMap.has(key)) {
-        busyDates.push(format(d, 'yyyy-MM-dd'));
+        busyDates.push(format(d, 'dd-MM-yyyy'));
       }
     });
 
     return busyDates;
+  }
+
+  //used to get schedule for a service or followup service (it uses the same function for getting the schedule for the SP)
+  async getSchedule(serviceId: string, city?: string){
+
+    //find the service to get its provider
+    let providerId: string;
+
+    const service = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+      select: { serviceProviderId: true, requiredNbOfWorkers: true },
+    });
+    if (!service) {
+      const followupService = await this.prisma.followupService.findUnique({
+        where: { id: serviceId },
+        select: {
+          request:{
+            select: {
+              service: {
+                select: {
+                  serviceProviderId: true,
+                }
+              }
+            }
+          }
+        }
+      });
+      if(followupService)
+        providerId = followupService.request.service.serviceProviderId;
+      else
+        throw new NotFoundException('Service not found');
+    }
+    else
+      providerId = service.serviceProviderId;
+
+    //if city, validate it
+    let cityFilter: CityName | undefined = undefined;
+    if(city)
+      cityFilter = await this.parseCity(city)
+    
+    const { blockedDates, busyDates } = await this.serviceProviderService.getNext30DaysSchedule(providerId, cityFilter);
+
+    //combine both arrays into one
+    const dates = [...blockedDates, ...busyDates];
+    return dates;
   }
 
   //helper
