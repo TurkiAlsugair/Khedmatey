@@ -23,6 +23,20 @@ export class ServicesResultDto {
     nameAR: string;
 
     @ApiProperty({
+        description: 'Service description in English',
+        example: 'Professional plumbing service for your home',
+        type: 'string'
+    })
+    descriptionEN: string;
+
+    @ApiProperty({
+        description: 'Service description in Arabic',
+        example: 'خدمة سباكة احترافية لمنزلك',
+        type: 'string'
+    })
+    descriptionAR: string;
+
+    @ApiProperty({
         description: 'Category ID for the service',
         example: 1,
         type: 'number'

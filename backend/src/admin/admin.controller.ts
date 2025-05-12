@@ -117,16 +117,16 @@ export class AdminController {
   @ApiBearerAuth('JWT-auth')
   @Roles(Role.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Patch('customers/blacklist')
+  @Patch('users/blacklist')
   async blacklistCustomer(@Body() blacklistDto: BlacklistCustomerDto): Promise<BaseResponseDto> {
     const result = await this.adminService.blacklistUser(
       blacklistDto.userId,
-      blacklistDto.blacklist,
+      blacklistDto.isBlacklisted,
       blacklistDto.role
     );
     try{
       return {
-        message: `${blacklistDto.role} ${blacklistDto.blacklist ? 'blacklisted' : 'removed from blacklist'} successfully`,
+        message: `${blacklistDto.role} ${blacklistDto.isBlacklisted ? 'blacklisted' : 'removed from blacklist'} successfully`,
       };
     } catch (err) {
       throw err;

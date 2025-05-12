@@ -9,11 +9,18 @@ export class ProvidersResultDto {
     id: number;
 
     @ApiProperty({
-        description: 'Service provider username',
+        description: 'Service provider username (English)',
         example: 'serviceCompany',
         type: 'string'
     })
     username: string;
+
+    @ApiProperty({
+        description: 'Service provider username (Arabic)',
+        example: 'شركة الخدمات',
+        type: 'string'
+    })
+    usernameAR: string;
 
     @ApiProperty({
         description: 'Service provider phone number',
