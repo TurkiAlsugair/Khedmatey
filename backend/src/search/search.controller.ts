@@ -18,6 +18,11 @@ export class SearchController {
       required: true, 
       description: 'Term to search for in service names and provider names'
     })
+    @ApiQuery({ 
+      name: 'city', 
+      required: false, 
+      description: 'Filter results by city name'
+    })
     @ApiResponse({ 
       status: 200, 
       description: 'Search results retrieved successfully',
@@ -75,15 +80,20 @@ export class SearchController {
     @ApiResponse({ status: 400, description: 'Bad request' })
     // @UseGuards(JwtAuthGuard)
     @Get()
-    async search(@Query('searchTerm') searchTerm: string): Promise<BaseResponseDto>
+    async search(
+      @Query('searchTerm') searchTerm: string,
+      @Query('city') city: string
+    ): Promise<BaseResponseDto>
     {
         try{
-      const { services, providers } = await this.searchService.search(searchTerm.trim());
+      const { services, providers } = await this.searchService.search(searchTerm.trim(), city);
   
       const response = {
         message: 'Search results fetched successfully.',
-        services,
-        providers,
+        data: {
+          services,
+          providers,
+        },
       };
   
       if (services.length === 0) {
