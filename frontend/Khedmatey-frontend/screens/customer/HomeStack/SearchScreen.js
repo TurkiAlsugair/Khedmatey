@@ -90,15 +90,15 @@ export default function SearchScreen({ navigation }) {
       });
 
       // if the response changed to { data: { services: [], providers: []} } }
-      // const data = res.data.data || {};
-      // setServices(data.services || []);
-      // setProviders(data.providers || []);
+      const data = res.data.data || {};
+      setServices(data.services || []);
+      setProviders(data.providers || []);
       
-      setServices(res.data.services || []);
-      setProviders(res.data.providers || []);
-      console.log("Search response:", res.data);
-      console.log("Services:", res.data.services);
-      console.log("Providers:", res.data.providers);
+      // setServices(res.data.services || []);
+      // setProviders(res.data.providers || []);
+      console.log("Search response:", data);
+      console.log("Services:",data.services);
+      console.log("Providers:", data.providers);
 
       /** store in history (keep unique & max 10) */
       const newHistory = [

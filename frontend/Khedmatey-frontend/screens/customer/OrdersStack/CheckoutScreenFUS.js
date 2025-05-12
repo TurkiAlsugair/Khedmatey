@@ -44,7 +44,7 @@ export default function CheckoutScreenFUS({ navigation, route }) {
     try {
       // Make API call to create follow-up order
       const response = await axios.patch(
-        `${API_BASE_URL}/customer/placeOrder/followUp`,
+        `${API_BASE_URL}/request/${order.id}/schedule-followup`,
         {
           orderId: order.id,
           date,

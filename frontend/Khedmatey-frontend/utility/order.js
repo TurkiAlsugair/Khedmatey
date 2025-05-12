@@ -16,7 +16,7 @@ export const fetchAllOrders = async (token, role) => {
     // // Get the appropriate API path based on the role
     // const apiPath = rolePathMap[role] || role.toLowerCase);
     
-    const response = await axios.get(`${API_BASE_URL}/requests`, {
+    const response = await axios.get(`${API_BASE_URL}/request`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
