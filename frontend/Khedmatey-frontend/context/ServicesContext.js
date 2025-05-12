@@ -46,10 +46,10 @@ export const ServicesProvider = ({ children }) => {
 
       // remap ids into the shape your UI expects
       const shaped = rawCategories.map((cat) => ({
-        categoryId: cat.id, // ← rename here
+        categoryId: cat.categoryId, // ← rename here
         categoryName: cat.categoryName,
         services: cat.services.map((svc) => ({
-          serviceId: svc.id, // ← and here
+          serviceId: svc.serviceId, // ← and here
           nameEN: svc.nameEN,
           nameAR: svc.nameAR,
           price: svc.price,

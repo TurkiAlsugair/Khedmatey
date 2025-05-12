@@ -48,7 +48,8 @@ export default function ServicesResultsTab({ data = [] }) {
 
       <FlatList
         data={list}
-        keyExtractor={(item) => item.id.toString()}
+        // item.id if the response changed to id instead of serviceId
+        keyExtractor={(item, index) => item.serviceId?.toString() || `service-${index}`}
         renderItem={({ item }) => (
           <ServiceItem service={item} showProvider={false} />
         )}
