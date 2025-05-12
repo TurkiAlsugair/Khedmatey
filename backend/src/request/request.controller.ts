@@ -182,235 +182,161 @@ export class RequestController {
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     @ApiResponse({ 
       status: 200, 
-      description: 'Requests fetched successfully',
-      schema: {
-        type: 'object',
-        properties: {
-          message: {
-            type: 'string',
-            example: 'Requests fetched'
-          },
-          data: {
-            oneOf: [
-              {
-                // For customers and workers: grouped by status
-                type: 'object',
-                additionalProperties: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      id: { type: 'string', example: 'request-uuid' },
-                      status: { type: 'string', example: 'PENDING' },
-                      notes: { type: 'string', example: 'Please come before noon' },
-                      createdAt: { type: 'string', example: '2023-01-15T08:30:00.000Z' },
-                      service: {
+      description: 'Requests fetched successfully. Response structure varies based on user role:',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              message: { 
+                type: 'string', 
+                example: 'Requests fetched' 
+              },
+              data: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    status: {
+                      type: 'string',
+                      enum: Object.values(Status),
+                      example: 'FINISHED'
+                    },
+                    requests: {
+                      type: 'array',
+                      items: {
                         type: 'object',
                         properties: {
-                          id: { type: 'string', example: 'service-uuid' },
-                          nameAR: { type: 'string', example: 'خدمة السباكة' },
-                          nameEN: { type: 'string', example: 'Plumbing Service' },
+                          id: {
+                            type: 'string',
+                            example: '400'
+                          },
+                          date: {
+                            type: 'string',
+                            example: '22/04/2025'
+                          },
+                          totalPrice: {
+                            type: 'string',
+                            example: '320'
+                          },
+                          invoice: {
+                            type: 'object',
+                            nullable: true,
+                            properties: {
+                              date: {
+                                type: 'string',
+                                example: '02/03/2024'
+                              },
+                              details: {
+                                type: 'array',
+                                items: {
+                                  type: 'object',
+                                  properties: {
+                                    nameAR: {
+                                      type: 'string',
+                                      example: 'اصلاح غساله'
+                                    },
+                                    nameEN: {
+                                      type: 'string',
+                                      example: 'Washing machine repair'
+                                    },
+                                    price: {
+                                      type: 'string',
+                                      example: '230'
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
                           serviceProvider: {
                             type: 'object',
                             properties: {
-                              id: { type: 'string', example: 'provider-uuid' },
-                              username: { type: 'string', example: 'serviceCompany' }
-                            }
-                          }
-                        }
-                      },
-                      customer: {
-                        type: 'object',
-                        properties: {
-                          id: { type: 'string', example: 'customer-uuid' },
-                          username: { type: 'string', example: 'customerName' }
-                        }
-                      },
-                      location: {
-                        type: 'object',
-                        properties: {
-                          city: { type: 'string', example: 'RIYADH' },
-                          fullAddress: { type: 'string', example: '123 Main St, Riyadh' }
-                        }
-                      },
-                      providerDay: {
-                        type: 'object',
-                        properties: {
-                          date: { type: 'string', example: '2023-01-15T00:00:00.000Z' },
-                          serviceProviderId: { type: 'string', example: 'provider-uuid' }
-                        }
-                      },
-                      dailyWorkers: {
-                        type: 'array',
-                        items: {
-                          type: 'object',
-                          properties: {
-                            worker: {
-                              type: 'object',
-                              properties: {
-                                id: { type: 'string', example: 'worker-uuid' },
-                                name: { type: 'string', example: 'Worker Name' }
+                              username: {
+                                type: 'string',
+                                example: 'CoolAir'
+                              },
+                              usernameAR: {
+                                type: 'string',
+                                example: 'كول إير'
                               }
                             }
+                          },
+                          status: {
+                            type: 'string',
+                            enum: Object.values(Status),
+                            example: 'FINISHED'
+                          },
+                          createdAt: {
+                            type: 'string',
+                            format: 'date-time',
+                            example: '2023-01-15T08:30:00.000Z'
+                          },
+                          notes: {
+                            type: 'string',
+                            example: 'Please come before noon'
                           }
                         }
                       },
-                      invoiceItems: {
-                        type: 'array',
-                        items: {
-                          type: 'object',
-                          properties: {
-                            id: { type: 'string', example: 'invoice-item-uuid' },
-                            nameAR: { type: 'string', example: 'رسوم الخدمة' },
-                            nameEN: { type: 'string', example: 'Service call fee' },
-                            price: { type: 'number', example: 50.00 },
-                            createdAt: { type: 'string', example: '2023-05-15T10:30:00Z' }
-                          }
+                      example: [
+                        { 
+                          "id": "400", 
+                          "serviceProvider": { 
+                            "username": "CoolAir", 
+                            "usernameAR": "كول إير" 
+                          }, 
+                          "date": "22/04/2025",
+                          "totalPrice": "320",
+                          "invoice": {
+                            "date": "02/03/2024",
+                            "details": [
+                              { "nameAR": "اصلاح غساله", "nameEN": "Washing machine repair", "price": "230" },
+                              { "nameAR": "قطعه غسيل", "nameEN": "Some piece", "price": "90" }
+                            ]
+                          },
+                          "status": "FINISHED",
+                          "createdAt": "2023-01-15T08:30:00.000Z",
+                          "notes": "Please come before noon"
+                        },
+                        { 
+                          "id": "401", 
+                          "serviceProvider": { 
+                            "username": "CleanStar", 
+                            "usernameAR": "كلين ستار" 
+                          }, 
+                          "date": "25/04/2025",
+                          "totalPrice": "150",
+                          "invoice": {
+                            "date": "05/03/2024",
+                            "details": [
+                              { "nameAR": "تنظيف", "nameEN": "Cleaning service", "price": "150" }
+                            ]
+                          },
+                          "status": "FINISHED",
+                          "createdAt": "2023-01-16T09:45:00.000Z",
+                          "notes": "Apartment 3B"
                         }
-                      }
+                      ]
                     }
                   }
                 },
-                example: {
-                  "PENDING": [
-                    {
-                      "id": "request-uuid-1",
-                      "status": "PENDING",
-                      "notes": "Please come before noon",
-                      "createdAt": "2023-01-15T08:30:00.000Z",
-                      "service": {
-                        "id": "service-uuid",
-                        "nameAR": "خدمة السباكة",
-                        "nameEN": "Plumbing Service",
-                        "serviceProvider": {
-                          "id": "provider-uuid",
-                          "username": "serviceCompany"
-                        }
-                      },
-                      "customer": {
-                        "id": "customer-uuid",
-                        "username": "customerName"
-                      },
-                      "location": {
-                        "city": "RIYADH",
-                        "fullAddress": "123 Main St, Riyadh"
-                      },
-                      "invoiceItems": [],
-                      "feedback": null,
-                    }
-                  ],
-                  "ACCEPTED": [],
-                  "DECLINED": [],
-                  "CANCELED": [],
-                  "COMING": [],
-                  "IN_PROGRESS": [],
-                  "FINISHED": [],
-                  "INVOICED": [],
-                  "PAID": []
-                }
-              },
-              {
-                // For service providers: grouped by city
-                type: 'object',
-                additionalProperties: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      id: { type: 'string', example: 'request-uuid' },
-                      status: { type: 'string', example: 'PENDING' },
-                      notes: { type: 'string', example: 'Please come before noon' },
-                      createdAt: { type: 'string', example: '2023-01-15T08:30:00.000Z' },
-                      service: {
-                        type: 'object',
-                        properties: {
-                          id: { type: 'string', example: 'service-uuid' },
-                          nameAR: { type: 'string', example: 'خدمة السباكة' },
-                          nameEN: { type: 'string', example: 'Plumbing Service' }
-                        }
-                      },
-                      customer: {
-                        type: 'object',
-                        properties: {
-                          id: { type: 'string', example: 'customer-uuid' },
-                          username: { type: 'string', example: 'customerName' }
-                        }
-                      },
-                      location: {
-                        type: 'object',
-                        properties: {
-                          city: { type: 'string', example: 'RIYADH' },
-                          fullAddress: { type: 'string', example: '123 Main St, Riyadh' }
-                        }
-                      }
-                    }
+                example: [
+                  {
+                    "status": "FINISHED",
+                    "requests": [
+                      { "id": "400", "serviceProvider": { "username": "CoolAir", "usernameAR": "كول إير" }, "date": "22/04/2025", "totalPrice": "320", "invoice": { "date": "02/03/2024", "details": [{ "nameAR": "اصلاح غساله", "nameEN": "Washing machine repair", "price": "230" }, { "nameAR": "قطعه غسيل", "nameEN": "Some piece", "price": "90" }] }, "createdAt": "2023-01-15T08:30:00.000Z", "notes": "Please come before noon" },
+                      { "id": "401", "serviceProvider": { "username": "CleanStar", "usernameAR": "كلين ستار" }, "date": "25/04/2025", "totalPrice": "150", "invoice": { "date": "05/03/2024", "details": [{ "nameAR": "تنظيف", "nameEN": "Cleaning service", "price": "150" }] }, "createdAt": "2023-01-16T09:45:00.000Z", "notes": "Apartment 3B" }
+                    ]
+                  },
+                  {
+                    "status": "PENDING",
+                    "requests": [
+                      { "id": "402", "serviceProvider": { "username": "FastFix", "usernameAR": "فاست فيكس" }, "date": "28/04/2025", "totalPrice": "0", "invoice": null, "createdAt": "2023-01-17T11:20:00.000Z", "notes": "Commercial building" }
+                    ]
                   }
-                },
-                example: {
-                  "RIYADH": [
-                    {
-                      "id": "request-uuid-1",
-                      "status": "PENDING",
-                      "notes": "Please come before noon",
-                      "createdAt": "2023-01-15T08:30:00.000Z",
-                      "service": {
-                        "id": "service-uuid",
-                        "nameAR": "خدمة السباكة",
-                        "nameEN": "Plumbing Service"
-                      },
-                      "customer": {
-                        "id": "customer-uuid",
-                        "username": "customerName"
-                      },
-                      "location": {
-                        "city": "RIYADH",
-                        "fullAddress": "123 Main St, Riyadh"
-                      }
-                    },
-                    {
-                      "id": "request-uuid-2",
-                      "status": "ACCEPTED",
-                      "notes": "Apartment 3B",
-                      "createdAt": "2023-01-16T10:15:00.000Z",
-                      "service": {
-                        "id": "service-uuid",
-                        "nameAR": "خدمة السباكة",
-                        "nameEN": "Plumbing Service"
-                      },
-                      "customer": {
-                        "id": "customer-uuid-2",
-                        "username": "anotherCustomer"
-                      },
-                      "location": {
-                        "city": "RIYADH",
-                        "fullAddress": "456 King St, Riyadh"
-                      }
-                    }
-                  ],
-                  "JEDDAH": [
-                    {
-                      "id": "request-uuid-3",
-                      "status": "PENDING",
-                      "notes": "Commercial building",
-                      "createdAt": "2023-01-17T09:45:00.000Z",
-                      "service": {
-                        "id": "service-uuid",
-                        "nameAR": "خدمة السباكة",
-                        "nameEN": "Plumbing Service"
-                      },
-                      "customer": {
-                        "id": "customer-uuid-3",
-                        "username": "jeddahCustomer"
-                      },
-                      "location": {
-                        "city": "JEDDAH",
-                        "fullAddress": "789 Red Sea Rd, Jeddah"
-                      }
-                    }
-                  ]
-                }
+                ]
               }
-            ]
+            }
           }
         }
       }
@@ -436,139 +362,149 @@ export class RequestController {
       }
     }
 
-    @ApiOperation({ summary: 'Get request by ID', description: 'Get detailed information about a specific request' })
+    @ApiOperation({ 
+      summary: 'Get request by ID', 
+      description: 'Get detailed information about a specific request by its ID. The response includes all related data such as service details, customer information, location, workers, and invoice items.' 
+    })
     @ApiParam({ name: 'id', description: 'Request ID', type: 'string' })
     @ApiResponse({ 
       status: 200, 
-      description: 'Request details fetched successfully',
-      schema: {
-        type: 'object',
-        properties: {
-          message: {
-            type: 'string',
-            example: 'Request fetched'
-          },
-          data: {
+      description: 'Request fetched successfully. Response includes complete request details with related entities.',
+      content: {
+        'application/json': {
+          schema: {
             type: 'object',
             properties: {
-              id: { type: 'string', example: 'request-uuid' },
-              status: { type: 'string', example: 'PENDING' },
-              notes: { type: 'string', example: 'Please come before noon' },
-              createdAt: { type: 'string', example: '2023-01-15T08:30:00.000Z' },
-              service: {
+              message: {
+                type: 'string',
+                example: 'Request fetched'
+              },
+              data: {
                 type: 'object',
                 properties: {
-                  id: { type: 'string', example: 'service-uuid' },
-                  nameAR: { type: 'string', example: 'خدمة السباكة' },
-                  nameEN: { type: 'string', example: 'Plumbing Service' },
-                  serviceProvider: {
+                  id: { type: 'string', example: 'request-uuid' },
+                  status: { type: 'string', example: 'PENDING' },
+                  notes: { type: 'string', example: 'Please come before noon' },
+                  createdAt: { type: 'string', example: '2023-01-15T08:30:00.000Z' },
+                  service: {
                     type: 'object',
                     properties: {
-                      id: { type: 'string', example: 'provider-uuid' },
-                      username: { type: 'string', example: 'serviceCompany' }
+                      id: { type: 'string', example: 'service-uuid' },
+                      nameAR: { type: 'string', example: 'خدمة السباكة' },
+                      nameEN: { type: 'string', example: 'Plumbing Service' },
+                      serviceProvider: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'string', example: 'provider-uuid' },
+                          username: { type: 'string', example: 'serviceCompany' }
+                        }
+                      }
                     }
-                  }
-                }
-              },
-              customer: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string', example: 'customer-uuid' },
-                  username: { type: 'string', example: 'customerName' },
-                  phone: { type: 'string', example: '+966500000000' }
-                }
-              },
-              location: {
-                type: 'object',
-                properties: {
-                  city: { type: 'string', example: 'RIYADH' },
-                  fullAddress: { type: 'string', example: '123 Main St, Riyadh' },
-                  miniAddress: { type: 'string', example: 'Al Olaya District' },
-                  lat: { type: 'number', example: 24.7136 },
-                  lng: { type: 'number', example: 46.6753 }
-                }
-              },
-              providerDay: {
-                type: 'object',
-                properties: {
-                  date: { type: 'string', example: '2023-01-15T00:00:00.000Z' },
-                  serviceProviderId: { type: 'string', example: 'provider-uuid' }
-                }
-              },
-              dailyWorkers: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    worker: {
+                  },
+                  customer: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string', example: 'customer-uuid' },
+                      username: { type: 'string', example: 'customerName' }
+                    }
+                  },
+                  location: {
+                    type: 'object',
+                    properties: {
+                      city: { type: 'string', example: 'RIYADH' },
+                      fullAddress: { type: 'string', example: '123 Main St, Riyadh' },
+                      miniAddress: { type: 'string', example: 'Al Olaya District' },
+                      lat: { type: 'number', example: 24.7136 },
+                      lng: { type: 'number', example: 46.6753 }
+                    }
+                  },
+                  providerDay: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string', example: 'provider-day-uuid' },
+                      date: { type: 'string', example: '2023-01-15T00:00:00.000Z' },
+                      serviceProviderId: { type: 'string', example: 'provider-uuid' }
+                    }
+                  },
+                  dailyWorkers: {
+                    type: 'array',
+                    items: {
                       type: 'object',
                       properties: {
-                        id: { type: 'string', example: 'worker-uuid' },
-                        name: { type: 'string', example: 'Worker Name' },
-                        phone: { type: 'string', example: '+966500000000' }
+                        worker: {
+                          type: 'object',
+                          properties: {
+                            id: { type: 'string', example: 'worker-uuid' },
+                            name: { type: 'string', example: 'Worker Name' }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  invoiceItems: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string', example: 'invoice-item-uuid' },
+                        nameAR: { type: 'string', example: 'رسوم الخدمة' },
+                        nameEN: { type: 'string', example: 'Service call fee' },
+                        price: { type: 'number', example: 50.00 },
+                        createdAt: { type: 'string', example: '2023-05-15T10:30:00Z' }
+                      }
+                    }
+                  },
+                  feedback: {
+                    type: 'object',
+                    nullable: true,
+                    properties: {
+                      rating: { type: 'number', example: 4.5 },
+                      review: { type: 'string', example: 'Great service!' }
+                    }
+                  },
+                  complaint: {
+                    type: 'object',
+                    nullable: true,
+                    properties: {
+                      description: { type: 'string', example: 'The service was not completed properly' },
+                      createdAt: { type: 'string', example: '2023-01-20T14:25:00.000Z' }
+                    }
+                  },
+                  // Optional fields that may be present in follow-up requests
+                  followupService: {
+                    type: 'object',
+                    nullable: true,
+                    properties: {
+                      id: { type: 'string', example: 'followup-service-uuid' },
+                      nameAR: { type: 'string', example: 'متابعة السباكة' },
+                      nameEN: { type: 'string', example: 'Plumbing Follow-up' }
+                    }
+                  },
+                  followUpProviderDay: {
+                    type: 'object',
+                    nullable: true,
+                    properties: {
+                      id: { type: 'string', example: 'followup-provider-day-uuid' },
+                      date: { type: 'string', example: '2023-01-25T00:00:00.000Z' },
+                      serviceProviderId: { type: 'string', example: 'provider-uuid' }
+                    }
+                  },
+                  followupDailyWorkers: {
+                    type: 'array',
+                    nullable: true,
+                    items: {
+                      type: 'object',
+                      properties: {
+                        worker: {
+                          type: 'object',
+                          properties: {
+                            id: { type: 'string', example: 'worker-uuid' },
+                            name: { type: 'string', example: 'Worker Name' }
+                          }
+                        }
                       }
                     }
                   }
-                }
-              },
-              followupService: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string', example: 'followup-service-uuid' },
-                  nameAR: { type: 'string', example: 'متابعة السباكة' },
-                  nameEN: { type: 'string', example: 'Plumbing Follow-up' }
-                }
-              },
-              followUpProviderDay: {
-                type: 'object',
-                properties: {
-                  date: { type: 'string', example: '2023-01-25T00:00:00.000Z' },
-                  serviceProviderId: { type: 'string', example: 'provider-uuid' }
-                }
-              },
-              followupDailyWorkers: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    worker: {
-                      type: 'object',
-                      properties: {
-                        id: { type: 'string', example: 'worker-uuid' },
-                        name: { type: 'string', example: 'Worker Name' },
-                        phone: { type: 'string', example: '+966500000000' }
-                      }
-                    }
-                  }
-                }
-              },
-              invoiceItems: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'string', example: 'invoice-item-uuid' },
-                    nameAR: { type: 'string', example: 'رسوم الخدمة' },
-                    nameEN: { type: 'string', example: 'Service call fee' },
-                    price: { type: 'number', example: 50.00 },
-                    createdAt: { type: 'string', example: '2023-05-15T10:30:00Z' }
-                  }
-                }
-              },
-              feedback: {
-                type: 'object',
-                nullable: true,
-                properties: {
-                  rating: { type: 'number', example: 4.5 },
-                  review: { type: 'string', example: 'Great service!' }
-                }
-              },
-              complaint: {
-                type: 'object',
-                nullable: true,
-                properties: {
-                  description: { type: 'string', example: 'The service was not completed properly' },
-                  createdAt: { type: 'string', example: '2023-01-20T14:25:00.000Z' }
                 }
               }
             }
