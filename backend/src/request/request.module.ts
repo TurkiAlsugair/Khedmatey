@@ -9,7 +9,7 @@ import { ServiceProviderModule } from 'src/service-provider/service-provider.mod
 @Module({
   imports:[
     DatabaseModule,
-    ServiceModule,
+    forwardRef(() => ServiceModule),
     forwardRef(() => ServiceProviderModule) //needed bacuse of the circular dependency
   ],
   controllers: [RequestController],
