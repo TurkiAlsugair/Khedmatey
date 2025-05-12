@@ -14,7 +14,7 @@ import LoadingOverlay from "../../../components/LoadingOverlay";
 import MultiSelectInput from "../../../components/SelectInputs/MultiSelect";
 import { cities } from "../../../constants/data";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 const citiesList = cities;
 
 export default function MyAccountScreen({ navigation }) {
@@ -24,6 +24,7 @@ export default function MyAccountScreen({ navigation }) {
   const [formState, setFormState] = useState({
     username: { value: userInfo.username, isValid: true },
     usernameAR: { value: userInfo.usernameAR || "", isValid: true }, // new field
+    email: { value: userInfo.email, isValid: true },
     cities: { value: userInfo.cities, isValid: true },
   });
 
@@ -32,6 +33,7 @@ export default function MyAccountScreen({ navigation }) {
 
   // Basic validations
   const validateUsername = (input) => input.trim().length > 0;
+  const validateEmail = (input) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input);
 
   function handleInputChange(field, value) {
     setFormState((prev) => ({
@@ -44,13 +46,15 @@ export default function MyAccountScreen({ navigation }) {
   async function handleUpdateAccount() {
     const isUsernameValid = validateUsername(formState.username.value);
     const isUsernameARValid = validateUsername(formState.usernameAR.value);
+    const isEmailValid = validateEmail(formState.email.value);
     const isCitiesValid = formState.cities.value.length > 0;
 
-    if (!isUsernameValid || !isUsernameARValid || !isCitiesValid) {
+    if (!isUsernameValid || !isUsernameARValid || !isEmailValid || !isCitiesValid) {
       setFormState((prev) => ({
         ...prev,
         username: { ...prev.username, isValid: isUsernameValid },
         usernameAR: { ...prev.usernameAR, isValid: isUsernameARValid },
+        email: { ...prev.email, isValid: isEmailValid },
         cities: { ...prev.cities, isValid: isCitiesValid },
       }));
       return;
@@ -58,11 +62,14 @@ export default function MyAccountScreen({ navigation }) {
 
     try {
       setLoading(true);
+
       const response = await axios.patch(
-        `${API_BASE_URL}/serviceProvider/account`,
+        `${API_BASE_URL}/auth/service-provider/${userInfo.id}/account`,
         {
           username: formState.username.value,
           usernameAR: formState.usernameAR.value, // pass the new field
+          email: formState.email.value,
+          phoneNumber: userInfo.phoneNumber, // Include phoneNumber in the request
           cities: formState.cities.value,
         },
         {
@@ -77,6 +84,7 @@ export default function MyAccountScreen({ navigation }) {
         ...userInfo,
         username: formState.username.value,
         usernameAR: formState.usernameAR.value,
+        email: formState.email.value,
         cities: formState.cities.value,
       });
 
@@ -139,11 +147,15 @@ export default function MyAccountScreen({ navigation }) {
 
       <Input
         label="Email"
-        placeholder={userInfo.email}
-        placeholderTextColor="rgb(126,126,126)"
+        keyboardType="email-address"
+        onUpdateValue={(val) => handleInputChange("email", val)}
+        value={formState.email.value}
         labelFontSize={wp(3.8)}
         labelColor="#6F6F6F"
-        isReadOnly={true}
+        isInvalid={!formState.email.isValid}
+        errorMessage={
+          !formState.email.isValid ? "Please enter a valid email address" : ""
+        }
       />
 
       <MultiSelectInput

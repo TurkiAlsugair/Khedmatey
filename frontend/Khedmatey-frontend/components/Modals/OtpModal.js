@@ -6,13 +6,14 @@ import Button from "../../components/UI/Button";
 import { Colors } from "../../constants/styles";
 import axios from "axios";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function OtpModal({
   visible,
   phoneNumber,
   extraData = {},
   verifyUrl, // The verification endpoint
+  token,
   onClose,
   onVerify,
   isAuth = false,
@@ -56,11 +57,22 @@ export default function OtpModal({
       )}`
     );
     try {
-      const response = await axios.post(`${API_BASE_URL}${verifyUrl}`, {
-        phoneNumber,
-        ...extraData,
-        otpCode: otp,
-      });
+      // Configure request options with headers if token exists
+      const config = token 
+        ? { headers: { Authorization: `Bearer ${token}` } }
+        : {};
+        console.log("config", config);
+      
+      const response = await axios.post(
+        `${API_BASE_URL}${verifyUrl}`, 
+        {
+          phoneNumber,
+          ...extraData,
+          otpCode: otp,
+        },
+        config
+      );
+      console.log(` Sending POST , OTP for: ${phoneNumber}. Response:${response.data}`);
 
       onVerify(response.data.data);
 
@@ -72,7 +84,16 @@ export default function OtpModal({
 
   const handleResendOtp = async () => {
     try {
-      await axios.post(`${API_BASE_URL}/auth/sendOTP`, { phoneNumber });
+      // Configure request options with headers if token exists
+      const config = token 
+        ? { headers: { Authorization: `Bearer ${token}` } }
+        : {};
+        
+      await axios.post(
+        `${API_BASE_URL}/auth/sendOTP`, 
+        { phoneNumber },
+        config
+      );
       alert(`A new OTP has been sent to ${phoneNumber}`);
       setResendDisabled(true);
       setCountdown(30);

@@ -14,7 +14,7 @@ import { AuthContext } from "../../context/AuthContext";
 import axios from "axios";
 import Toast from "react-native-toast-message";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function ServiceItem({ service, editable }) {
   const navigation = useNavigation();
@@ -32,7 +32,7 @@ export default function ServiceItem({ service, editable }) {
           style: "destructive",
           onPress: async () => {
             try {
-              await axios.delete(`${API_BASE_URL}/service`, {
+              await axios.delete(`${API_BASE_URL}/service/${service.serviceId}`, {
                 headers: {
                   Authorization: `Bearer ${token}`,
                 },

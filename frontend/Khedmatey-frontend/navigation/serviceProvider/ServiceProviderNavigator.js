@@ -7,8 +7,6 @@ import UpdateServiceScreen from "../../screens/serviceProvider/ServicesStack/Upd
 import { ServicesProvider } from "../../context/ServicesContext";
 import ManageScheduleScreen from "../../screens/serviceProvider/DashboardStack/ManageScheduleScreen";
 import { Colors } from "../../constants/styles";
-import PendignOrdersScreen from "../../screens/serviceProvider/DashboardStack/PendingOrdersScreen";
-import AcceptedOrdersScreen from "../../screens/serviceProvider/DashboardStack/AcceptedOrdersScreen";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import OrderDetailsScreen from "../../screens/serviceProvider/DashboardStack/SP-OrderDetailsScreen";

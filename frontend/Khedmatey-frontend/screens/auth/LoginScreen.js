@@ -121,7 +121,7 @@ export default function LoginScreen({ navigation }) {
         visible={otpVisible}
         phoneNumber={formState.phoneNumber.value}
         // here i can control what to return as a response by adding params ********
-        verifyUrl="/auth/signin/verifyOTP?role=w"
+        verifyUrl="/auth/signin"
         onClose={() => setOtpVisible(false)}
         onVerify={(data) => {
           const { accessToken, user } = data;

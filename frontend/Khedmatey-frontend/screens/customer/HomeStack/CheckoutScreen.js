@@ -31,6 +31,7 @@ export default function CheckoutScreen({ navigation, route }) {
   const { location } = useContext(LocationContext);
   const { token } = useContext(AuthContext);
 
+
   const service = route.params.service;
   const date = route.params.date;
 

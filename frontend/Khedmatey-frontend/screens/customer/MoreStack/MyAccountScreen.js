@@ -12,7 +12,7 @@ import Button from "../../../components/UI/Button";
 import Toast from "react-native-toast-message";
 import LoadingOverlay from "../../../components/LoadingOverlay";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function MyAccountScreen({ navigation }) {
   const { token, userInfo, updateUserInfo, logout } = useContext(AuthContext);
@@ -44,8 +44,11 @@ export default function MyAccountScreen({ navigation }) {
     try {
       setLoading(true);
       const response = await axios.patch(
-        `${API_BASE_URL}/customer/account`,
-        { username: formState.username.value },
+        `${API_BASE_URL}/customer/${userInfo.id}/account`,
+        { 
+          username: formState.username.value,
+          phoneNumber: userInfo.phoneNumber  // Include phoneNumber in the request
+        },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -83,7 +86,7 @@ export default function MyAccountScreen({ navigation }) {
           onPress: async () => {
             try {
               setLoading(true);
-              await axios.delete(`${API_BASE_URL}/customer/account`, {
+              await axios.delete(`${API_BASE_URL}/customer/${userInfo.id}/account`, {
                 headers: {
                   Authorization: `Bearer ${token}`,
                 },

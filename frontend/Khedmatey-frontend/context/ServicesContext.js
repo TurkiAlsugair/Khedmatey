@@ -4,12 +4,12 @@ import { useContext } from "react";
 import { AuthContext } from "./AuthContext";
 import { getCategoryNameById } from "../utility/services";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export const ServicesContext = createContext();
 
 export const ServicesProvider = ({ children }) => {
-  const { token } = useContext(AuthContext);
+  const { token, userInfo } = useContext(AuthContext);
   const [servicesData, setServicesData] = useState([]);
   const [activeCategoryId, setActiveCategoryId] = useState(null);
   const [loadingServices, setLoadingServices] = useState(false);
@@ -32,12 +32,17 @@ export const ServicesProvider = ({ children }) => {
     try {
       setLoadingServices(true);
 
-      const response = await axios.get(`${API_BASE_URL}/services`, {
+
+
+      const response = await axios.get(`${API_BASE_URL}/service?spId=${userInfo.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       // rawCategories has { id, categoryName, services: [ { id, … }, … ] }
-      const rawCategories = response.data.data.services;
+      const rawCategories = response.data.data.data.services;
+      console.log("userInfo", rawCategories);
+      console.log("rawCategories", rawCategories);
+      console.log("response", response.data.data);
 
       // remap ids into the shape your UI expects
       const shaped = rawCategories.map((cat) => ({
@@ -48,7 +53,6 @@ export const ServicesProvider = ({ children }) => {
           nameEN: svc.nameEN,
           nameAR: svc.nameAR,
           price: svc.price,
-          workersNeeded: svc.workersNeeded,
           // ...any other svc fields you use
         })),
       }));
