@@ -1337,7 +1337,8 @@ export class RequestService {
         //create the invoice item
         await this.prisma.invoiceItem.create({
           data: {
-            description: addInvoiceItemDto.description,
+            nameAR: addInvoiceItemDto.nameAR,
+            nameEN: addInvoiceItemDto.nameEN,
             price: addInvoiceItemDto.price,
             requestId: requestId
           }
@@ -1357,7 +1358,6 @@ export class RequestService {
         throw error;
       }
     }
-
     
     async addFeedback(requestId: string, userId: string, data: { rating: number, review?: string }) {
 

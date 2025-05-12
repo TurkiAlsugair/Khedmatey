@@ -29,7 +29,7 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
 
 export default function CheckoutScreen({ navigation, route }) {
   const { location } = useContext(LocationContext);
-  const { token } = useContext(AuthContext);
+  const { token, userInfo } = useContext(AuthContext);
 
 
   const service = route.params.service;
@@ -42,6 +42,7 @@ export default function CheckoutScreen({ navigation, route }) {
   const handlePlaceOrder = async () => {
     // order payload
     const payload = {
+      customerId: userInfo.id,
       serviceId: service.id,
       location: {
         miniAddress: location?.address || "",
@@ -59,7 +60,7 @@ export default function CheckoutScreen({ navigation, route }) {
     try {
       setBackendError("");
       const response = await axios.post(
-        `${API_BASE_URL}/customer/placeOrder`,
+        `${API_BASE_URL}/request`,
         payload,
         {
           headers: {

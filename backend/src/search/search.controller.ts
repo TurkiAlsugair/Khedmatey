@@ -28,41 +28,46 @@ export class SearchController {
             type: 'string',
             example: 'Search results fetched successfully.'
           },
-          services: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                serviceId: { type: 'string', example: 'service-uuid' },
-                nameEN: { type: 'string', example: 'Plumbing Service' },
-                nameAR: { type: 'string', example: 'خدمة السباكة' },
-                categoryId: { type: 'number', example: 1 },
-                price: { type: 'string', example: '100' },
-                providerId: { type: 'string', example: 'provider-uuid' },
-                providerName: { type: 'string', example: 'serviceCompany' }
+          data: {
+            type: 'object',
+            properties: {
+              services: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    serviceId: { type: 'string', example: 'service-uuid' },
+                    nameEN: { type: 'string', example: 'Plumbing Service' },
+                    nameAR: { type: 'string', example: 'خدمة السباكة' },
+                    categoryId: { type: 'number', example: 1 },
+                    price: { type: 'string', example: '100' },
+                    providerId: { type: 'string', example: 'provider-uuid' },
+                    providerName: { type: 'string', example: 'serviceCompany' }
+                  }
+                }
+              },
+              providers: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string', example: 'provider-uuid' },
+                    username: { type: 'string', example: 'serviceCompany' },
+                    phoneNumber: { type: 'string', example: '+123456789' }
+                  }
+                }
+              },
+              servicesMessage: {
+                type: 'string',
+                example: 'No services found matching your search.',
+                description: 'Message displayed when no services match the search term'
+              },
+              providersMessage: {
+                type: 'string',
+                example: 'No service providers found matching your search.',
+                description: 'Message displayed when no providers match the search term'
               }
             }
-          },
-          providers: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                id: { type: 'string', example: 'provider-uuid' },
-                username: { type: 'string', example: 'serviceCompany' },
-                phoneNumber: { type: 'string', example: '+123456789' }
-              }
-            }
-          },
-          servicesMessage: {
-            type: 'string',
-            example: 'No services found matching your search.',
-            description: 'Message displayed when no services match the search term'
-          },
-          providersMessage: {
-            type: 'string',
-            example: 'No service providers found matching your search.',
-            description: 'Message displayed when no providers match the search term'
           }
         }
       }

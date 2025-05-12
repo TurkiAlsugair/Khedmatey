@@ -88,6 +88,18 @@ export class ServiceProviderController {
                 type: 'array', 
                 items: { type: 'string' },
                 example: ['RIYADH', 'JEDDAH']
+              },
+              services: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string', example: 'service-uuid' },
+                    nameAR: { type: 'string', example: 'خدمة السباكة' },
+                    nameEN: { type: 'string', example: 'Plumbing Service' },
+                    status: { type: 'string', example: 'ACCEPTED' }
+                  }
+                }
               }
             }
           }

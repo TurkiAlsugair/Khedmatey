@@ -14,6 +14,15 @@ export class UpdateServiceProviderDto {
   username: string;
 
   @ApiProperty({
+    description: 'Updated Arabic username for the service provider',
+    example: 'شركة الخدمات المحدثة',
+    required: true
+  })
+  @IsString()
+  @IsNotEmpty()
+  usernameAR: string;
+
+  @ApiProperty({
     description: 'Updated email for the service provider',
     example: 'updated@example.com',
     required: true

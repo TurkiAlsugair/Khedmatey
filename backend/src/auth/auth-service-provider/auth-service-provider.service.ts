@@ -10,7 +10,7 @@ import { UpdateServiceProviderDto } from "./dtos/update-serviceprovider.dto";
 export class AuthServiceProviderService {
   constructor( private prisma: DatabaseService, private twilio: TwilioService, private authService: AuthService) {}
 
-  async signupServiceProvider({ phoneNumber, otpCode, username, email, cities }: CreateServiceProviderDto) {
+  async signupServiceProvider({ phoneNumber, otpCode, username, usernameAR, email, cities }: CreateServiceProviderDto) {
 
     //check if phonenumber exists
     const existingPhoneNumber = await this.authService.findUser({phoneNumber});
@@ -50,7 +50,7 @@ export class AuthServiceProviderService {
 
     //create service provider
     const newServiceProvider = await this.prisma.serviceProvider.create({
-      data: { username, email, phoneNumber, //role column defaults to SERVICE_PROVIDER
+      data: { username, usernameAR, email, phoneNumber, //role column defaults to SERVICE_PROVIDER
         cities: {
           connect: matchedCities.map((city) => ({ id: city.id })),
         },
@@ -63,7 +63,7 @@ export class AuthServiceProviderService {
   }
 
 
-  async updateServiceProviderInfo( { phoneNumber ,username, email, cities }: UpdateServiceProviderDto ) {
+  async updateServiceProviderInfo( { phoneNumber, username, usernameAR, email, cities }: UpdateServiceProviderDto ) {
 
      // Find if the Service Provider is registered
      const serviceProvider = await this.authService.findUser({ phoneNumber });
@@ -95,6 +95,7 @@ export class AuthServiceProviderService {
       where: { phoneNumber },
       data: {
         ...(username && { username }),
+        ...(usernameAR && { usernameAR }),
         ...(email && { email }),
         ...(matchedCities.length > 0 && {
           cities: {

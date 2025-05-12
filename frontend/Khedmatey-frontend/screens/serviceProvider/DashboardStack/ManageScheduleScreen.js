@@ -30,7 +30,7 @@ export default function ManageScheduleScreen({ navigation }) {
   const [busyDates, setBusyDates] = useState(new Set());
   const [blockedDates, setBlockedDates] = useState(new Set());
   const [loading, setLoading] = useState(false);
-  const { token } = useContext(AuthContext);
+  const { token, userInfo } = useContext(AuthContext);
 
   const todayISO = moment().format("YYYY-MM-DD");
   const maxDateISO = moment().add(1, "month").format("YYYY-MM-DD");
@@ -45,7 +45,7 @@ export default function ManageScheduleScreen({ navigation }) {
       setLoading(true);
       try {
         const res = await axios.get(
-          `${API_BASE_URL}/service-provider/unavailableDates/sp`
+          `${API_BASE_URL}/service-provider/${userInfo.id}/schedule`
         );
         const { busyDates: bD = [], blockedDates: blkD = [] } =
           res.data.data || {};
@@ -131,8 +131,8 @@ export default function ManageScheduleScreen({ navigation }) {
 
       // Send to backend:
       await axios.patch(
-        `${API_BASE_URL}/service-provider/blockedDates`,
-        { blockedDates: blockedArrayDDMMYYYY },
+        `${API_BASE_URL}/service-provider/${userInfo.id}/schedule`,
+        { dates: blockedArrayDDMMYYYY },
         {
           Authorization: `Bearer ${token}`,
         }

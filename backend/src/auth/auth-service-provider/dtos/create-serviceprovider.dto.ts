@@ -13,6 +13,15 @@ export class CreateServiceProviderDto {
   username: string;
 
   @ApiProperty({
+    description: 'Arabic username for the new service provider',
+    example: 'شركة الخدمات',
+    required: true
+  })
+  @IsString()
+  @IsNotEmpty()
+  usernameAR: string;
+
+  @ApiProperty({
     description: 'Email for the service provider',
     example: 'service@example.com',
     required: true

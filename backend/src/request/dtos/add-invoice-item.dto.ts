@@ -3,13 +3,22 @@ import { IsNotEmpty, IsNumber, IsString, Min } from 'class-validator';
 
 export class AddInvoiceItemDto {
   @ApiProperty({
-    description: 'Description of the invoice item',
+    description: 'Name of the invoice item in Arabic',
+    example: 'رسوم الخدمة',
+    required: true
+  })
+  @IsNotEmpty()
+  @IsString()
+  nameAR: string;
+
+  @ApiProperty({
+    description: 'Name of the invoice item in English',
     example: 'Service call fee',
     required: true
   })
   @IsNotEmpty()
   @IsString()
-  description: string;
+  nameEN: string;
 
   @ApiProperty({
     description: 'Price of the invoice item',

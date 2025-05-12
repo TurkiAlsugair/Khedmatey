@@ -17,11 +17,12 @@ export class AuthController {
     status: 200, 
     description: 'User information returned successfully',
     schema: {
-      example: {
-        id: 'user-uuid',
-        username: 'username',
-        phoneNumber: '+123456789',
-        role: 'CUSTOMER | SERVICE_PROVIDER | WORKER'
+      type: 'object',
+      properties: {
+        id: { type: 'string', example: 'user-uuid' },
+        username: { type: 'string', example: 'username' },
+        phoneNumber: { type: 'string', example: '+123456789' },
+        role: { type: 'string', example: 'CUSTOMER | SERVICE_PROVIDER | WORKER' }
       }
     }
   })
