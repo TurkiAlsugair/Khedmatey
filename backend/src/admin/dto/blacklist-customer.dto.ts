@@ -20,7 +20,7 @@ export class BlacklistCustomerDto {
   })
   @IsNotEmpty()
   @IsBoolean()
-  blacklist: boolean;
+  isBlacklisted: boolean;
   
   @ApiProperty({
     description: 'Role of the user (CUSTOMER or SERVICE_PROVIDER)',

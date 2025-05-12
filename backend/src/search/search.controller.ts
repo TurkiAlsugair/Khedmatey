@@ -82,7 +82,7 @@ export class SearchController {
     @Get()
     async search(
       @Query('searchTerm') searchTerm: string,
-      @Query('city') city?: string
+      @Query('city') city: string
     ): Promise<BaseResponseDto>
     {
         try{
