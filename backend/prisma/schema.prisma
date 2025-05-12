@@ -62,6 +62,8 @@ model ServiceProvider {
   feedbacks RequestFeedback[]
   
   complaints Complaint[]
+
+  isBlacklisted Boolean @default(false)
 }
 
 enum CityName {
