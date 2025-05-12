@@ -15,7 +15,7 @@ export default function ProvidersResultsTab({ data }) {
   return (
     <FlatList
       data={data}
-      keyExtractor={(item) => item.id.toString()}
+      keyExtractor={(item, index) => item.id?.toString() || `provider-${index}`}
       renderItem={({ item }) => <ProviderItem provider={item} />}
       contentContainerStyle={{ paddingBottom: hp(16) }}
     />

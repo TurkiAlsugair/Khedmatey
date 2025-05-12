@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -10,12 +10,14 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
+import { AuthContext } from "../../context/AuthContext";
 import axios from "axios";
 import ProviderItem from "./ProviderItem";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function ProvidersTab({ city }) {
+  const { token } = useContext(AuthContext);
   const [providers, setProviders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [backendError, setBackendError] = useState("");
@@ -26,7 +28,12 @@ export default function ProvidersTab({ city }) {
       try {
         // GET /service-provider?city=...
         const response = await axios.get(
-          `${API_BASE_URL}/service-provider?city=${city}`
+          `${API_BASE_URL}/service-provider?city=${city}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         // Assuming response.data.data is an array of providers
         setProviders(response.data.data);

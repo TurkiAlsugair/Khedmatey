@@ -1,5 +1,5 @@
 // components/ServicesTab.js
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -15,11 +15,13 @@ import {
 import CategoriesRow from "./CategoriesRow";
 import ServiceItem from "./ServiceItem";
 import { serviceCategories } from "../../constants/data";
+import { AuthContext } from "../../context/AuthContext";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 const Categories = [{ label: "All", value: "All" }, ...serviceCategories];
 
 export default function ServicesTab({ city }) {
+  const { token } = useContext(AuthContext);
   const [services, setServices] = useState([]);
   const [filteredServices, setFilteredServices] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -32,7 +34,12 @@ export default function ServicesTab({ city }) {
       setLoading(true);
       try {
         const response = await axios.get(
-          `${API_BASE_URL}/service?city=${city}`
+          `${API_BASE_URL}/service?city=${city}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         // The array of services is in response.data.data
         setServices(response.data.data);

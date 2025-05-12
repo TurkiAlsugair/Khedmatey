@@ -17,7 +17,7 @@ import {
 import { AuthContext } from "../../context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function PendingServicesProvidersList({ navigation }) {
   const { token } = useContext(AuthContext);
@@ -32,7 +32,7 @@ export default function PendingServicesProvidersList({ navigation }) {
         try {
           setLoading(true);
           const res = await axios.get(
-            `${API_BASE_URL}/admin/providers/pending-services`,
+            `${API_BASE_URL}/auth/admin/service-providers/services/status/pending`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           setProviders(res.data.data);

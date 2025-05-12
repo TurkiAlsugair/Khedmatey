@@ -62,7 +62,6 @@ export default function SignupCustomerScreen({ navigation }) {
       }));
       return;
     }
-
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/sendOTP`, {
         phoneNumber: formState.phoneNumber.value,
@@ -165,7 +164,7 @@ export default function SignupCustomerScreen({ navigation }) {
           phoneNumber={formState.phoneNumber.value}
           extraData={{ username: formState.username.value }}
           // here i can control what to return as a response by adding params ********
-          verifyUrl="/auth/customer/signup/verifyOtp"
+          verifyUrl="/auth/customer/signup"
           onClose={() => setOtpVisible(false)}
           onVerify={(data) => {
             const { accessToken, user } = data;

@@ -24,13 +24,19 @@ function parseISOtoDDMMYYYY(isoString) {
   return `${day}/${month}/${year}`; // "DD/MM/YYYY"
 }
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+//NEW: Since Expecting ISO format from backend
+// Format yyyy-MM-dd to DD/MM/YYYY
+function formatToBackendFormat(isoString) {
+  return moment(isoString).format("DD/MM/YYYY");
+}
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function ManageScheduleScreen({ navigation }) {
+  const { token, userInfo } = useContext(AuthContext);
   const [busyDates, setBusyDates] = useState(new Set());
   const [blockedDates, setBlockedDates] = useState(new Set());
   const [loading, setLoading] = useState(false);
-  const { token, userInfo } = useContext(AuthContext);
 
   const todayISO = moment().format("YYYY-MM-DD");
   const maxDateISO = moment().add(1, "month").format("YYYY-MM-DD");
@@ -45,18 +51,26 @@ export default function ManageScheduleScreen({ navigation }) {
       setLoading(true);
       try {
         const res = await axios.get(
-          `${API_BASE_URL}/service-provider/${userInfo.id}/schedule`
+          `${API_BASE_URL}/service-provider/${userInfo.id}/schedule`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         const { busyDates: bD = [], blockedDates: blkD = [] } =
           res.data.data || {};
-
-        const busySet = new Set(bD.map(parseDDMMYYYYtoISO));
-        const blockSet = new Set(blkD.map(parseDDMMYYYYtoISO));
+          //When Expecting DD/MM/YYYY format from backend
+          // const busySet = new Set(bD.map(parseDDMMYYYYtoISO));
+          // const blockSet = new Set(blkD.map(parseDDMMYYYYtoISO));
+          // No need to convert here, as we're already getting ISO format from backend
+        const busySet = new Set(bD);
+        const blockSet = new Set(blkD);
 
         setBusyDates(busySet);
         setBlockedDates(blockSet);
       } catch (error) {
-        console.error("Error fetching unavailable dates:", error);
+        console.error(error.response?.data?.message);
         Alert.alert("Error", "Failed to load schedule.");
       } finally {
         setLoading(false);
@@ -125,16 +139,23 @@ export default function ManageScheduleScreen({ navigation }) {
   const handleUpdateSchedule = async () => {
     try {
       setLoading(true);
-      // Convert blockedDates from ISO => dd/mm/yyyy
-      const blockedArrayDDMMYYYY =
-        Array.from(blockedDates).map(parseISOtoDDMMYYYY);
+      // When Expecting DD/MM/YYYY format from backend
+      //  // Convert blockedDates from ISO => dd/mm/yyyy
+      //  const blockedArrayDDMMYYYY =
+      //  Array.from(blockedDates).map(parseISOtoDDMMYYYY);
+
+      // Convert blockedDates from ISO to DD/MM/YYYY for backend
+      const blockedArrayDDMMYYYY = 
+        Array.from(blockedDates).map(formatToBackendFormat);
 
       // Send to backend:
-      await axios.patch(
+      await axios.post(
         `${API_BASE_URL}/service-provider/${userInfo.id}/schedule`,
         { dates: blockedArrayDDMMYYYY },
         {
-          Authorization: `Bearer ${token}`,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          }
         }
       );
 

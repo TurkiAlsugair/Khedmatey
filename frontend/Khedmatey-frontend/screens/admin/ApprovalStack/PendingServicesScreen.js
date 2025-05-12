@@ -19,7 +19,7 @@ import {
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function PendingServicesScreen({ route, navigation }) {
   const { token } = useContext(AuthContext);
@@ -42,7 +42,7 @@ export default function PendingServicesScreen({ route, navigation }) {
           onPress: async () => {
             try {
               await axios.patch(
-                `${API_BASE_URL}/admin/service-providers/${provider.id}/services/${serviceId}/status`,
+                `${API_BASE_URL}/auth/admin/service-providers/${provider.id}/services/${serviceId}/status`,
                 { status },
                 { headers: { Authorization: `Bearer ${token}` } }
               );

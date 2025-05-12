@@ -1,5 +1,5 @@
 // screens/Customer/ServiceProviderScreen.js
-import React, { useEffect, useLayoutEffect, useState } from "react";
+import React, { useContext, useEffect, useLayoutEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -17,10 +17,12 @@ import {
 
 import CategoriesRow from "../../../components/CustomerHome/CategoriesRow";
 import ServiceItem from "../../../components/CustomerHome/ServiceItem";
+import { AuthContext } from "../../../context/AuthContext";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function ServiceProviderScreen({ navigation, route }) {
+  const { token } = useContext(AuthContext);
   /* ─────────────────────── params & header title */
   const { provider } = route.params;
   const { id: providerId, username } = provider;
@@ -45,29 +47,36 @@ export default function ServiceProviderScreen({ navigation, route }) {
       setLoading(true);
       setBackendError("");
       try {
-        const res = await axios.get(`${API_BASE_URL}/services/${providerId}`);
-        const cats = res.data?.data?.services || [];
+        const res = await axios.get(`${API_BASE_URL}/service`, {
+          params: {
+            spId: providerId,
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const cats = res.data?.data?.data?.services || [];
+        console.log("cats", cats);
 
-        /* 1️⃣ flatten & rename id‑fields so the rest of the app doesn’t change */
+        /* 1️⃣ flatten & rename id‑fields so the rest of the app doesn't change */
         const flat = [];
         cats.forEach((cat) => {
           cat.services.forEach((svc) => {
             flat.push({
               ...svc,
-              serviceId: svc.id,
-              categoryId: Number(cat.id),
-              category: { id: Number(cat.id), name: cat.categoryName },
+              categoryId: Number(cat.categoryId),
+              category: { id: Number(cat.categoryId), name: cat.categoryName },
               serviceProvider: provider, // keep reference if needed
             });
           });
         });
 
-        /* 2️⃣ prepare category chips for <CategoriesRow/> */
+        /* 2️⃣ prepare category chips for <CategoriesRow/> */
         const chips = [
           { label: "All", value: "All" },
           ...cats.map((c) => ({
             label: c.categoryName,
-            value: String(c.id), // CategoriesRow only cares about equality
+            value: String(c.categoryId), // Use categoryId instead of id
           })),
         ];
 
@@ -147,7 +156,7 @@ export default function ServiceProviderScreen({ navigation, route }) {
 
       <FlatList
         data={filteredServices}
-        keyExtractor={(item) => item.serviceId.toString()}
+        keyExtractor={(item, index) => item.serviceId?.toString() || `service-${index}`}
         renderItem={({ item }) => (
           <ServiceItem service={item} showProvider={false} />
         )}

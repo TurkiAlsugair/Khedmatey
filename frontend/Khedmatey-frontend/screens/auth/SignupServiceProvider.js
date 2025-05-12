@@ -195,7 +195,7 @@ export default function SignupServiceProviderScreen({ navigation }) {
               email: formState.email.value,
               cities: formState.cities.value,
             }}
-            verifyUrl="/auth/serviceProvider/signup/verifyOtp"
+            verifyUrl="/auth/service-provider/signup"
             onClose={() => setOtpVisible(false)}
             onVerify={(data) => {
               const { accessToken, user } = data;

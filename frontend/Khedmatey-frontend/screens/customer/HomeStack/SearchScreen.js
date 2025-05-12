@@ -26,13 +26,15 @@ import ServicesResultsTab from "../../../components/Search/ServicesResultsTab";
 import ProvidersResultsTab from "../../../components/Search/ProvidersResultsTab";
 import PreviousSearches from "../../../components/Search/PreviousSearches";
 import { LocationContext } from "../../../context/LocationContext";
+import { AuthContext } from "../../../context/AuthContext";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 const STORAGE_KEY = "prev_searches_v1";
 
 export default function SearchScreen({ navigation }) {
   /* ────────────────────────── local state */
   const insets = useSafeAreaInsets();
+  const { token } = useContext(AuthContext);
   const { location } = useContext(LocationContext);
 
   const [query, setQuery] = useState("");
@@ -82,10 +84,21 @@ export default function SearchScreen({ navigation }) {
     try {
       const res = await axios.get(`${API_BASE_URL}/search`, {
         params: { searchTerm: text.trim(), city: location?.city || "" },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      const data = res.data.data || {};
-      setServices(data.services || []);
-      setProviders(data.providers || []);
+
+      // if the response changed to { data: { services: [], providers: []} } }
+      // const data = res.data.data || {};
+      // setServices(data.services || []);
+      // setProviders(data.providers || []);
+      
+      setServices(res.data.services || []);
+      setProviders(res.data.providers || []);
+      console.log("Search response:", res.data);
+      console.log("Services:", res.data.services);
+      console.log("Providers:", res.data.providers);
 
       /** store in history (keep unique & max 10) */
       const newHistory = [

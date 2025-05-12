@@ -283,7 +283,7 @@ export class ServiceController {
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard)
   @Get(':serviceId/schedule')
-  async getServiceSchedule(@Param('serviceId', ParseIntPipe) serviceId: string, @Query('city') city?: string,): Promise<BaseResponseDto> {
+  async getServiceSchedule(@Param('serviceId') serviceId: string, @Query('city') city?: string,): Promise<BaseResponseDto> {
 
     const busyDates = await this.serviceService.getServiceSchedule(serviceId, city);
     return {
@@ -291,5 +291,5 @@ export class ServiceController {
       data: { busyDates },
     };
   }
-
+  
 }

@@ -15,7 +15,7 @@ import axios from "axios";
 import Toast from "react-native-toast-message";
 import { ServicesContext } from "../../../context/ServicesContext";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function UpdateServiceScreen({ navigation, route }) {
   const { token } = useContext(AuthContext);
@@ -26,10 +26,6 @@ export default function UpdateServiceScreen({ navigation, route }) {
     categoryId: { value: activeCategoryId, isValid: true },
     nameEN: { value: service.nameEN, isValid: true },
     nameAR: { value: service.nameAR, isValid: true },
-    workersNeeded: {
-      value: service.workersNeeded,
-      isValid: true,
-    },
     price: {
       value: service.price,
       isValid: true,
@@ -68,20 +64,12 @@ export default function UpdateServiceScreen({ navigation, route }) {
     const isValidCategory = !!formState.categoryId.value;
     const isValidNameEN = formState.nameEN.value.trim().length > 0;
     const isValidNameAR = formState.nameAR.value.trim().length > 0;
-
-    // workersNeeded must be ≥ 1 numeric
-    const workersStr = formState.workersNeeded.value.trim();
-    const workersNum = parseInt(workersStr, 10);
-    const isValidWorkers =
-      !isNaN(workersNum) && workersNum >= 1 && /^\d+$/.test(workersStr);
-
     const isValidPrice = formState.price.value.trim().length > 0;
 
     const allValid =
       isValidCategory &&
       isValidNameEN &&
       isValidNameAR &&
-      isValidWorkers &&
       isValidPrice;
 
     if (!allValid) {
@@ -90,7 +78,6 @@ export default function UpdateServiceScreen({ navigation, route }) {
         categoryId: { ...prev.categoryId, isValid: isValidCategory },
         nameEN: { ...prev.nameEN, isValid: isValidNameEN },
         nameAR: { ...prev.nameAR, isValid: isValidNameAR },
-        workersNeeded: { ...prev.workersNeeded, isValid: isValidWorkers },
         price: { ...prev.price, isValid: isValidPrice },
       }));
       return;
@@ -99,16 +86,12 @@ export default function UpdateServiceScreen({ navigation, route }) {
     try {
       setLoading(true);
 
-      // parse the numeric
-      const workersNeeded = parseInt(formState.workersNeeded.value, 10);
-
       await axios.patch(
         `${API_BASE_URL}/service/${service.serviceId}`,
         {
-          categoryId: formState.categoryId.value,
+          categoryId: parseInt(formState.categoryId.value, 10),
           nameEN: formState.nameEN.value,
           nameAR: formState.nameAR.value,
-          workersNeeded: formState.workersNeeded.value,
           price: formState.price.value,
         },
         {
@@ -125,7 +108,6 @@ export default function UpdateServiceScreen({ navigation, route }) {
         nameEN: formState.nameEN.value,
         nameAR: formState.nameAR.value,
         price: formState.price.value,
-        workersNeeded: formState.workersNeeded.value,
       });
 
       Toast.show({
@@ -177,19 +159,6 @@ export default function UpdateServiceScreen({ navigation, route }) {
           labelColor="#6F6F6F"
           isInvalid={!formState.nameAR.isValid}
           errorMessage="Arabic description is required"
-        />
-
-        {/* NEW: number of workers needed */}
-        <Input
-          label="Number of Workers Needed"
-          placeholder="Minimum number of workers needed"
-          keyboardType="numeric"
-          onUpdateValue={(value) => handleInputChange("workersNeeded", value)}
-          value={formState.workersNeeded.value}
-          labelFontSize={wp(3.8)}
-          labelColor="#6F6F6F"
-          isInvalid={!formState.workersNeeded.isValid}
-          errorMessage="Workers needed must be a number ≥ 1"
         />
 
         <Input

@@ -25,11 +25,12 @@ import Button from "../../../components/UI/Button";
 import Toast from "react-native-toast-message";
 import axios from "axios";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function CheckoutScreen({ navigation, route }) {
   const { location } = useContext(LocationContext);
   const { token, userInfo } = useContext(AuthContext);
+
 
   const service = route.params.service;
   const date = route.params.date;
@@ -42,7 +43,7 @@ export default function CheckoutScreen({ navigation, route }) {
     // order payload
     const payload = {
       customerId: userInfo.id,
-      serviceId: service.id,
+      serviceId: service.serviceId || service.id,
       location: {
         miniAddress: location?.address || "",
         fullAddress: location?.fullAddress || "",
@@ -175,13 +176,11 @@ export default function CheckoutScreen({ navigation, route }) {
                   title="Current Location"
                   description={location.fullAddress || ""}
                 >
-                  <View style={styles.iconContainer}>
-                    <FontAwesome5
-                      name="map-marker-alt"
-                      size={27}
-                      color="rgba(224, 1, 1, 0.71)"
-                    />
-                  </View>
+                  <FontAwesome5 
+                    name="map-marker-alt" 
+                    size={27} 
+                    color={Colors.primary} 
+                  />
                 </Marker>
               </MapView>
             )}

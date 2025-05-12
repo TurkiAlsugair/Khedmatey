@@ -18,7 +18,7 @@ import {
 import Toast from "react-native-toast-message";
 import { AuthContext } from "../../context/AuthContext";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function PendingProvidersList() {
   const { token } = useContext(AuthContext);
@@ -115,7 +115,7 @@ export default function PendingProvidersList() {
           style={[styles.btn, { backgroundColor: "green" }]}
           onPress={() => handleAction(item.id, "ACCEPTED")}
         >
-          <Text style={styles.btnText}>Approve</Text>
+          <Text style={styles.btnText}>Accept</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.btn, { backgroundColor: "red" }]}

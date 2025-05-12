@@ -144,7 +144,7 @@ export default function OrdersScreen() {
       <StatusBar barStyle={"dark-content"} />
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.headerContainer}>
-          <Text style={styles.header}>Orders</Text>
+        <Text style={styles.header}>Orders</Text>
           <View style={styles.filterRow}>
             <TouchableOpacity
               style={styles.filterButton}
@@ -175,10 +175,10 @@ export default function OrdersScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          <OrderList
+        <OrderList
             data={filteredOrders}
-            refreshing={refreshing}
-            onRefresh={() => load(true)}
+          refreshing={refreshing}
+          onRefresh={() => load(true)}
           />
         )}
         

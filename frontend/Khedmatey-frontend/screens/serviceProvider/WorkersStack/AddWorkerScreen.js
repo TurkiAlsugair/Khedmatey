@@ -164,12 +164,12 @@ export default function AddWorkerScreen({ navigation }) {
           username: formState.username.value,
           city: formState.city.value, // if needed
         }}
-        verifyUrl="/serviceProvider/workers"
+        token={token}
+        verifyUrl={`/service-provider/${userInfo.id}/workers`}
         onClose={() => setOtpVisible(false)}
         onVerify={(data) => {
           setOtpVisible(false);
           setLoading(false);
-
           Toast.show({
             type: "success",
             text1: "Worker added successfully!",

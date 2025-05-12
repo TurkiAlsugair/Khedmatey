@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -19,14 +19,17 @@ import { Colors } from "../../../constants/styles";
 import ServiceItem from "../../../components/CustomerHome/ServiceItem";
 import { Ionicons } from "@expo/vector-icons";
 import Button from "../../../components/UI/Button";
+import { AuthContext } from "../../../context/AuthContext";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function PickAppointment({ navigation, route }) {
+  const { token } = useContext(AuthContext);
   const [unavailableDates, setUnavailableDates] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const service = route.params.service;
+  console.log("Service object:", JSON.stringify(service, null, 2));
 
   const todayISO = moment().format("YYYY-MM-DD");
   const maxDateISO = moment().add(1, "month").format("YYYY-MM-DD");
@@ -46,19 +49,69 @@ export default function PickAppointment({ navigation, route }) {
     const fetchUnavailable = async () => {
       setLoading(true);
       try {
+        // Get the service ID - ensure it's treated as a number if needed
+        let serviceId = service.serviceId || service.id;
+        
+        // If the service comes from a search result, it might have different property names
+        if (!serviceId && service.serviceId === undefined && service.id === undefined) {
+          if (service._id) {
+            serviceId = service._id;
+          } else {
+            // Try to find any property that could be the ID
+            const possibleIdFields = Object.keys(service).filter(key => 
+              key.toLowerCase().includes('id') || key === '_id'
+            );
+            
+            if (possibleIdFields.length > 0) {
+              serviceId = service[possibleIdFields[0]];
+            }
+          }
+        }
+        
+        if (!serviceId) {
+          throw new Error('Could not determine service ID');
+        }
+        
+        // If ID is not numeric but backend expects numeric, try to parse it
+        // This can happen with MongoDB ObjectIds or UUIDs which need to be converted
+        if (typeof serviceId === 'string' && serviceId.includes('-')) {
+          // This is likely a UUID, try to extract a numeric portion or use a different field
+          console.log("Warning: ID appears to be UUID format, but backend may expect numeric ID");
+        }
+        
+        console.log(`Fetching schedule for service ID: ${serviceId}`);
+        
+        // Add city parameter if needed (as shown in your API docs)
+        const params = {};
+        if (route.params.city) {
+          params.city = route.params.city;
+        }
+        
         const res = await axios.get(
-          `${API_BASE_URL}/service-provider/unavailableDates`
+          `${API_BASE_URL}/service/${serviceId}/schedule`,
+          {
+            params,
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
-        const list = res.data.data || [];
-        setUnavailableDates(list);
+        
+        console.log("Service schedule response:", JSON.stringify(res.data, null, 2));
+        
+        // API returns { busyDates: [] } in ISO format (YYYY-MM-DD)
+        const busyDates = res.data.data.busyDates || [];
+        
+        // Store the dates in ISO format since that's what the calendar uses
+        setUnavailableDates(busyDates);
 
         /* decide default: today only if NOT blocked */
-        const todayDDMMYYYY = moment().format("DD/MM/YYYY");
-        if (!list.includes(todayDDMMYYYY)) {
+        if (!busyDates.includes(todayISO)) {
           setSelectedDate(todayISO);
         }
       } catch (err) {
         console.error("Failed to fetch unavailable dates:", err);
+        Alert.alert("Error", err.response?.data?.message || "Failed to load schedule");
       } finally {
         setLoading(false);
       }
@@ -70,10 +123,9 @@ export default function PickAppointment({ navigation, route }) {
   /* ───────────────────────── calendar marks */
   const markedDates = {};
 
-  // blocked days
-  unavailableDates.forEach((ddMMYYYY) => {
-    const [d, m, y] = ddMMYYYY.split("/");
-    markedDates[`${y}-${m}-${d}`] = {
+  // blocked days - no need to convert, API now returns ISO format
+  unavailableDates.forEach((isoDate) => {
+    markedDates[isoDate] = {
       disabled: true,
       disableTouchEvent: true,
       marked: true,
@@ -81,7 +133,7 @@ export default function PickAppointment({ navigation, route }) {
     };
   });
 
-  // selected day – only if it’s not disabled
+  // selected day – only if it's not disabled
   if (selectedDate && !markedDates[selectedDate]?.disabled) {
     markedDates[selectedDate] = {
       ...(markedDates[selectedDate] || {}),
@@ -91,7 +143,7 @@ export default function PickAppointment({ navigation, route }) {
     };
   }
 
-  // dot under “today” (secondary colour) when it’s free
+  // dot under "today" (secondary colour) when it's free
   if (todayISO !== selectedDate && !markedDates[todayISO]?.disabled) {
     markedDates[todayISO] = {
       ...(markedDates[todayISO] || {}),
