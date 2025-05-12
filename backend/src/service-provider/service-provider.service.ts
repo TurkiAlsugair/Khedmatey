@@ -7,7 +7,7 @@ import { addDays, eachDayOfInterval, format, formatISO, startOfDay } from 'date-
 import { RequestService } from 'src/request/request.service';
 import { ServiceService } from 'src/service/service.service';
 import { forwardRef } from '@nestjs/common';
-
+import { AuthService } from 'src/auth/auth.service';
 
 @Injectable()
 export class ServiceProviderService {
@@ -15,16 +15,14 @@ export class ServiceProviderService {
       private prisma: DatabaseService, 
       private twilio: TwilioService,
       @Inject(forwardRef(() => RequestService)) private requestService: RequestService, 
-      private serviceService: ServiceService
+      private serviceService: ServiceService, private authService: AuthService  
     ){}
 
     async createWorker(dto: CreateWorkerDto, serviceProviderId: string) {
 
         //check if phonenumber exists
-        const existing = await this.prisma.worker.findUnique({
-          where: { phoneNumber: dto.phoneNumber },
-        });
-        if (existing) {
+        const existingUser = await this.authService.findUser({ phoneNumber: dto.phoneNumber });
+        if (existingUser) {
           throw new ConflictException('Worker with this phone number already exists');
         }
 
