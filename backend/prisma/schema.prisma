@@ -68,6 +68,8 @@ enum CityName {
   Riyadh
   Jeddah
   Dammam
+  Mecca
+  Unayzah
 }
 
 model City {
@@ -81,10 +83,15 @@ model City {
 }
 
 enum CategoryName {
-  Cleaning
+  AirConditioning
   Plumbing
-  Electrical
-  Painting
+  HomeAppliances
+  Electricity
+  PaintingAndDecorations
+  Sterilization
+  Gardening
+  CarServices
+  FurnitureMoving
   Other
 }
 
