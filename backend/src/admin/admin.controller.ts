@@ -6,12 +6,8 @@ import { Role } from '@prisma/client';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { BaseResponseDto } from 'src/dtos/base-reposnse.dto';
-import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import { GenerateTokenDto } from 'src/auth/dtos/generate-token.dto';
-import { FindUserDto } from 'src/dtos/find-user.dto';
 import { BlacklistCustomerDto } from './dto/blacklist-customer.dto';
 import { LookupUserDto } from './dto/lookup-user.dto';
-import { AllUnhandledRequestsResponseDto } from './dto/unhandled-requests.dto';
 import { DashboardStatsDto } from './dto/dashboard-stats.dto';
 
 @ApiTags('admin')
@@ -75,7 +71,33 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('users/lookup')
   async lookupUser(@Query() query: LookupUserDto) {
-    return this.adminService.lookUpUsers(query.phoneNumber, query.blacklisted);
+    const result = await this.adminService.lookUpUsers(query.phoneNumber, query.blacklisted);
+    
+    if (query.phoneNumber) {
+      const userRole = result.role;
+      
+      if (userRole === Role.CUSTOMER) {
+        return {
+          message: "Customer data with requests retrieved successfully",
+          data: result
+        };
+      } else if (userRole === Role.SERVICE_PROVIDER) {
+        return {
+          message: "Service provider data retrieved successfully",
+          data: result
+        };
+      } else {
+        return {
+          message: "User information retrieved successfully",
+          data: result
+        };
+      }
+    } else if (query.blacklisted !== undefined) {
+      return {
+        message: `${result.length} ${query.blacklisted ? 'blacklisted' : 'non-blacklisted'} customers retrieved successfully`,
+        data: result
+      };
+    }
   }
 
   @ApiOperation({ summary: 'Blacklist a customer', description: 'Update a customer\'s blacklist status and cancel unpaid requests if blacklisting' })
@@ -96,11 +118,19 @@ export class AdminController {
   @Roles(Role.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch('customers/blacklist')
-  async blacklistCustomer(@Body() blacklistDto: BlacklistCustomerDto) {
-    return this.adminService.blacklistCustomer(
-      blacklistDto.customerId,
-      blacklistDto.blacklist
+  async blacklistCustomer(@Body() blacklistDto: BlacklistCustomerDto): Promise<BaseResponseDto> {
+    const result = await this.adminService.blacklistUser(
+      blacklistDto.userId,
+      blacklistDto.blacklist,
+      blacklistDto.role
     );
+    try{
+      return {
+        message: `${blacklistDto.role} ${blacklistDto.blacklist ? 'blacklisted' : 'removed from blacklist'} successfully`,
+      };
+    } catch (err) {
+      throw err;
+    }
   }
 
   @ApiOperation({ summary: 'Delete user', description: 'Delete a user account based on their role' })
@@ -125,7 +155,9 @@ export class AdminController {
   ): Promise<BaseResponseDto> {
     try {
       const result = await this.adminService.deleteUser(id, role);
-      return result;
+      return {
+        message: `${result.role === Role.CUSTOMER ? 'Customer' : 'Service provider'} with ID ${result.id} deleted successfully`
+      };
     } catch (err) {
       throw err;
     }
@@ -184,7 +216,7 @@ export class AdminController {
 
   @ApiOperation({
     summary: 'Get all unhandled requests',
-    description: 'Returns all unhandled requests (PENDING, PENDING_BY_SP, CANCELED) for all customers, grouped by service provider'
+    description: 'Returns all unhandled requests (PENDING, CANCELED) for all customers'
   })
   @ApiResponse({
     status: 200,
@@ -192,46 +224,93 @@ export class AdminController {
     schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', example: 'Unhandled requests retrieved successfully' },
+        message: { type: 'string', example: 'Unhandled Requests Fetched Successfully' },
         data: {
-          type: 'object',
-          properties: {
-            serviceProviders: {
-              type: 'array',
-              items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'request-uuid' },
+              customerId: { type: 'string', example: 'customer-uuid' },
+              serviceId: { type: 'string', example: 'service-uuid' },
+              locationId: { type: 'string', example: 'location-uuid' },
+              notes: { type: 'string', example: 'Please come before noon' },
+              status: { type: 'string', example: 'PENDING' },
+              date: { type: 'string', example: '15/01/2023' },
+              createdAt: { type: 'string', format: 'date-time' },
+              providerDayId: { type: 'string', example: 'provider-day-uuid' },
+              
+              service: {
                 type: 'object',
                 properties: {
-                  serviceProviderId: { type: 'string', example: 'provider-uuid' },
-                  serviceProviderName: { type: 'string', example: 'Service Provider Name' },
-                  serviceProviderPhone: { type: 'string', example: '+966500000000' },
-                  serviceProviderEmail: { type: 'string', example: 'provider@example.com' },
-                  requests: {
+                  id: { type: 'string', example: 'service-uuid' },
+                  nameAR: { type: 'string', example: 'خدمة السباكة' },
+                  nameEN: { type: 'string', example: 'Plumbing Service' },
+                  categoryId: { type: 'number', example: 1 },
+                  price: { type: 'string', example: '150' },
+                  requiredNbOfWorkers: { type: 'number', example: 2 },
+                  status: { type: 'string', example: 'ACCEPTED' },
+                  serviceProviderId: { type: 'string', example: 'provider-uuid' }
+                }
+              },
+              
+              serviceProvider: {
+                type: 'object',
+                properties: {
+                  username: { type: 'string', example: 'Service Provider Name' },
+                  usernameAR: { type: 'string', example: 'اسم مقدم الخدمة' },
+                  phoneNumber: { type: 'string', example: '+966500000000' },
+                  email: { type: 'string', example: 'provider@example.com' }
+                }
+              },
+              
+              customer: {
+                type: 'object',
+                properties: {
+                  username: { type: 'string', example: 'Customer Name' },
+                  phoneNumber: { type: 'string', example: '+966500000001' }
+                }
+              },
+              
+              location: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', example: 'location-uuid' },
+                  city: { type: 'string', example: 'RIYADH' },
+                  fullAddress: { type: 'string', example: '123 Main St, Riyadh' },
+                  miniAddress: { type: 'string', example: 'Al Olaya District' },
+                  lat: { type: 'number', example: 24.7136 },
+                  lng: { type: 'number', example: 46.6753 }
+                }
+              },
+              
+              followupService: {
+                type: 'object',
+                nullable: true,
+                properties: {
+                  id: { type: 'string', example: 'followup-service-uuid' },
+                  categoryId: { type: 'number', example: 2 },
+                  nameEN: { type: 'string', example: 'Follow-up Plumbing Service' },
+                  nameAR: { type: 'string', example: 'خدمة متابعة السباكة' },
+                  descriptionEN: { type: 'string', example: 'Follow-up check for plumbing work' },
+                  descriptionAR: { type: 'string', example: 'متابعة وفحص أعمال السباكة' },
+                  price: { type: 'string', example: '75' }
+                }
+              },
+              
+              invoice: {
+                type: 'object',
+                nullable: true,
+                properties: {
+                  date: { type: 'string', example: '18/01/2023' },
+                  details: {
                     type: 'array',
                     items: {
                       type: 'object',
                       properties: {
-                        id: { type: 'string', example: 'request-uuid' },
-                        status: { type: 'string', example: 'PENDING' },
-                        createdAt: { type: 'string', format: 'date-time' },
-                        date: { type: 'string', example: '15/01/2023' },
-                        notes: { type: 'string', example: 'Please come before noon' },
-                        serviceId: { type: 'string', example: 'service-uuid' },
-                        serviceName: { type: 'string', example: 'Plumbing Service' },
-                        locationId: { type: 'string', example: 'location-uuid' },
-                        locationDetails: {
-                          type: 'object',
-                          properties: {
-                            city: { type: 'string', example: 'RIYADH' },
-                            fullAddress: { type: 'string', example: '123 Main St, Riyadh' },
-                            miniAddress: { type: 'string', example: 'Al Olaya District' },
-                            lat: { type: 'number', example: 24.7136 },
-                            lng: { type: 'number', example: 46.6753 }
-                          }
-                        },
-                        scheduledDate: { type: 'string', format: 'date-time' },
-                        customerId: { type: 'string', example: 'customer-uuid' },
-                        customerName: { type: 'string', example: 'Customer Name' },
-                        customerPhone: { type: 'string', example: '+966500000001' }
+                        nameEN: { type: 'string', example: 'Repair Service' },
+                        nameAR: { type: 'string', example: 'خدمة إصلاح' },
+                        price: { type: 'number', example: 200 }
                       }
                     }
                   }
@@ -247,8 +326,13 @@ export class AdminController {
   @Roles(Role.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('requests/unhandled')
-  async getAllUnhandledRequests(): Promise<AllUnhandledRequestsResponseDto> {
-    return this.adminService.getAllUnhandledRequests();
+  async getAllUnhandledRequests(): Promise<BaseResponseDto> {
+    const requests = await this.adminService.getAllUnhandledRequests();
+    
+    return {
+      message: "Unhandled Requests Fetched Successfully",
+      data: requests || []
+    };
   }
 
   @ApiOperation({
@@ -316,7 +400,11 @@ export class AdminController {
   @Roles(Role.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('dashboard/stats')
-  async getDashboardStats(): Promise<DashboardStatsDto> {
-    return this.adminService.getDashboardStats();
+  async getDashboardStats(): Promise<any> {
+    const stats = await this.adminService.getDashboardStats();
+    return {
+      message: "Dashboard statistics retrieved successfully",
+      data: stats
+    };
   }
 }
