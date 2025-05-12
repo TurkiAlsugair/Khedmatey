@@ -391,6 +391,8 @@ export class RequestService {
           },
           location: true,
           invoiceItems: true,
+          feedback: true,
+          complaint: true
         },
         orderBy: { createdAt: 'desc' },
       }) as unknown as Request[];
@@ -454,7 +456,9 @@ export class RequestService {
             },
             invoice,
             status,
-            notes
+            notes,
+            feedback: (req as any).feedback,
+            complaint: (req as any).complaint
           };
         });
         const groupingField = isProvider ? 'city' : 'status';
@@ -1241,7 +1245,8 @@ export class RequestService {
           feedback: {
             select: {
               rating: true,
-              review: true
+              review: true,
+              createdAt: true,
             }
           },
           complaint: {
@@ -1327,6 +1332,8 @@ export class RequestService {
         status,
         notes, 
         followUpService: request.followupService,
+        feedback: request.feedback,
+        complaint: request.complaint
       };
     }
 
