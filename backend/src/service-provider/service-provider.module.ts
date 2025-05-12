@@ -5,13 +5,14 @@ import { DatabaseModule } from 'src/database/database.module';
 import { TwilioModule } from 'src/twilio/twilio.module';
 import { RequestModule } from 'src/request/request.module';
 import { ServiceModule } from 'src/service/service.module';
-
+import { AuthModule } from 'src/auth/auth.module';
 @Module({
   imports: [
     DatabaseModule,
     TwilioModule,
     forwardRef(() => RequestModule), //needed bacuse of the circular dependency
-    forwardRef(() => ServiceModule)
+    forwardRef(() => ServiceModule),
+    AuthModule
   ],
   controllers: [ServiceProviderController],
   providers: [ServiceProviderService],
