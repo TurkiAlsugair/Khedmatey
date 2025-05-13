@@ -35,9 +35,9 @@ export class SearchService {
                 s.nameAR LIKE CONCAT('%', ${searchTerm}, '%')
               )
               AND sp.id IN (
-                SELECT serviceProviderId
+                SELECT sp_city.B
                 FROM City c
-                JOIN _CityToServiceProvider csp ON c.id = csp.A
+                JOIN _CityToServiceProvider sp_city ON c.id = sp_city.A
                 WHERE c.name = ${city}
               )
             ORDER BY
@@ -54,9 +54,9 @@ export class SearchService {
             WHERE status = 'ACCEPTED'
             AND username LIKE CONCAT('%', ${searchTerm}, '%')
             AND id IN (
-              SELECT serviceProviderId
+              SELECT sp_city.B
               FROM City c
-              JOIN _CityToServiceProvider csp ON c.id = csp.A
+              JOIN _CityToServiceProvider sp_city ON c.id = sp_city.A
               WHERE c.name = ${city}
             )
             ORDER BY

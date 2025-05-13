@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, SafeAreaView, TextInput } from "react-native";
 import { Colors, ORDER_STATUS_STYLES } from "../../../constants/styles";
 import Button from "../../../components/UI/Button";
@@ -6,10 +6,12 @@ import LoadingOverlay from "../../../components/LoadingOverlay";
 import axios from "axios";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import { Ionicons } from "@expo/vector-icons";
+import { AuthContext } from "../../../context/AuthContext";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function AccountsScreen({ navigation }) {
+  const {token} = useContext(AuthContext);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [userData, setUserData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -31,8 +33,15 @@ export default function AccountsScreen({ navigation }) {
     setIsLoading(true);
     
     try {
-      console.log(`/admin/users/lookup?phoneNumber=${phoneNumber}`);
-      const response = await axios.get(`${API_BASE_URL}/admin/users/lookup?phoneNumber=${phoneNumber}`);
+      const encodedPhoneNumber = encodeURIComponent(phoneNumber);
+      console.log(`/admin/users/lookup?phoneNumber=${encodedPhoneNumber}`);
+      const response = await axios.get(`${API_BASE_URL}/admin/users/lookup?phoneNumber=${encodedPhoneNumber}`, 
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       console.log("User data:", response.data.data);
       setUserData(response.data.data);
     } catch (err) {
@@ -101,7 +110,7 @@ export default function AccountsScreen({ navigation }) {
                 activeOpacity={0.7}
               >
                 <View style={styles.userHeader}>
-                  <Text style={styles.username}>{userData.username}</Text>
+                  <Text style={styles.username} numberOfLines={2}>{userData.username}</Text>
                   <View style={[
                     styles.roleBadge, 
                     userData.role === "CUSTOMER" ? styles.customerBadge : styles.providerBadge
@@ -290,20 +299,24 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
   userHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: "column",
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
     marginBottom: 12,
+    gap: 8,
   },
   username: {
     fontSize: wp(4.8),
     fontWeight: "bold",
     color: Colors.primary,
+    flexWrap: 'wrap',
+    width: '100%',
   },
   roleBadge: {
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 8,
+    alignSelf: 'flex-start',
   },
   customerBadge: {
     backgroundColor: "rgba(52, 152, 219, 0.15)",

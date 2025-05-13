@@ -14,13 +14,11 @@ export const serviceCategories = [
   { label: "Home Appliances", value: "3" },
   { label: "Electricity", value: "4" },
   { label: "Painting & Decorations", value: "5" },
-  { label: "Carpentry & Welding", value: "6" },
-  { label: "Cleaning", value: "7" },
-  { label: "Sterilization & Pest Control", value: "8" },
-  { label: "Gardening", value: "9" },
-  { label: "Car Services", value: "10" },
-  { label: "Furniture Moving", value: "11" },
-  { label: "Other", value: "12" },
+  { label: "Sterilization", value: "6" },
+  { label: "Gardening", value: "7" },
+  { label: "Car Services", value: "8" },
+  { label: "Furniture Moving", value: "9" },
+  { label: "Other", value: "10" },
 ];
 
 export const supportedCities = ["Riyadh", "Jeddah", "Dammam", "Unayzah"];
