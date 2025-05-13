@@ -7,7 +7,7 @@ import { addDays, eachDayOfInterval, format, formatISO, startOfDay } from 'date-
 import { RequestService } from 'src/request/request.service';
 import { ServiceService } from 'src/service/service.service';
 import { forwardRef } from '@nestjs/common';
-
+import { AuthService } from 'src/auth/auth.service';
 
 @Injectable()
 export class ServiceProviderService {
@@ -15,16 +15,14 @@ export class ServiceProviderService {
       private prisma: DatabaseService, 
       private twilio: TwilioService,
       @Inject(forwardRef(() => RequestService)) private requestService: RequestService, 
-      private serviceService: ServiceService
+      @Inject(forwardRef(() => ServiceService)) private serviceService: ServiceService, private authService: AuthService  
     ){}
 
     async createWorker(dto: CreateWorkerDto, serviceProviderId: string) {
 
         //check if phonenumber exists
-        const existing = await this.prisma.worker.findUnique({
-          where: { phoneNumber: dto.phoneNumber },
-        });
-        if (existing) {
+        const existingUser = await this.authService.findUser({ phoneNumber: dto.phoneNumber });
+        if (existingUser) {
           throw new ConflictException('Worker with this phone number already exists');
         }
 
@@ -231,7 +229,7 @@ export class ServiceProviderService {
       // iterate through full 30‑day range and check each date against the maps
       eachDayOfInterval({ start: today, end }).forEach(d => {
         const key = d.toDateString();              
-        const iso = format(d, 'yyyy-MM-dd');       
+        const iso = format(d, 'dd/MM/yyyy');       
   
         if (closedMap.has(key)) blockedDates.push(iso);
         else if (busyMap.has(key)) busyDates.push(iso);

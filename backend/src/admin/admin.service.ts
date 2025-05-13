@@ -232,7 +232,7 @@ export class AdminService {
     }
   }
 
-  async blacklistUser(userId: string, blacklist: boolean, role: Role) {
+  async blacklistUser(userId: string, isBlacklisted: boolean, role: Role) {
 
     //check if user is a customer
     if (role === Role.CUSTOMER) {
@@ -245,7 +245,7 @@ export class AdminService {
 
 
         //only update requests if blacklisting the user
-        if (blacklist === true) {
+        if (isBlacklisted === true) {
           //process each request according to its status
           for (const request of customer.Requests) {
             //don't change status if it's INVOICED, PAID, or DECLINED
@@ -275,7 +275,7 @@ export class AdminService {
         //update the customer's blacklist status
         await this.prisma.customer.update({
           where: { id: userId },
-          data: { isBlacklisted: blacklist }
+          data: { isBlacklisted }
         });
 
         return;
@@ -300,7 +300,7 @@ export class AdminService {
       }
 
       //only update requests if blacklisting the service provider
-      if (blacklist === true) {
+      if (isBlacklisted === true) {
         //collect all requests from all services of this provider
         const allRequests = serviceProvider.services.flatMap(service => service.Requests);
 
@@ -329,13 +329,13 @@ export class AdminService {
       // Using raw query to bypass potential Prisma client type issues
       await this.prisma.serviceProvider.update({
         where: { id: userId },
-        data: { isBlacklisted: blacklist}
+        data: { isBlacklisted: isBlacklisted}
       });
 
       //update the service provider's status
       await this.prisma.serviceProvider.update({
         where: { id: userId },
-        data: { status: blacklist ? Status.PENDING : Status.ACCEPTED }
+        data: { status: isBlacklisted ? Status.PENDING : Status.ACCEPTED }
       });
 
       return;
