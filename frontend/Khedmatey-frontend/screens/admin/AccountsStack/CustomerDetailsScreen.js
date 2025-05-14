@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { 
   View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, Modal 
 } from "react-native";
+import { AuthContext } from "../../../context/AuthContext";
 import { Colors, ORDER_STATUS_STYLES } from "../../../constants/styles";
 import Button from "../../../components/UI/Button";
 import axios from "axios";
@@ -12,9 +13,10 @@ import OrderItem from "./components/OrderItem";
 import CustomerOrdersFilter from "./components/CustomerOrdersFilter";
 import LoadingOverlay from "../../../components/LoadingOverlay";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function CustomerDetailsScreen({ route, navigation }) {
+  const { token } = useContext(AuthContext);
   const { userData } = route.params;
   const [orders, setOrders] = useState(userData.requests || []);
   const [filteredOrders, setFilteredOrders] = useState(userData.requests || []);
@@ -52,9 +54,21 @@ export default function CustomerDetailsScreen({ route, navigation }) {
   const confirmDelete = async () => {
     setIsLoading(true);
     try {
-      await axios.delete(`${API_BASE_URL}/admin/CUSTOMER/${userData.id}`);
-      Alert.alert("Success", "Customer deleted successfully");
-      navigation.replace("Accounts");
+      await axios.delete(`${API_BASE_URL}/admin/${userData.role}/${userData.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      Alert.alert("Success", "Customer deleted successfully", 
+        [
+          {
+            text: "OK", 
+            onPress: () => navigation.replace("Accounts")
+          }
+        ]
+      );
     } catch (error) {
       Alert.alert("Error", error.response?.data?.message || "Failed to delete customer");
     } finally {
@@ -64,7 +78,7 @@ export default function CustomerDetailsScreen({ route, navigation }) {
   };
 
   const handleBlacklistStatus = async () => {
-    const actionText = userData.isBlacklisted === "true" ? "remove from" : "add to";
+    const actionText = userData.isBlacklisted ? "remove from" : "add to";
     
     Alert.alert(
       `Confirm Blacklist Action`,
@@ -81,22 +95,36 @@ export default function CustomerDetailsScreen({ route, navigation }) {
 
   const confirmBlacklistChange = async () => {
     setIsLoading(true);
-    const newStatus = userData.isBlacklisted === "true" ? false : true;
+    const newStatus = !userData.isBlacklisted;
     
     try {
-      await axios.patch(`${API_BASE_URL}/admin/users/blacklistStatus`, {
+      await axios.patch(`${API_BASE_URL}/admin/users/blacklist`, {
         role: "CUSTOMER",
-        id: userData.id,
+        userId: userData.id,
         isBlacklisted: newStatus
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       
       // Update local state to reflect the change
-      userData.isBlacklisted = newStatus.toString();
+      userData.isBlacklisted = newStatus;
       
       const actionText = newStatus ? "added to" : "removed from";
-      Alert.alert("Success", `Customer ${actionText} blacklist successfully`);
+      Alert.alert("Success", `Customer ${actionText} blacklist successfully`, 
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              // Use replace to go back to AccountsScreen with updated userData
+              navigation.replace("Accounts", { updatedUserData: userData });
+            }
+          }
+        ]
+      );
     } catch (error) {
-      Alert.alert("Error", error.response?.data?.message || "Failed to update blacklist status");
+      Alert.alert("Error", error.response?.data?.message[0] || "Failed to update blacklist status");
     } finally {
       setIsLoading(false);
       setShowManageOptions(false);
@@ -178,7 +206,7 @@ export default function CustomerDetailsScreen({ route, navigation }) {
               style={styles.optionItem}
               onPress={handleBlacklistStatus}
             >
-              {userData.isBlacklisted === "true" ? (
+              {userData.isBlacklisted ? (
                 <>
                   <Ionicons name="checkmark-circle-outline" size={24} color="#27ae60" />
                   <Text style={[styles.optionText, { color: "#27ae60" }]}>Remove from Blacklist</Text>

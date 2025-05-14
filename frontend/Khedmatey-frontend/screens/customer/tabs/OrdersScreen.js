@@ -54,7 +54,7 @@ export default function OrdersScreen() {
       isRefresh ? setRefreshing(true) : setLoading(true);
       setBackendError("");
       try {
-        const data = await fetchAllOrders(token, "CUSTOMER");
+        const data = await fetchAllOrders(token, "CUSTOMER", ["PENDING", "ACCEPTED","COMING","IN_PROGRESS","FINISHED","CANCELED", "DECLINED"]);
         const flattenedOrders = flatten(data);
         setOrders(flattenedOrders);
         setFilteredOrders(flattenedOrders);

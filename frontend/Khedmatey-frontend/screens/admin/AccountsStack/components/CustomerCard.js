@@ -20,13 +20,13 @@ export default function CustomerCard({ userData }) {
           
           <View style={[
             styles.blacklistBadge,
-            userData.isBlacklisted === "true" ? styles.blacklisted : styles.notBlacklisted
+            userData.isBlacklisted ? styles.blacklisted : styles.notBlacklisted
           ]}>
             <Text style={[
               styles.blacklistText,
-              userData.isBlacklisted === "true" ? styles.blacklistedText : styles.notBlacklistedText
+              userData.isBlacklisted ? styles.blacklistedText : styles.notBlacklistedText
             ]}>
-              {userData.isBlacklisted === "true" ? "Blacklisted" : "Not Blacklisted"}
+              {userData.isBlacklisted ? "Blacklisted" : "Not Blacklisted"}
             </Text>
           </View>
         </View>

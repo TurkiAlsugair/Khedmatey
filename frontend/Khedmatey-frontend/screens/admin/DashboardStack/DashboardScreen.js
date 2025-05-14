@@ -19,7 +19,7 @@ import axios from "axios";
 import { AuthContext } from "../../../context/AuthContext";
 import Toast from "react-native-toast-message";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 // Card component for displaying summary stats
 const StatCard = ({ title, count, icon, color }) => (
@@ -36,19 +36,23 @@ export default function DashboardScreen({ navigation }) {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const { token, userInfo } = useContext(AuthContext);
   const insets = useSafeAreaInsets();
 
   const fetchDashboardData = async () => {
     try {
-      setLoading(true);
+      if (!token) return;
+      
+      if (!dashboardData) setLoading(true);
       setError(null);
       
-      const response = await axios.get(`${API_BASE_URL}/admin/dashboard/status`, {
+      const response = await axios.get(`${API_BASE_URL}/admin/dashboard/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      setDashboardData(response.data);
+      setDashboardData(response.data.data);
+      setLastUpdated(new Date());
     } catch (err) {
       const errorMsg = err.response?.data?.message || "Failed to fetch dashboard data";
       setError(errorMsg);
@@ -64,7 +68,19 @@ export default function DashboardScreen({ navigation }) {
     }
   };
 
+  // Format last updated time as "HH:MM:SS"
+  const formatLastUpdated = () => {
+    if (!lastUpdated) return "";
+    
+    const hours = lastUpdated.getHours().toString().padStart(2, '0');
+    const minutes = lastUpdated.getMinutes().toString().padStart(2, '0');
+    const seconds = lastUpdated.getSeconds().toString().padStart(2, '0');
+    
+    return `${hours}:${minutes}:${seconds}`;
+  };
+
   useEffect(() => {
+    // Initial fetch
     fetchDashboardData();
   }, []);
 
@@ -111,6 +127,26 @@ export default function DashboardScreen({ navigation }) {
         <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           <View style={[styles.contentCont, { paddingBottom: insets.top + hp(6.5) }]}>
             
+            {/* Last Updated */}
+            {lastUpdated && (
+              <View style={styles.lastUpdatedContainer}>
+                <Text style={styles.lastUpdatedText}>
+                  Last updated at: {formatLastUpdated()}
+                </Text>
+                <TouchableOpacity 
+                  style={styles.refreshButton} 
+                  onPress={fetchDashboardData}
+                  disabled={loading}
+                >
+                  <Ionicons 
+                    name="refresh" 
+                    size={wp(5)} 
+                    color={Colors.primary} 
+                  />
+                </TouchableOpacity>
+              </View>
+            )}
+            
             {/* Summary Stats */}
             <Text style={styles.title}>Summary</Text>
             <View style={styles.summaryContainer}>
@@ -151,7 +187,7 @@ export default function DashboardScreen({ navigation }) {
                 </Text>
               </View>
               <View style={styles.statsInnerCont}>
-                {dashboardData?.serviceProviders?.byStatus?.PENDING && (
+                {dashboardData?.serviceProviders?.byStatus?.PENDING !== undefined && (
                   <View style={styles.statGridCard}>
                     <Text
                       style={[
@@ -167,7 +203,7 @@ export default function DashboardScreen({ navigation }) {
                   </View>
                 )}
                 
-                {dashboardData?.serviceProviders?.byStatus?.DECLINED && (
+                {dashboardData?.serviceProviders?.byStatus?.DECLINED !== undefined && (
                   <View style={styles.statGridCard}>
                     <Text
                       style={[
@@ -183,7 +219,7 @@ export default function DashboardScreen({ navigation }) {
                   </View>
                 )}
                 
-                {dashboardData?.serviceProviders?.byStatus?.ACCEPTED && (
+                {dashboardData?.serviceProviders?.byStatus?.ACCEPTED !== undefined && (
                   <View style={styles.statGridCardFullWidth}>
                     <Text
                       style={[
@@ -212,7 +248,7 @@ export default function DashboardScreen({ navigation }) {
                 </Text>
               </View>
               <View style={styles.statsInnerCont}>
-                {dashboardData?.services?.byStatus?.PENDING && (
+                {dashboardData?.services?.byStatus?.PENDING !== undefined && (
                   <View style={styles.statGridCard}>
                     <Text
                       style={[
@@ -228,7 +264,7 @@ export default function DashboardScreen({ navigation }) {
                   </View>
                 )}
                 
-                {dashboardData?.services?.byStatus?.DECLINED && (
+                {dashboardData?.services?.byStatus?.DECLINED !== undefined && (
                   <View style={styles.statGridCard}>
                     <Text
                       style={[
@@ -244,7 +280,7 @@ export default function DashboardScreen({ navigation }) {
                   </View>
                 )}
                 
-                {dashboardData?.services?.byStatus?.ACCEPTED && (
+                {dashboardData?.services?.byStatus?.ACCEPTED !== undefined && (
                   <View style={styles.statGridCardFullWidth}>
                     <Text
                       style={[
@@ -273,7 +309,7 @@ export default function DashboardScreen({ navigation }) {
                 </Text>
               </View>
               <View style={styles.statsInnerCont}>
-                {dashboardData?.requests?.byStatus?.PENDING && (
+                {dashboardData?.requests?.byStatus?.PENDING !== undefined && (
                   <View style={styles.statGridCard}>
                     <Text
                       style={[
@@ -289,7 +325,7 @@ export default function DashboardScreen({ navigation }) {
                   </View>
                 )}
                 
-                {dashboardData?.requests?.byStatus?.ACCEPTED && (
+                {dashboardData?.requests?.byStatus?.ACCEPTED !== undefined && (
                   <View style={styles.statGridCard}>
                     <Text
                       style={[
@@ -305,7 +341,7 @@ export default function DashboardScreen({ navigation }) {
                   </View>
                 )}
                 
-                {dashboardData?.requests?.byStatus?.COMING && (
+                {dashboardData?.requests?.byStatus?.COMING !== undefined && (
                   <View style={styles.statGridCard}>
                     <Text
                       style={[
@@ -321,7 +357,7 @@ export default function DashboardScreen({ navigation }) {
                   </View>
                 )}
                 
-                {dashboardData?.requests?.byStatus?.IN_PROGRESS && (
+                {dashboardData?.requests?.byStatus?.IN_PROGRESS !== undefined && (
                   <View style={styles.statGridCard}>
                     <Text
                       style={[
@@ -337,7 +373,7 @@ export default function DashboardScreen({ navigation }) {
                   </View>
                 )}
                 
-                {dashboardData?.requests?.byStatus?.FINISHED && (
+                {dashboardData?.requests?.byStatus?.FINISHED !== undefined && (
                   <View style={styles.statGridCard}>
                     <Text
                       style={[
@@ -353,7 +389,7 @@ export default function DashboardScreen({ navigation }) {
                   </View>
                 )}
                 
-                {dashboardData?.requests?.byStatus?.INVOICED && (
+                {dashboardData?.requests?.byStatus?.INVOICED !== undefined && (
                   <View style={styles.statGridCard}>
                     <Text
                       style={[
@@ -369,14 +405,14 @@ export default function DashboardScreen({ navigation }) {
                   </View>
                 )}
                 
-                {dashboardData?.requests?.byStatus?.CANCELED && (
+                {dashboardData?.requests?.byStatus?.CANCELED !== undefined && (
                   <View style={styles.statGridCard}>
                     <Text
                       style={[
                         styles.gridText,
                         {
-                          backgroundColor: ORDER_STATUS_STYLES.CANCELLED.bg,
-                          color: ORDER_STATUS_STYLES.CANCELLED.text,
+                          backgroundColor: ORDER_STATUS_STYLES.CANCELED.bg,
+                          color: ORDER_STATUS_STYLES.CANCELED.text,
                         },
                       ]}
                     >
@@ -385,7 +421,7 @@ export default function DashboardScreen({ navigation }) {
                   </View>
                 )}
                 
-                {dashboardData?.requests?.byStatus?.DECLINED && (
+                {dashboardData?.requests?.byStatus?.DECLINED !== undefined && (
                   <View style={styles.statGridCard}>
                     <Text
                       style={[
@@ -401,7 +437,7 @@ export default function DashboardScreen({ navigation }) {
                   </View>
                 )}
                 
-                {dashboardData?.requests?.byStatus?.PAID && (
+                {dashboardData?.requests?.byStatus?.PAID !== undefined && (
                   <View style={styles.statGridCardFullWidth}>
                     <Text
                       style={[
@@ -586,5 +622,25 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: wp(4),
+  },
+  lastUpdatedContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+    // backgroundColor: '#f9f9f9',
+    // padding: 10,
+    borderRadius: 8,
+  },
+  lastUpdatedText: {
+    fontSize: wp(3.5),
+    color: '#666',
+  },
+  refreshButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

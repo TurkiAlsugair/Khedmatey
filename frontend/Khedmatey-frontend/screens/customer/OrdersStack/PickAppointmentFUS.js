@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -20,10 +20,12 @@ import ServiceItem from "../../../components/CustomerHome/ServiceItem";
 import { Ionicons } from "@expo/vector-icons";
 import Button from "../../../components/UI/Button";
 import Price from "../../../components/Price";
+import { AuthContext } from "../../../context/AuthContext";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function PickAppointment({ navigation, route }) {
+  const { token } = useContext(AuthContext);
   const [unavailableDates, setUnavailableDates] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -49,9 +51,14 @@ export default function PickAppointment({ navigation, route }) {
       setLoading(true);
       try {
         const res = await axios.get(
-          `${API_BASE_URL}/service-provider/unavailableDates`
+          `${API_BASE_URL}/service/${order.followUpService.id}/schedule`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
-        const list = res.data.data || [];
+        const list = res.data.data.busyDates || [];
         setUnavailableDates(list);
 
         /* decide default: today only if NOT blocked */

@@ -8,7 +8,7 @@ import {
 } from "react-native-responsive-screen";
 import { useNavigation } from "@react-navigation/native";
 export default function ReceiptItem({ receipt }) {
-  const { status, date, serviceProvider, price } = receipt;
+  const { status, date, serviceProvider, totalPrice } = receipt;
   const { text: textColor, bg: bgColor } = ORDER_STATUS_STYLES[status] || {
     text: "#777",
     bg: "#ededed",
@@ -49,7 +49,7 @@ export default function ReceiptItem({ receipt }) {
                 // transition={1000}
               />
             </View>
-            <Text style={styles.price}>{price}</Text>
+            <Text style={styles.price}>{totalPrice}</Text>
           </View>
           <Text style={styles.date}>{date}</Text>
         </View>

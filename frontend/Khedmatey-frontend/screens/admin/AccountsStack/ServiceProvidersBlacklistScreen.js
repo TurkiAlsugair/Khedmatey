@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../../../context/AuthContext';
 import Toast from 'react-native-toast-message';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 const ServiceProviderItem = ({ provider, onToggleBlacklist }) => {
   return (
@@ -25,19 +25,13 @@ const ServiceProviderItem = ({ provider, onToggleBlacklist }) => {
         <Text style={styles.username}>{provider.username}</Text>
         <View style={[
           styles.blacklistBadge,
-          provider.isBlacklisted === true || provider.isBlacklisted === "true" 
-            ? styles.blacklisted 
-            : styles.notBlacklisted
+          provider.isBlacklisted ? styles.blacklisted : styles.notBlacklisted
         ]}>
           <Text style={[
             styles.blacklistText,
-            provider.isBlacklisted === true || provider.isBlacklisted === "true" 
-              ? styles.blacklistedText 
-              : styles.notBlacklistedText
+            provider.isBlacklisted ? styles.blacklistedText : styles.notBlacklistedText
           ]}>
-            {provider.isBlacklisted === true || provider.isBlacklisted === "true" 
-              ? "Blacklisted" 
-              : "Not Blacklisted"}
+            {provider.isBlacklisted ? "Blacklisted" : "Not Blacklisted"}
           </Text>
         </View>
       </View>
@@ -73,23 +67,17 @@ const ServiceProviderItem = ({ provider, onToggleBlacklist }) => {
       <TouchableOpacity 
         style={[
           styles.actionButton,
-          provider.isBlacklisted === true || provider.isBlacklisted === "true" 
-            ? styles.unblacklistButton 
-            : styles.blacklistButton
+          provider.isBlacklisted ? styles.unblacklistButton : styles.blacklistButton
         ]}
         onPress={() => onToggleBlacklist(provider)}
       >
         <Ionicons 
-          name={provider.isBlacklisted === true || provider.isBlacklisted === "true" 
-            ? "checkmark-circle-outline" 
-            : "ban-outline"} 
+          name={provider.isBlacklisted ? "checkmark-circle-outline" : "ban-outline"} 
           size={20} 
           color="white" 
         />
         <Text style={styles.actionButtonText}>
-          {provider.isBlacklisted === true || provider.isBlacklisted === "true" 
-            ? "Remove from Blacklist" 
-            : "Add to Blacklist"}
+          {provider.isBlacklisted ? "Remove from Blacklist" : "Add to Blacklist"}
         </Text>
       </TouchableOpacity>
     </View>
@@ -106,10 +94,10 @@ export default function ServiceProvidersBlacklistScreen({ navigation }) {
   const fetchProviders = async (blacklistStatus) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/admin/users/lookup?blacklisted=${blacklistStatus}&role=SERVICE_PROVIDER`, 
+        `${API_BASE_URL}/admin/users/lookup?blacklisted=${blacklistStatus}`, 
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -127,7 +115,7 @@ export default function ServiceProvidersBlacklistScreen({ navigation }) {
   }, [activeTab]);
 
   const handleToggleBlacklist = async (provider) => {
-    const currentStatus = provider.isBlacklisted === true || provider.isBlacklisted === "true";
+    const currentStatus = provider.isBlacklisted;
     const newStatus = !currentStatus;
     const actionText = currentStatus ? "remove from" : "add to";
     
@@ -142,9 +130,9 @@ export default function ServiceProvidersBlacklistScreen({ navigation }) {
             try {
               setLoading(true);
               
-              await axios.patch(`${API_BASE_URL}/admin/users/blacklistStatus`, {
+              await axios.patch(`${API_BASE_URL}/admin/users/blacklist`, {
                 role: "SERVICE_PROVIDER",
-                id: provider.id,
+                userId: provider.id,
                 isBlacklisted: newStatus
               }, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -154,7 +142,7 @@ export default function ServiceProvidersBlacklistScreen({ navigation }) {
               setProviders(prevProviders => 
                 prevProviders.map(p => 
                   p.id === provider.id 
-                    ? { ...p, isBlacklisted: newStatus.toString() } 
+                    ? { ...p, isBlacklisted: newStatus } 
                     : p
                 )
               );

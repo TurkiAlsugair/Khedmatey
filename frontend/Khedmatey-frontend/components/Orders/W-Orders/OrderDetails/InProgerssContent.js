@@ -133,11 +133,11 @@ export default function InProgressContent({
           style: "default",
           onPress: async () => {
             try {
-              await updateStatus(token, order.id, "CANCELLED");
-              changeStatus("CANCELLED");
+              await updateStatus(token, order.id, "CANCELED");
+              changeStatus("CANCELED");
               Toast.show({
                 type: "success",
-                text1: "Order cancelled successfully",
+                text1: "Order canceled successfully",
                 visibilityTime: 2000,
                 topOffset: hp(7),
               });

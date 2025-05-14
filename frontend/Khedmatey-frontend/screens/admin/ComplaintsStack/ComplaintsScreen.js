@@ -16,7 +16,7 @@ import axios from "axios";
 import { AuthContext } from "../../../context/AuthContext";
 import Toast from "react-native-toast-message";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 const ComplaintItem = ({ complaint }) => {
   const [expanded, setExpanded] = useState(false);
@@ -49,7 +49,8 @@ const ComplaintItem = ({ complaint }) => {
             <View style={styles.detailRow}>
               <Ionicons name="person-outline" size={16} color={Colors.primary} />
               <Text style={styles.detailText}>
-                {complaint.serviceProvider.username} - {complaint.serviceProvider.usernameAR}
+                {complaint.serviceProvider.username}
+                {complaint.serviceProvider.usernameAR && ` - ${complaint.serviceProvider.usernameAR}`}
               </Text>
             </View>
             <View style={styles.detailRow}>
@@ -68,12 +69,31 @@ const ComplaintItem = ({ complaint }) => {
             <Text style={styles.sectionTitle}>Customer</Text>
             <View style={styles.detailRow}>
               <Ionicons name="person-outline" size={16} color={Colors.primary} />
-              <Text style={styles.detailText}>{complaint.customer.username}</Text>
+              <Text style={styles.detailText}>{complaint.request?.customer?.username || "Unknown customer"}</Text>
             </View>
             <View style={styles.detailRow}>
               <Ionicons name="call-outline" size={16} color={Colors.primary} />
-              <Text style={styles.detailText}>{complaint.customer.phoneNumber}</Text>
+              <Text style={styles.detailText}>{complaint.request?.customer?.phoneNumber || "No phone number"}</Text>
             </View>
+          </View>
+          
+          <View style={styles.detailsSection}>
+            <Text style={styles.sectionTitle}>Service Info</Text>
+            <View style={styles.detailRow}>
+              <Ionicons name="construct-outline" size={16} color={Colors.primary} />
+              <Text style={styles.detailText}>
+                {complaint.request?.service?.nameEN || "Unknown"} 
+                {complaint.request?.service?.nameAR && ` - ${complaint.request?.service?.nameAR}`}
+              </Text>
+            </View>
+            {complaint.request?.location && (
+              <View style={styles.detailRow}>
+                <Ionicons name="location-outline" size={16} color={Colors.primary} />
+                <Text style={styles.detailText}>
+                  {complaint.request.location.fullAddress}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       )}
@@ -211,6 +231,7 @@ const styles = StyleSheet.create({
   complaintHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    width: "80%",
   },
   complaintId: {
     fontSize: wp(4),

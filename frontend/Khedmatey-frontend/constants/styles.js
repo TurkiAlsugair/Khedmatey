@@ -14,6 +14,6 @@ export const ORDER_STATUS_STYLES = {
   FINISHED: { text: "#1e90ff", bg: "#e6f3ff" },
   INVOICED: { text: "#ff4500", bg: "#ffece6" },
   PAID: { text: "#228b57", bg: "#e4f7ef" },
-  CANCELLED: { text: "#777", bg: "#ededed" },
+  CANCELED: { text: "#777", bg: "#ededed" },
   DECLINED: { text: "#b22222", bg: "#fdeaea" },
 };

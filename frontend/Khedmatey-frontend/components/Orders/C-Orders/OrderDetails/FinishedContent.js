@@ -73,7 +73,7 @@ export default function FinishedContent({ order, changeStatus, isFollowUpOrder =
 
       <View style={styles.buttonsContainer}>
         <Button
-          cusStyles={[styles.cancelButton, { backgroundColor: ORDER_STATUS_STYLES.CANCELLED.text }]}
+          cusStyles={[styles.cancelButton, { backgroundColor: ORDER_STATUS_STYLES.CANCELED.text }]}
           onPress={handleCancel}
         >
           Cancel

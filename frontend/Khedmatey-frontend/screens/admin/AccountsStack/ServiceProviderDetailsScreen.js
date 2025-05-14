@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { 
   View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, Modal 
 } from "react-native";
@@ -13,8 +13,9 @@ import CustomerOrdersFilter from "./components/CustomerOrdersFilter";
 import LoadingOverlay from "../../../components/LoadingOverlay";
 import Price from "../../../components/UI/Price";
 import { getCategoryNameById } from "../../../utility/services";
+import { AuthContext } from "../../../context/AuthContext";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 const ServicesList = ({ services }) => {
   if (!services || services.length === 0) {
@@ -129,6 +130,7 @@ const OrdersList = ({ orders, handleFilter }) => {
 };
 
 export default function ServiceProviderDetailsScreen({ route, navigation }) {
+  const { token } = useContext(AuthContext);
   const { userData } = route.params;
   const [activeTab, setActiveTab] = useState("services");
   const [showManageOptions, setShowManageOptions] = useState(false);
@@ -152,9 +154,21 @@ export default function ServiceProviderDetailsScreen({ route, navigation }) {
   const confirmDelete = async () => {
     setIsLoading(true);
     try {
-      await axios.delete(`${API_BASE_URL}/admin/SERVICE_PROVIDER/${userData.id}`);
-      Alert.alert("Success", "Service provider deleted successfully");
-      navigation.replace("Accounts");
+      await axios.delete(`${API_BASE_URL}/admin/${userData.role}/${userData.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      Alert.alert("Success", "Service provider deleted successfully",
+        [
+          {
+            text: "OK", 
+            onPress: () => navigation.replace("Accounts")
+          }
+        ]
+      );
     } catch (error) {
       Alert.alert("Error", error.response?.data?.message || "Failed to delete service provider");
     } finally {
@@ -164,7 +178,7 @@ export default function ServiceProviderDetailsScreen({ route, navigation }) {
   };
 
   const handleBlacklistStatus = async () => {
-    const actionText = userData.isBlacklisted === "true" ? "remove from" : "add to";
+    const actionText = userData.isBlacklisted ? "remove from" : "add to";
     
     Alert.alert(
       `Confirm Blacklist Action`,
@@ -181,22 +195,38 @@ export default function ServiceProviderDetailsScreen({ route, navigation }) {
 
   const confirmBlacklistChange = async () => {
     setIsLoading(true);
-    const newStatus = userData.isBlacklisted === "true" ? false : true;
+    const newStatus = !userData.isBlacklisted;
     
     try {
-      await axios.patch(`${API_BASE_URL}/admin/users/blacklistStatus`, {
+      await axios.patch(`${API_BASE_URL}/admin/users/blacklist`, {
         role: "SERVICE_PROVIDER",
-        id: userData.id,
+        userId: userData.id,
         isBlacklisted: newStatus
-      });
+      }, 
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       
       // Update local state to reflect the change
-      userData.isBlacklisted = newStatus.toString();
+      userData.isBlacklisted = newStatus;
       
       const actionText = newStatus ? "added to" : "removed from";
-      Alert.alert("Success", `Service provider ${actionText} blacklist successfully`);
+      Alert.alert("Success", `Service provider ${actionText} blacklist successfully`,
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              // Use replace to go back to AccountsScreen with updated userData
+              navigation.replace("Accounts", { updatedUserData: userData });
+            }
+          }
+        ]
+      );
     } catch (error) {
-      Alert.alert("Error", error.response?.data?.message || "Failed to update blacklist status");
+      Alert.alert("Error", error.response?.data?.message[0] || "Failed to update blacklist status");
     } finally {
       setIsLoading(false);
       setShowManageOptions(false);
@@ -332,7 +362,7 @@ export default function ServiceProviderDetailsScreen({ route, navigation }) {
               style={styles.optionItem}
               onPress={handleBlacklistStatus}
             >
-              {userData.isBlacklisted === "true" ? (
+              {userData.isBlacklisted ? (
                 <>
                   <Ionicons name="checkmark-circle-outline" size={24} color="#27ae60" />
                   <Text style={[styles.optionText, { color: "#27ae60" }]}>Remove from Blacklist</Text>

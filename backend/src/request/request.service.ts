@@ -379,7 +379,13 @@ export class RequestService {
             } 
           },
           service: {
-            include: {
+            select: {
+              id: true,
+              nameEN: true,
+              nameAR: true,
+              price: true,
+              descriptionEN: true,
+              descriptionAR: true,
               serviceProvider: {
                 select: {
                   id: true,
@@ -387,6 +393,16 @@ export class RequestService {
                   usernameAR: true
                 }
               }
+            }
+          },
+          followupService: {
+            select: {
+              id: true,
+              nameEN: true,
+              nameAR: true,
+              price: true,
+              descriptionEN: true,
+              descriptionAR: true
             }
           },
           location: true,
@@ -446,6 +462,35 @@ export class RequestService {
             };
           }
           
+          // Extract service data
+          const service = (req as any).service ? {
+            id: (req as any).service.id,
+            nameEN: (req as any).service.nameEN,
+            nameAR: (req as any).service.nameAR,
+            price: (req as any).service.price,
+            descriptionEN: (req as any).service.descriptionEN,
+            descriptionAR: (req as any).service.descriptionAR
+          } : null;
+          
+          // Extract followUpService data
+          const followUpService = (req as any).followupService ? {
+            id: (req as any).followupService.id,
+            nameEN: (req as any).followupService.nameEN,
+            nameAR: (req as any).followupService.nameAR,
+            price: (req as any).followupService.price,
+            descriptionEN: (req as any).followupService.descriptionEN,
+            descriptionAR: (req as any).followupService.descriptionAR
+          } : null;
+          
+          // Extract location data
+          const location = (req as any).location ? {
+            miniAddress: (req as any).location.miniAddress,
+            fullAddress: (req as any).location.fullAddress,
+            city: (req as any).location.city,
+            lat: (req as any).location.lat,
+            lng: (req as any).location.lng
+          } : null;
+          
           return {
             id,
             date,
@@ -458,7 +503,10 @@ export class RequestService {
             status,
             notes,
             feedback: (req as any).feedback,
-            complaint: (req as any).complaint
+            complaint: (req as any).complaint,
+            service,
+            followUpService,
+            location
           };
         });
         const groupingField = isProvider ? 'city' : 'status';
@@ -1169,6 +1217,7 @@ export class RequestService {
     {
       //Build a where object based on user role and request ID
       const where: any = { id };
+
       
       switch (user.role) {
         case Role.SERVICE_PROVIDER:
@@ -1261,6 +1310,9 @@ export class RequestService {
       if (!request) {
         throw new NotFoundException(`Request with id ${id} not found or you don't have permission to access it`);
       }
+
+      console.log("kokokokokoko");
+      console.log(request);
 
       const date = this.toDDMMYYYY((request as any).providerDay?.date).formatted;
           
