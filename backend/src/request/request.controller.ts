@@ -679,20 +679,20 @@ export class RequestController {
     }
 
     @ApiOperation({ 
-      summary: 'Add invoice item', 
-      description: 'Add an invoice item to a request. This does not override existing items but adds to them.' 
+      summary: 'Add invoice items', 
+      description: 'Add multiple invoice items to a request. This does not override existing items but adds to them.' 
     })
     @ApiParam({ name: 'id', description: 'Request ID', type: 'string' })
     @ApiBody({ type: AddInvoiceItemDto })
     @ApiResponse({ 
       status: 200, 
-      description: 'Invoice item added successfully',
+      description: 'Invoice items added successfully',
       schema: {
         type: 'object',
         properties: {
           message: {
             type: 'string',
-            example: 'Invoice item added'
+            example: 'Invoice items added'
           },
           data: {
             type: 'object',
@@ -782,7 +782,7 @@ export class RequestController {
       try {
         const data = await this.requestService.addInvoiceItem(id, user.id, addInvoiceItemDto);
         return { 
-          message: 'Invoice item added', 
+          message: 'Invoice items added', 
           data 
         };
       } catch (error) {

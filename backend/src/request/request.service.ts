@@ -1311,9 +1311,6 @@ export class RequestService {
         throw new NotFoundException(`Request with id ${id} not found or you don't have permission to access it`);
       }
 
-      console.log("kokokokokoko");
-      console.log(request);
-
       const date = this.toDDMMYYYY((request as any).providerDay?.date).formatted;
           
       //extract needed properties without duplicating 'id'
@@ -1469,15 +1466,19 @@ export class RequestService {
           }
         }
 
-        //create the invoice item
-        await this.prisma.invoiceItem.create({
-          data: {
-            nameAR: addInvoiceItemDto.nameAR,
-            nameEN: addInvoiceItemDto.nameEN,
-            price: addInvoiceItemDto.price,
-            requestId: requestId
-          }
-        });
+        //create all invoice items in a transaction
+        await this.prisma.$transaction(
+          addInvoiceItemDto.items.map(item => 
+            this.prisma.invoiceItem.create({
+              data: {
+                nameAR: item.nameAR,
+                nameEN: item.nameEN,
+                price: item.price,
+                requestId: requestId
+              }
+            })
+          )
+        );
 
         //get all invoice items
         const invoiceItems = await this.prisma.invoiceItem.findMany({
