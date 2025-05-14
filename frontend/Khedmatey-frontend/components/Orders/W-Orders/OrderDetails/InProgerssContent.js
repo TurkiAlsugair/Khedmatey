@@ -16,7 +16,7 @@ import axios from "axios";
 import Toast from "react-native-toast-message";
 import { updateStatus } from "../../../../utility/order";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 // Invoice means: Current Generated Invoice and order.Invoice means: Previous Generated Invoice
 export default function InProgressContent({
