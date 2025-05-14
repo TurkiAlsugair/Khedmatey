@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../../../context/AuthContext';
 import Toast from 'react-native-toast-message';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 const CustomerItem = ({ customer, onToggleBlacklist }) => {
   return (
@@ -25,19 +25,13 @@ const CustomerItem = ({ customer, onToggleBlacklist }) => {
         <Text style={styles.username}>{customer.username}</Text>
         <View style={[
           styles.blacklistBadge,
-          customer.isBlacklisted === true || customer.isBlacklisted === "true" 
-            ? styles.blacklisted 
-            : styles.notBlacklisted
+          customer.isBlacklisted ? styles.blacklisted : styles.notBlacklisted
         ]}>
           <Text style={[
             styles.blacklistText,
-            customer.isBlacklisted === true || customer.isBlacklisted === "true" 
-              ? styles.blacklistedText 
-              : styles.notBlacklistedText
+            customer.isBlacklisted ? styles.blacklistedText : styles.notBlacklistedText
           ]}>
-            {customer.isBlacklisted === true || customer.isBlacklisted === "true" 
-              ? "Blacklisted" 
-              : "Not Blacklisted"}
+            {customer.isBlacklisted ? "Blacklisted" : "Not Blacklisted"}
           </Text>
         </View>
       </View>
@@ -59,23 +53,17 @@ const CustomerItem = ({ customer, onToggleBlacklist }) => {
       <TouchableOpacity 
         style={[
           styles.actionButton,
-          customer.isBlacklisted === true || customer.isBlacklisted === "true" 
-            ? styles.unblacklistButton 
-            : styles.blacklistButton
+          customer.isBlacklisted ? styles.unblacklistButton : styles.blacklistButton
         ]}
         onPress={() => onToggleBlacklist(customer)}
       >
         <Ionicons 
-          name={customer.isBlacklisted === true || customer.isBlacklisted === "true" 
-            ? "checkmark-circle-outline" 
-            : "ban-outline"} 
+          name={customer.isBlacklisted ? "checkmark-circle-outline" : "ban-outline"} 
           size={20} 
           color="white" 
         />
         <Text style={styles.actionButtonText}>
-          {customer.isBlacklisted === true || customer.isBlacklisted === "true" 
-            ? "Remove from Blacklist" 
-            : "Add to Blacklist"}
+          {customer.isBlacklisted ? "Remove from Blacklist" : "Add to Blacklist"}
         </Text>
       </TouchableOpacity>
     </View>
@@ -113,7 +101,7 @@ export default function CustomersBlacklistScreen({ navigation }) {
   }, [activeTab]);
 
   const handleToggleBlacklist = async (customer) => {
-    const currentStatus = customer.isBlacklisted === true || customer.isBlacklisted === "true";
+    const currentStatus = customer.isBlacklisted;
     const newStatus = !currentStatus;
     const actionText = currentStatus ? "remove from" : "add to";
     
@@ -128,9 +116,9 @@ export default function CustomersBlacklistScreen({ navigation }) {
             try {
               setLoading(true);
               
-              await axios.patch(`${API_BASE_URL}/admin/users/blacklistStatus`, {
+              await axios.patch(`${API_BASE_URL}/admin/users/blacklist`, {
                 role: "CUSTOMER",
-                id: customer.id,
+                userId: customer.id,
                 isBlacklisted: newStatus
               }, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -140,7 +128,7 @@ export default function CustomersBlacklistScreen({ navigation }) {
               setCustomers(prevCustomers => 
                 prevCustomers.map(c => 
                   c.id === customer.id 
-                    ? { ...c, isBlacklisted: newStatus.toString() } 
+                    ? { ...c, isBlacklisted: newStatus } 
                     : c
                 )
               );

@@ -37,7 +37,7 @@ const CustomerOrdersFilter = ({ visible, onClose, onApply, initialFilters }) => 
     { value: 'IN_PROGRESS', label: 'IN_PROGRESS' },
     { value: 'FINISHED', label: 'FINISHED' },
     { value: 'DECLINED', label: 'DECLINED' },
-    { value: 'CANCELLED', label: 'CANCELLED' },
+    { value: 'CANCELED', label: 'CANCELED' },
     { value: 'INVOICED', label: 'INVOICED' },
     { value: 'PAID', label: 'PAID' }
   ];

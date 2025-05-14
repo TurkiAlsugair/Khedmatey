@@ -26,11 +26,13 @@ import InProgressContent from "../../../components/Orders/C-Orders/OrderDetails/
 // Final status components
 import FinishedContent from "../../../components/Orders/C-Orders/OrderDetails/FinishedContent";
 import InvoicedContent from "../../../components/Orders/C-Orders/OrderDetails/InvoicedContent";
-import CancelledContent from "../../../components/Orders/C-Orders/OrderDetails/CancelledContent";
+import CanceledContent from "../../../components/Orders/C-Orders/OrderDetails/CanceledContent";
 import DeclinedContent from "../../../components/Orders/C-Orders/OrderDetails/DeclinedContent";
 
 const MAIN_STATUSES = ["PENDING", "ACCEPTED", "COMING", "IN_PROGRESS"];
-const FINAL_STATUSES = ["FINISHED", "INVOICED", "CANCELLED", "DECLINED"];
+const FINAL_STATUSES = ["FINISHED", "INVOICED", "CANCELED", "DECLINED"];
+
+
 
 const ICONS = {
   PENDING: "time-outline",
@@ -52,6 +54,7 @@ export default function OrderDetailsScreen({ navigation, route }) {
     const getOrderDetails = async () => {
       try {
         const data = await fetchOrderDetails(token, id);
+        console.log("data", data);
         setOrderData(data);
         setLoading(false);
       } catch (error) {
@@ -69,6 +72,7 @@ export default function OrderDetailsScreen({ navigation, route }) {
 
     socket.on("orderStatusUpdate", (orderData) => {
       if (orderData.orderId === id) {
+        console.log("WEB SOCKET ORDER STATUS UPDATE TO:", orderData.status);
         setStatus(orderData.status);
       }
     });
@@ -190,8 +194,8 @@ export default function OrderDetailsScreen({ navigation, route }) {
             {status === "INVOICED" && (
               <InvoicedContent order={orderData} isFollowUpOrder={isFollowUpOrder}/>
             )}
-            {status === "CANCELLED" && (
-              <CancelledContent order={orderData} isFollowUpOrder={isFollowUpOrder}/>
+            {status === "CANCELED" && (
+              <CanceledContent order={orderData} isFollowUpOrder={isFollowUpOrder}/>
             )}
             {status === "DECLINED" && (
               <DeclinedContent order={orderData} isFollowUpOrder={isFollowUpOrder}/>

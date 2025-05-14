@@ -48,7 +48,7 @@ export default function ComingContent({
   const confirmCancel = () => {
     Alert.alert("Cancel Order", "Are you sure you want to cancel this order?", [
       { text: "No", style: "cancel" },
-      { text: "Yes", onPress: () => updateStatusHandler("CANCELLED") },
+      { text: "Yes", onPress: () => updateStatusHandler("CANCELED") },
     ]);
   };
 
@@ -96,8 +96,8 @@ export default function ComingContent({
           <Button
             cusStyles={styles.cancelOrderButton}
             onPress={confirmCancel}
-            disabled={loadingStatus === "CANCELLED"}
-            loading={loadingStatus === "CANCELLED"}
+            disabled={loadingStatus === "CANCELED"}
+            loading={loadingStatus === "CANCELED"}
           >
             Cancel
           </Button>

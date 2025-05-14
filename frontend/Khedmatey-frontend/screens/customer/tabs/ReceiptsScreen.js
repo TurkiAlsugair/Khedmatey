@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useContext } from "react";
 import {
   View,
   Text,
@@ -8,8 +8,8 @@ import {
   RefreshControl,
   TouchableOpacity,
 } from "react-native";
-import axios from "axios";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import ReceiptList from "../../../components/Receipts/ReceiptsList";
 import { Colors } from "../../../constants/styles";
 import {
@@ -18,14 +18,15 @@ import {
 } from "react-native-responsive-screen";
 import { Ionicons } from "@expo/vector-icons";
 import FilterReceiptsModal from "../../../components/Modals/FilterReceiptsModal";
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+import { AuthContext } from "../../../context/AuthContext";
+import { fetchAllOrders } from "../../../utility/order";
 
 export default function ReceiptsScreen() {
   const insets = useSafeAreaInsets();
-  const [grouped, setGrouped] = useState([]); // raw grouped by status
-  const [flat, setFlat] = useState([]); // flattened array
-  const [filteredReceipts, setFilteredReceipts] = useState([]); // filtered array for display
+  const { token, userInfo } = useContext(AuthContext);
+  
+  const [receipts, setReceipts] = useState([]);
+  const [filteredReceipts, setFilteredReceipts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [backendError, setBackendError] = useState("");
@@ -37,39 +38,35 @@ export default function ReceiptsScreen() {
   });
   const [isFiltered, setIsFiltered] = useState(false);
 
+  // flatten grouped response into a single array
+  const flatten = (groups = []) =>
+    groups.flatMap((grp) =>
+      (grp.requests || []).map((req) => ({
+        ...req,
+        status: grp.status,
+      }))
+    );
+
   const fetchReceipts = useCallback(async (isRefresh = false) => {
+    if (!token) return;
     isRefresh ? setRefreshing(true) : setLoading(true);
     setBackendError("");
     try {
-      const res = await axios.get(`${API_BASE_URL}/request/receipts`);
-      const grp = res.data.data || [];
-      setGrouped(grp);
-
-      // flatten: attach status to each receipt
-      const all = grp.reduce((acc, { status, requests }) => {
-        const withStatus = requests.map((r) => ({ ...r, status }));
-        return acc.concat(withStatus);
-      }, []);
-      setFlat(all);
-      setFilteredReceipts(all); // Initialize filtered with all receipts
+      const data = await fetchAllOrders(token, "CUSTOMER", ["INVOICED", "PAID"]);
+      const flattenedReceipts = flatten(data);
+      setReceipts(flattenedReceipts);
+      setFilteredReceipts(flattenedReceipts);
+      applyFilters(flattenedReceipts);
     } catch (err) {
       setBackendError(err.response?.data?.message || "Something went wrong.");
     } finally {
       isRefresh ? setRefreshing(false) : setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    fetchReceipts();
-  }, [fetchReceipts]);
+  }, [token]);
 
   // Apply filters whenever activeFilters change
-  useEffect(() => {
-    applyFilters();
-  }, [activeFilters, flat]);
-
-  const applyFilters = () => {
-    let results = [...flat];
+  const applyFilters = useCallback((receiptsData = receipts) => {
+    let results = [...receiptsData];
     const { priceSort, statusFilter, dateSort } = activeFilters;
     
     // Apply status filter
@@ -80,8 +77,8 @@ export default function ReceiptsScreen() {
     // Apply price sorting
     if (priceSort !== 'default') {
       results.sort((a, b) => {
-        const priceA = parseFloat(a.price);
-        const priceB = parseFloat(b.price);
+        const priceA = parseFloat(a.totalPrice);
+        const priceB = parseFloat(b.totalPrice);
         return priceSort === 'asc' ? priceA - priceB : priceB - priceA;
       });
     }
@@ -119,10 +116,11 @@ export default function ReceiptsScreen() {
       statusFilter !== 'default' || 
       dateSort !== 'default'
     );
-  };
+  }, [activeFilters, receipts]);
 
   const handleFilterApply = (filters) => {
     setActiveFilters(filters);
+    applyFilters();
   };
   
   const clearFilters = () => {
@@ -132,7 +130,15 @@ export default function ReceiptsScreen() {
       dateSort: 'default'
     });
     setIsFiltered(false);
+    setFilteredReceipts(receipts);
   };
+
+  // reload whenever screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchReceipts();
+    }, [fetchReceipts])
+  );
 
   // first‐load spinner
   if (loading && !refreshing) {
@@ -144,7 +150,7 @@ export default function ReceiptsScreen() {
   }
 
   // error or empty states use a ScrollView to enable pull‑to‑refresh
-  if (backendError || flat.length === 0) {
+  if (backendError || receipts.length === 0) {
     return (
       <ScrollView
         contentContainerStyle={[

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, SafeAreaView, TextInput } from "react-native";
 import { Colors, ORDER_STATUS_STYLES } from "../../../constants/styles";
 import Button from "../../../components/UI/Button";
@@ -6,14 +6,36 @@ import LoadingOverlay from "../../../components/LoadingOverlay";
 import axios from "axios";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import { Ionicons } from "@expo/vector-icons";
+import { AuthContext } from "../../../context/AuthContext";
+import { useFocusEffect } from "@react-navigation/native";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
-export default function AccountsScreen({ navigation }) {
+export default function AccountsScreen({ navigation, route }) {
+  const {token} = useContext(AuthContext);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [userData, setUserData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Check for updatedUserData when screen is focused or params change
+  useEffect(() => {
+    if (route.params?.updatedUserData) {
+      setUserData(route.params.updatedUserData);
+      setPhoneNumber(route.params.updatedUserData.phoneNumber);
+      // Clean up route params to avoid infinite updates
+      navigation.setParams({ updatedUserData: null });
+    }
+  }, [route.params?.updatedUserData]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (userData && phoneNumber && !route.params?.updatedUserData) {
+        handleSearch();
+      }
+      return () => {};
+    }, [phoneNumber, token, route.params?.updatedUserData])
+  );
 
   const validatePhoneNumber = (number) => {
     const phoneRegex = /^\+9665[0-9]{8}$/;
@@ -31,8 +53,15 @@ export default function AccountsScreen({ navigation }) {
     setIsLoading(true);
     
     try {
-      console.log(`/admin/users/lookup?phoneNumber=${phoneNumber}`);
-      const response = await axios.get(`${API_BASE_URL}/admin/users/lookup?phoneNumber=${phoneNumber}`);
+      const encodedPhoneNumber = encodeURIComponent(phoneNumber);
+      console.log(`/admin/users/lookup?phoneNumber=${encodedPhoneNumber}`);
+      const response = await axios.get(`${API_BASE_URL}/admin/users/lookup?phoneNumber=${encodedPhoneNumber}`, 
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       console.log("User data:", response.data.data);
       setUserData(response.data.data);
     } catch (err) {
@@ -101,7 +130,6 @@ export default function AccountsScreen({ navigation }) {
                 activeOpacity={0.7}
               >
                 <View style={styles.userHeader}>
-                  <Text style={styles.username}>{userData.username}</Text>
                   <View style={[
                     styles.roleBadge, 
                     userData.role === "CUSTOMER" ? styles.customerBadge : styles.providerBadge
@@ -113,6 +141,7 @@ export default function AccountsScreen({ navigation }) {
                       {userData.role === "CUSTOMER" ? "Customer" : "Service Provider"}
                     </Text>
                   </View>
+                      <Text style={styles.username} numberOfLines={2}>{userData.username}</Text>
                 </View>
                 
                 <View style={styles.userDetailsContainer}>
@@ -134,13 +163,13 @@ export default function AccountsScreen({ navigation }) {
                   <Text style={styles.statusLabel}>Blacklisted Status: </Text>
                   <View style={[
                     styles.statusBadge, 
-                    userData.isBlacklisted === "true" ? styles.blacklistedBadge : styles.notBlacklistedBadge
+                    userData.isBlacklisted ? styles.blacklistedBadge : styles.notBlacklistedBadge
                   ]}>
                     <Text style={[
                       styles.statusText,
-                      userData.isBlacklisted === "true" ? styles.blacklistedText : styles.notBlacklistedText
+                      userData.isBlacklisted ? styles.blacklistedText : styles.notBlacklistedText
                     ]}>
-                      {userData.isBlacklisted === "true" ? "Blacklisted" : "Not Blacklisted"}
+                      {userData.isBlacklisted ? "Blacklisted" : "Not Blacklisted"}
                     </Text>
                   </View>
                 </View>
@@ -212,7 +241,7 @@ export default function AccountsScreen({ navigation }) {
             </Button>
           </View>
         </View>
-      </View>
+    </View>
     </SafeAreaView>
   );
 }
@@ -290,20 +319,24 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
   userHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: "column",
+    // justifyContent: "flex-start",
+    // alignItems: "flex-start",
     marginBottom: 12,
+    gap: 8,
   },
   username: {
     fontSize: wp(4.8),
     fontWeight: "bold",
     color: Colors.primary,
+    flexWrap: 'wrap',
+    // width: '0%',
   },
   roleBadge: {
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 8,
+    alignSelf: 'flex-start',
   },
   customerBadge: {
     backgroundColor: "rgba(52, 152, 219, 0.15)",

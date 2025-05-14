@@ -10,6 +10,8 @@ import Price from "../../../Price";
 import { updateStatus } from "../../../../utility/order";
 import { useContext } from "react";
 import { AuthContext } from "../../../../context/AuthContext";
+import Button from "../../../UI/Button";
+import Toast from "react-native-toast-message";
 
 export default function PendingContent({ order, changeStatus, isFollowUpOrder = false }) {
   const [showPrevDetails, setShowPrevDetails] = useState(false);
@@ -38,8 +40,8 @@ export default function PendingContent({ order, changeStatus, isFollowUpOrder = 
           text: "Yes",
           onPress: async () => {
             try {
-              await updateStatus(token, order.id, "CANCELLED");
-              changeStatus("CANCELLED");
+              await updateStatus(token, order.id, "CANCELED");
+              changeStatus("CANCELED");
             } catch (error) {
               console.error(error);
               Alert.alert("Error", "Failed to cancel order. Please try again.");
@@ -122,7 +124,7 @@ export default function PendingContent({ order, changeStatus, isFollowUpOrder = 
 
         <TouchableOpacity
           onPress={handleCancel}
-          style={[styles.cancelButton, { backgroundColor: ORDER_STATUS_STYLES.CANCELLED.text }]}
+          style={[styles.cancelButton, { backgroundColor: ORDER_STATUS_STYLES.CANCELED.text }]}
         >
           <Text style={styles.cancelButtonText}>Cancel Order</Text>
         </TouchableOpacity>

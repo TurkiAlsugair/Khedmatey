@@ -28,13 +28,13 @@ import InProgressContent from "../../../components/Orders/W-Orders/OrderDetails/
 import FinishedContent from "../../../components/Orders/W-Orders/OrderDetails/FinishedContent";
 
 import InvoicedContent from "../../../components/Orders/W-Orders/OrderDetails/InvoicedContent";
-import CancelledContent from "../../../components/Orders/W-Orders/OrderDetails/CancelledContent";
+import CanceledContent from "../../../components/Orders/W-Orders/OrderDetails/CanceledContent";
 import DeclinedContent from "../../../components/Orders/W-Orders/OrderDetails/DeclinedContent";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
 
 const MAIN_STATUSES = ["PENDING", "ACCEPTED", "COMING", "IN_PROGRESS"];
-const FINAL_STATUSES = ["FINISHED", "INVOICED", "CANCELLED", "DECLINED"];
+const FINAL_STATUSES = ["FINISHED", "INVOICED", "CANCELED", "DECLINED"];
 
 const ICONS = {
   PENDING: "time-outline",
@@ -206,12 +206,12 @@ export default function OrderDetailsScreen({ navigation, route }) {
                 // isFollowUpOrder={isFollowUpOrder}
               />
             )}
-            {status === "CANCELLED" && (
-              <CancelledContent
+            {status === "CANCELED" && (
+              <CanceledContent
                 order={orderData}
                 // isFollowUpOrder={isFollowUpOrder}
               />
-            )}
+              )}
             {status === "DECLINED" && (
               <DeclinedContent
                 order={orderData}

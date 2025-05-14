@@ -26,6 +26,8 @@ export default function UpdateServiceScreen({ navigation, route }) {
     categoryId: { value: activeCategoryId, isValid: true },
     nameEN: { value: service.nameEN, isValid: true },
     nameAR: { value: service.nameAR, isValid: true },
+    descriptionEN: { value: service.descriptionEN || "", isValid: true },
+    descriptionAR: { value: service.descriptionAR || "", isValid: true },
     price: {
       value: service.price,
       isValid: true,
@@ -64,12 +66,16 @@ export default function UpdateServiceScreen({ navigation, route }) {
     const isValidCategory = !!formState.categoryId.value;
     const isValidNameEN = formState.nameEN.value.trim().length > 0;
     const isValidNameAR = formState.nameAR.value.trim().length > 0;
+    const isValidDescriptionEN = formState.descriptionEN.value.trim().length > 0;
+    const isValidDescriptionAR = formState.descriptionAR.value.trim().length > 0;
     const isValidPrice = formState.price.value.trim().length > 0;
 
     const allValid =
       isValidCategory &&
       isValidNameEN &&
       isValidNameAR &&
+      isValidDescriptionEN &&
+      isValidDescriptionAR &&
       isValidPrice;
 
     if (!allValid) {
@@ -78,6 +84,8 @@ export default function UpdateServiceScreen({ navigation, route }) {
         categoryId: { ...prev.categoryId, isValid: isValidCategory },
         nameEN: { ...prev.nameEN, isValid: isValidNameEN },
         nameAR: { ...prev.nameAR, isValid: isValidNameAR },
+        descriptionEN: { ...prev.descriptionEN, isValid: isValidDescriptionEN },
+        descriptionAR: { ...prev.descriptionAR, isValid: isValidDescriptionAR },
         price: { ...prev.price, isValid: isValidPrice },
       }));
       return;
@@ -92,6 +100,8 @@ export default function UpdateServiceScreen({ navigation, route }) {
           categoryId: parseInt(formState.categoryId.value, 10),
           nameEN: formState.nameEN.value,
           nameAR: formState.nameAR.value,
+          descriptionEN: formState.descriptionEN.value,
+          descriptionAR: formState.descriptionAR.value,
           price: formState.price.value,
         },
         {
@@ -107,6 +117,8 @@ export default function UpdateServiceScreen({ navigation, route }) {
         categoryId: formState.categoryId.value,
         nameEN: formState.nameEN.value,
         nameAR: formState.nameAR.value,
+        descriptionEN: formState.descriptionEN.value,
+        descriptionAR: formState.descriptionAR.value,
         price: formState.price.value,
       });
 
@@ -138,27 +150,55 @@ export default function UpdateServiceScreen({ navigation, route }) {
         />
 
         <Input
-          label="Service description (English)"
-          placeholder="Enter your service description in English"
+          label="Service name (English)"
+          placeholder="Enter your service name in English"
           keyboardType="default"
           onUpdateValue={(value) => handleInputChange("nameEN", value)}
           value={formState.nameEN.value}
           labelFontSize={wp(3.8)}
           labelColor="#6F6F6F"
           isInvalid={!formState.nameEN.isValid}
-          errorMessage="English description is required"
+          errorMessage="English name is required"
         />
 
         <Input
-          label="Service description (Arabic)"
-          placeholder="Enter your service description in Arabic"
+          label="Service name (Arabic)"
+          placeholder="Enter your service name in Arabic"
           keyboardType="default"
           onUpdateValue={(value) => handleInputChange("nameAR", value)}
           value={formState.nameAR.value}
           labelFontSize={wp(3.8)}
           labelColor="#6F6F6F"
           isInvalid={!formState.nameAR.isValid}
+          errorMessage="Arabic name is required"
+        />
+
+        <Input
+          label="Service description (English)"
+          placeholder="Enter your service description in English"
+          keyboardType="default"
+          onUpdateValue={(value) => handleInputChange("descriptionEN", value)}
+          value={formState.descriptionEN.value}
+          labelFontSize={wp(3.8)}
+          labelColor="#6F6F6F"
+          isInvalid={!formState.descriptionEN.isValid}
+          errorMessage="English description is required"
+          multiline={true}
+          numberOfLines={3}
+        />
+
+        <Input
+          label="Service description (Arabic)"
+          placeholder="Enter your service description in Arabic"
+          keyboardType="default"
+          onUpdateValue={(value) => handleInputChange("descriptionAR", value)}
+          value={formState.descriptionAR.value}
+          labelFontSize={wp(3.8)}
+          labelColor="#6F6F6F"
+          isInvalid={!formState.descriptionAR.isValid}
           errorMessage="Arabic description is required"
+          multiline={true}
+          numberOfLines={3}
         />
 
         <Input

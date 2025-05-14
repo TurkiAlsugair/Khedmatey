@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { StyleSheet, Text, View, TouchableOpacity, Alert } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -7,16 +7,12 @@ import {
 import { Colors, ORDER_STATUS_STYLES } from "../../../../constants/styles";
 import { Ionicons } from "@expo/vector-icons";
 import Price from "../../../Price";
-import { updateStatus } from "../../../../utility/order";
-import { useContext } from "react";
-import { AuthContext } from "../../../../context/AuthContext";
-import Toast from "react-native-toast-message";
 
-export default function AcceptedContent({ order, changeStatus, isFollowUpOrder = false }) {
+export default function CanceledContent({ order, isFollowUpOrder = false }) {
   const [showPrevDetails, setShowPrevDetails] = useState(false);
-  const { token } = useContext(AuthContext);
   const followUp = order.followUpService;
   const invoice = order.invoice;
+  const colors = ORDER_STATUS_STYLES["CANCELED"];
 
   const calculateTotal = () => {
     if (!invoice?.details?.length) return 0;
@@ -26,42 +22,16 @@ export default function AcceptedContent({ order, changeStatus, isFollowUpOrder =
     );
   };
 
-  const handleCancel = async () => {
-    Alert.alert(
-      "Cancel Order",
-      "Are you sure you want to cancel this order?",
-      [
-        {
-          text: "No",
-          style: "cancel",
-        },
-        {
-          text: "Yes",
-          onPress: async () => {
-            try {
-              await updateStatus(token, order.id, "CANCELED");
-              changeStatus("CANCELED");
-              Toast.show({
-                type: "success",
-                text1: "Order canceled successfully",
-                visibilityTime: 2000,
-                topOffset: hp(7),
-              });
-            } catch (error) {
-              console.error(error);
-              Alert.alert("Error", "Failed to cancel order. Please try again.");
-            }
-          },
-        },
-      ]
-    );
-  };
-
   return (
     <View style={styles.cont}>
-      <Text style={{ color: "#666", textAlign: "center", marginBottom: hp(2) }}>
-        The order has been accepted.
-      </Text>
+      <View style={[styles.statusContainer, { backgroundColor: colors.bg }]}>
+        <Text style={[styles.statusTitle, { color: colors.text }]}>
+          Order Canceled
+        </Text>
+        <Text style={styles.statusMessage}>
+          This order has been canceled and is no longer active.
+        </Text>
+      </View>
 
       <Text style={styles.title}>Order Details</Text>
       <View style={styles.contentBox}>
@@ -126,13 +96,6 @@ export default function AcceptedContent({ order, changeStatus, isFollowUpOrder =
         <Text style={styles.sectionText}>
           <Text style={styles.bold}>Date:</Text> {order.date}
         </Text>
-
-        <TouchableOpacity
-          onPress={handleCancel}
-          style={[styles.cancelButton, { backgroundColor: ORDER_STATUS_STYLES.CANCELED.text }]}
-        >
-          <Text style={styles.cancelButtonText}>Cancel Order</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -141,6 +104,20 @@ export default function AcceptedContent({ order, changeStatus, isFollowUpOrder =
 const styles = StyleSheet.create({
   cont: {
     paddingBottom: hp(5),
+  },
+  statusContainer: {
+    padding: 20,
+    borderRadius: 8,
+    marginBottom: hp(3),
+  },
+  statusTitle: {
+    fontSize: wp(5.5),
+    fontWeight: "bold",
+    marginBottom: hp(1),
+  },
+  statusMessage: {
+    fontSize: wp(4),
+    color: "#444",
   },
   title: {
     fontSize: wp(5),
@@ -211,15 +188,5 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  cancelButton: {
-    padding: hp(1.5),
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: hp(2),
-  },
-  cancelButtonText: {
-    color: "#fff",
-    fontSize: wp(3.5),
-    fontWeight: "600",
-  },
-}); 
+});
+ 

@@ -141,12 +141,12 @@ export default function DashboardScreen({ navigation }) {
                   style={[
                     styles.gridText,
                     {
-                      backgroundColor: ORDER_STATUS_STYLES.CANCELLED.bg,
-                      color: ORDER_STATUS_STYLES.CANCELLED.text,
+                      backgroundColor: ORDER_STATUS_STYLES.CANCELED.bg,
+                      color: ORDER_STATUS_STYLES.CANCELED.text,
                     },
                   ]}
                 >
-                  CANCELLED: 5
+                  CANCELED: 5
                 </Text>
               </View>
               
@@ -237,9 +237,9 @@ export default function DashboardScreen({ navigation }) {
             
             <TouchableOpacity
               style={styles.optionCont}
-              onPress={() => navigateToOrders("CANCELLED")}
+              onPress={() => navigateToOrders("CANCELED")}
             >
-              <Text style={styles.optionText}>Cancelled Orders</Text>
+              <Text style={styles.optionText}>Canceled Orders</Text>
             </TouchableOpacity>
             
             <TouchableOpacity

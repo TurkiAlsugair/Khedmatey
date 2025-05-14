@@ -26,11 +26,11 @@ import InProgressContent from "../../../components/Orders/SP-Orders/OrderDetails
 // Final status components
 import FinishedContent from "../../../components/Orders/SP-Orders/OrderDetails/FinishedContent";
 import InvoicedContent from "../../../components/Orders/SP-Orders/OrderDetails/InvoicedContent";
-import CancelledContent from "../../../components/Orders/SP-Orders/OrderDetails/CancelledContent";
+import CanceledContent from "../../../components/Orders/SP-Orders/OrderDetails/CanceledContent";
 import DeclinedContent from "../../../components/Orders/SP-Orders/OrderDetails/DeclinedContent";
 
 const MAIN_STATUSES = ["PENDING", "ACCEPTED", "COMING", "IN_PROGRESS"];
-const FINAL_STATUSES = ["FINISHED", "INVOICED", "CANCELLED", "DECLINED"];
+const FINAL_STATUSES = ["FINISHED", "INVOICED", "CANCELED", "DECLINED"];
 
 const ICONS = {
   PENDING: "time-outline",
@@ -191,8 +191,8 @@ export default function OrderDetailsScreen({ navigation, route }) {
             {status === "INVOICED" && (
               <InvoicedContent order={orderData} isFollowUpOrder={isFollowUpOrder}/>
             )}
-            {status === "CANCELLED" && (
-              <CancelledContent order={orderData} isFollowUpOrder={isFollowUpOrder}/>
+            {status === "CANCELED" && (
+              <CanceledContent order={orderData} isFollowUpOrder={isFollowUpOrder}/>
             )}
             {status === "DECLINED" && (
               <DeclinedContent order={orderData} isFollowUpOrder={isFollowUpOrder}/>

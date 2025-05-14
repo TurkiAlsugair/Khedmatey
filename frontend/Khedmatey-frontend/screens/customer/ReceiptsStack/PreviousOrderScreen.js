@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView } from "react-native";
-import { useEffect, useState } from "react";
-import { prevOrderDetails } from "../../../utility/order";
+import { useEffect, useState, useContext } from "react";
+import { fetchOrderDetails } from "../../../utility/order";
 import Price from "../../../components/Price";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import { Colors, ORDER_STATUS_STYLES } from "../../../constants/styles";
@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import FeedbackModal from "../../../components/Modals/FeedbackModal";
 import ComplaintModal from "../../../components/Modals/ComplaintModal";
+import { AuthContext } from "../../../context/AuthContext";
 
 export default function PreviousOrderScreen({ navigation, route }) {
   const { orderId } = route.params;
@@ -18,6 +19,7 @@ export default function PreviousOrderScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
   const [complaintModalVisible, setComplaintModalVisible] = useState(false);
+  const { token } = useContext(AuthContext);
 
   useEffect(() => {
     navigation.setOptions({
@@ -29,22 +31,23 @@ export default function PreviousOrderScreen({ navigation, route }) {
     const fetchDetails = async () => {
       try {
         setLoading(true);
-        const data = await prevOrderDetails(orderId);
+        const data = await fetchOrderDetails(token, orderId);
         setOrder(data);
         setError("");
       } catch (err) {
         setError("Failed to fetch invoice details.");
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
     fetchDetails();
-  }, [orderId]);
+  }, [orderId, token]);
 
   const handleFeedbackSuccess = (feedback) => {
     setOrder(prev => ({
       ...prev,
-      Feedback: feedback
+      feedback: feedback
     }));
   };
 
@@ -63,7 +66,7 @@ export default function PreviousOrderScreen({ navigation, route }) {
     if (order.status !== "PAID") return true;
     
     // If status is PAID, only show if feedback or complaint options are available
-    return (!order.Feedback || !order.complaint);
+    return (!order.feedback || !order.complaint);
   };
 
   if (loading) {
@@ -81,7 +84,14 @@ export default function PreviousOrderScreen({ navigation, route }) {
     );
   }
 
-  const total = order.details.reduce((sum, item) => sum + parseFloat(item.price), 0);
+  // Calculate total price from invoice or use totalPrice
+  let total = parseFloat(order.totalPrice);
+  const invoiceDetails = order.invoice?.details || [];
+  
+  if (invoiceDetails.length > 0) {
+    total = invoiceDetails.reduce((sum, item) => sum + parseFloat(item.price), 0);
+  }
+
   const status = order.status === "PAID" ? "PAID" : "INVOICED";
   const statusStyles = ORDER_STATUS_STYLES[status] || {};
   const mainTitle = status === "PAID" ? "Receipt" : "Invoice";
@@ -119,7 +129,7 @@ export default function PreviousOrderScreen({ navigation, route }) {
           </View>
           <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>Phone Number: </Text>
-            <Text style={styles.metaValue}> {order.worker?.phoneNumber}</Text>
+            <Text style={styles.metaValue}> {order.worker?.phonenumber || order.worker?.phoneNumber}</Text>
           </View>
           <View style={styles.seperator}></View>
           <View style={styles.metaRow}>
@@ -133,21 +143,72 @@ export default function PreviousOrderScreen({ navigation, route }) {
 
           <View style={styles.seperator}></View>
 
+          {/* Location section */}
+          {order.location && (
+            <>
+              <Text style={styles.sectionTitle}>Location</Text>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>City: </Text>
+                <Text style={styles.metaValue}>{order.location.city}</Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Address: </Text>
+                <Text style={styles.metaValue}>{order.location.miniAddress}</Text>
+              </View>
+              <View style={styles.seperator}></View>
+            </>
+          )}
+
+          {/* Service section */}
+          {order.service && (
+            <>
+              <Text style={styles.sectionTitle}>Service</Text>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Name: </Text>
+                <Text style={styles.metaValue}>{order.service.nameEN} - {order.service.nameAR}</Text>
+              </View>
+              {order.service.category && (
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Category: </Text>
+                  <Text style={styles.metaValue}>{order.service.category.name}</Text>
+                </View>
+              )}
+              <View style={styles.seperator}></View>
+            </>
+          )}
+
+          {/* FollowUp Service section if exists */}
+          {order.followUpService && (
+            <>
+              <Text style={styles.sectionTitle}>Follow-Up Service</Text>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Name: </Text>
+                <Text style={styles.metaValue}>{order.followUpService.nameEN} - {order.followUpService.nameAR}</Text>
+              </View>
+              <View style={styles.seperator}></View>
+            </>
+          )}
+
           {/* Invoice/Receipt Details */}
-          <Text style={styles.sectionTitle}>{detailsTitle}</Text>
-          {order.details.map((item, idx) => (
-            <View key={idx} style={styles.invoiceRow}>
-              <Text style={styles.detailText}>{item.nameEN} - {item.nameAR}</Text>
-              <Price price={item.price} size={wp(3.5)} />
-            </View>
-          ))}
+          {invoiceDetails.length > 0 && (
+            <>
+              <Text style={styles.sectionTitle}>{detailsTitle}</Text>
+              {invoiceDetails.map((item, idx) => (
+                <View key={idx} style={styles.invoiceRow}>
+                  <Text style={styles.detailText}>{item.nameEN} - {item.nameAR}</Text>
+                  <Price price={item.price} size={wp(3.5)} />
+                </View>
+              ))}
+            </>
+          )}
+
           <View style={styles.bottomSummaryRow}>
             <Price price={total.toFixed(2)} size={wp(4)} header="Total" />
             <Text style={styles.dateLabel}>Date: {order.date}</Text>
           </View>
           
           {/* Feedback Section (if exists) */}
-          {order.Feedback && (
+          {order.feedback && (
             <>
               <View style={styles.seperator}></View>
               <Text style={styles.sectionTitle}>Your Feedback</Text>
@@ -160,7 +221,7 @@ export default function PreviousOrderScreen({ navigation, route }) {
                         key={i}
                         name="star" 
                         size={18} 
-                        color={i < parseInt(order.Feedback.rate) ? '#FFD700' : '#ddd'} 
+                        color={i < parseInt(order.feedback.rating) ? '#FFD700' : '#ddd'} 
                         style={{ marginHorizontal: 2 }}
                       />
                     ))}
@@ -168,9 +229,9 @@ export default function PreviousOrderScreen({ navigation, route }) {
                 </View>
                 <View style={styles.reviewContainer}>
                   <Text style={styles.feedbackLabel}>Review:</Text>
-                  <Text style={styles.reviewText}>{order.Feedback.review}</Text>
+                  <Text style={styles.reviewText}>{order.feedback.review || "No review provided"}</Text>
                 </View>
-                <Text style={styles.feedbackDate}>Submitted on: {order.Feedback.date}</Text>
+                <Text style={styles.feedbackDate}>Submitted on: {new Date(order.feedback.createdAt).toLocaleDateString()}</Text>
               </View>
             </>
           )}
@@ -184,7 +245,7 @@ export default function PreviousOrderScreen({ navigation, route }) {
                 <View style={styles.complaintContent}>
                   <Text style={styles.complaintText}>{order.complaint.description}</Text>
                 </View>
-                <Text style={styles.complaintDate}>Submitted on: {order.complaint.date}</Text>
+                <Text style={styles.complaintDate}>Submitted on: {new Date(order.complaint.createdAt).toLocaleDateString()}</Text>
               </View>
             </>
           )}
@@ -204,9 +265,9 @@ export default function PreviousOrderScreen({ navigation, route }) {
           )}
 
           {/* Show feedback and complaint options for both PAID and INVOICED statuses */}
-          {(!order.Feedback || !order.complaint) && (
+          {(!order.feedback || !order.complaint) && (
             <View style={styles.actionsContainer}>
-              {!order.Feedback && !order.complaint && (
+              {!order.feedback && !order.complaint && (
                 <>
                   <Button 
                     cusStyles={styles.feedbackBtn} 
@@ -224,7 +285,7 @@ export default function PreviousOrderScreen({ navigation, route }) {
                 </>
               )}
               
-              {!order.Feedback && order.complaint && (
+              {!order.feedback && order.complaint && (
                 <Button 
                   cusStyles={[styles.singleBtn, { backgroundColor: Colors.primary }]} 
                   onPress={() => setFeedbackModalVisible(true)}
@@ -233,7 +294,7 @@ export default function PreviousOrderScreen({ navigation, route }) {
                 </Button>
               )}
               
-              {order.Feedback && !order.complaint && (
+              {order.feedback && !order.complaint && (
                 <Button 
                   cusStyles={styles.singleBtn} 
                   onPress={() => setComplaintModalVisible(true)}
@@ -243,9 +304,6 @@ export default function PreviousOrderScreen({ navigation, route }) {
               )}
             </View>
           )}
-
-
-
         </View>
       )}
       

@@ -356,7 +356,7 @@ export class ServiceService {
     eachDayOfInterval({ start: today, end }).forEach((d) => {
       const key = d.toDateString();
       if (unavailableMap.has(key)) {
-        busyDates.push(format(d, 'dd-MM-yyyy'));
+        busyDates.push(format(d, 'dd/MM/yyyy'));
       }
     });
 

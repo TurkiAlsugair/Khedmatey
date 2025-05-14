@@ -60,7 +60,7 @@ export default function CheckoutScreen({ navigation, route }) {
     try {
       setBackendError("");
       const response = await axios.post(
-        `${API_BASE_URL}/request`,
+        `${API_BASE_URL}/request/`,
         payload,
         {
           headers: {

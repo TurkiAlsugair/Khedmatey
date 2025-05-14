@@ -6,7 +6,6 @@ import {
   FlatList,
   Text,
 } from "react-native";
-import axios from "axios";
 import { Colors, ORDER_STATUS_STYLES } from "../../../constants/styles";
 import {
   widthPercentageToDP as wp,
@@ -14,11 +13,12 @@ import {
 } from "react-native-responsive-screen";
 import { AuthContext } from "../../../context/AuthContext";
 import { useFocusEffect } from "@react-navigation/native";
+import { fetchAllOrders } from "../../../utility/order";
 
 import CitiesRow from "../../../components/Orders/SP-Orders/CitiesRow";
 import OrderItem from "../../../components/Orders/SP-Orders/OrderItem";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function OrdersScreen({ route, navigation }) {
   const { status } = route.params;
@@ -48,14 +48,9 @@ export default function OrdersScreen({ route, navigation }) {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/requests?status=${status}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      
-      const fetched = response.data?.data?.requests || [];
-      setCitiesData(fetched);
+      // Use fetchAllOrders with the status parameter as a single-item array
+      const data = await fetchAllOrders(token, "SERVICE_PROVIDER", [status]);
+      setCitiesData(data || []);
       setBackendError("");
     } catch (err) {
       console.error(`Failed to fetch ${status} orders:`, err);

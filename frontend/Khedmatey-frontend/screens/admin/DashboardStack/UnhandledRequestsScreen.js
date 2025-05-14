@@ -21,7 +21,7 @@ import { AuthContext } from "../../../context/AuthContext";
 import Toast from "react-native-toast-message";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 const UnhandledRequestsScreen = ({ navigation }) => {
   const [requests, setRequests] = useState([]);
@@ -67,14 +67,13 @@ const UnhandledRequestsScreen = ({ navigation }) => {
       case "PENDING":
         setFilteredRequests(requestsData.filter(request => request.status === "PENDING"));
         break;
-      case "CANCELLED":
-        setFilteredRequests(requestsData.filter(request => request.status === "CANCELLED"));
+      case "CANCELED":
+        setFilteredRequests(requestsData.filter(request => request.status === "CANCELED"));
         break;
       default:
         setFilteredRequests(requestsData);
         break;
     }
-    setActiveFilter(filter);
   };
 
   useEffect(() => {
@@ -211,8 +210,8 @@ const UnhandledRequestsScreen = ({ navigation }) => {
     return requests.filter(request => request.status === "PENDING").length;
   };
 
-  const getCancelledCount = () => {
-    return requests.filter(request => request.status === "CANCELLED").length;
+  const getCanceledCount = () => {
+    return requests.filter(request => request.status === "CANCELED").length;
   };
 
   // Header component with filter buttons
@@ -242,9 +241,9 @@ const UnhandledRequestsScreen = ({ navigation }) => {
           onPress={() => applyFilter("PENDING")} 
         />
         <FilterButton 
-          title={`Cancelled (${getCancelledCount()})`} 
-          isActive={activeFilter === "CANCELLED"} 
-          onPress={() => applyFilter("CANCELLED")} 
+          title={`Canceled (${getCanceledCount()})`} 
+          isActive={activeFilter === "CANCELED"} 
+          onPress={() => applyFilter("CANCELED")} 
         />
       </View>
     </View>
