@@ -42,7 +42,7 @@ export default function PendingContent({ order, changeStatus, isFollowUpOrder = 
               changeStatus("ACCEPTED");
             } catch (error) {
               console.error(error);
-              Alert.alert("Error", "Failed to accept order. Please try again.");
+              Alert.alert("Error", error.response?.data?.message || "Failed to accept order. Please try again.");
             }
           },
         },

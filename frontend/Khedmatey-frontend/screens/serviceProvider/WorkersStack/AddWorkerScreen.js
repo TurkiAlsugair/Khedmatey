@@ -17,6 +17,7 @@ import { ServicesContext } from "../../../context/ServicesContext"; // if you ne
 import axios from "axios";
 import Toast from "react-native-toast-message";
 
+// Using the mock API for now, till Twilio is ready.
 const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
 
 export default function AddWorkerScreen({ navigation }) {

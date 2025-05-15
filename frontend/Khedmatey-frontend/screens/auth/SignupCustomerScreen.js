@@ -15,6 +15,7 @@ import { Colors } from "../../constants/styles";
 import IconButton from "../../components/UI/IconButton";
 import i18n from "../../locales/i18n";
 
+// Using the mock API for now, till Twilio is ready.
 const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
 
 export default function SignupCustomerScreen({ navigation }) {

@@ -19,7 +19,6 @@ import Button from "../../../UI/Button";
 import Price from "../../../Price";
 import { updateStatus } from "../../../../utility/order";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
 
 export default function ComingContent({
   order,

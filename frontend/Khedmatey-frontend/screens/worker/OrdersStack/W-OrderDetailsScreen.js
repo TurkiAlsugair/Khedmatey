@@ -31,7 +31,7 @@ import InvoicedContent from "../../../components/Orders/W-Orders/OrderDetails/In
 import CanceledContent from "../../../components/Orders/W-Orders/OrderDetails/CanceledContent";
 import DeclinedContent from "../../../components/Orders/W-Orders/OrderDetails/DeclinedContent";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 const MAIN_STATUSES = ["PENDING", "ACCEPTED", "COMING", "IN_PROGRESS"];
 const FINAL_STATUSES = ["FINISHED", "INVOICED", "CANCELED", "DECLINED"];
@@ -66,7 +66,7 @@ export default function OrderDetailsScreen({ navigation, route }) {
     };
 
     getOrderDetails();
-  }, [id, token]);
+  }, [id, token, status]);
 
   useEffect(() => {
     // join the room that has the orderId = id

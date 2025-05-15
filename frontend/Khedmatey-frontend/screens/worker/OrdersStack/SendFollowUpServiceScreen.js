@@ -17,7 +17,7 @@ import SingleSelect from "../../../components/SelectInputs/SingleSelect";
 import { serviceCategories } from "../../../constants/data";
 import { updateStatus } from "../../../utility/order";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function SendFollowUpServiceScreen() {
   const { token } = useContext(AuthContext);
@@ -33,6 +33,7 @@ export default function SendFollowUpServiceScreen() {
     descriptionEN: { value: "", isValid: true },
     descriptionAR: { value: "", isValid: true },
     price: { value: "" || "", isValid: true },
+    notes: { value: "", isValid: true },
   });
   const [backendError, setBackendError] = useState("");
 
@@ -74,6 +75,10 @@ export default function SendFollowUpServiceScreen() {
         isValid:
           formState.price.value.trim() !== "" && !isNaN(formState.price.value),
       },
+      notes: {
+        ...formState.notes,
+        isValid: true, // Notes are optional
+      },
     };
     setFormState(updated);
     return Object.values(updated).every((field) => field.isValid);
@@ -85,11 +90,19 @@ export default function SendFollowUpServiceScreen() {
     try {
       setLoading(true);
 
-      await axios.post(
-        `${API_BASE_URL}/generateInvoice`,
+      // update the request status to FINISHED, use updateStatus utility
+      await updateStatus(token, order.id, "FINISHED");
+     
+      await axios.patch(
+        `${API_BASE_URL}/request/${order.id}/invoice`,
         {
-          ...invoice,
-          orderId: order.id,
+          // since the backend expects it items rather than details
+          items: invoice.details.map(item => ({
+            nameAR: item.nameAR,
+            nameEN: item.nameEN,
+            // expects it to be a number
+            price: parseFloat(item.price)
+          }))
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -97,27 +110,24 @@ export default function SendFollowUpServiceScreen() {
       );
 
       await axios.post(
-        `${API_BASE_URL}/followUpService`,
+        `${API_BASE_URL}/followupService`,
         {
-          orderId: order.id,
-          followUpService: {
-            categoryId: formState.categoryId.value,
-            nameEN: formState.nameEN.value,
-            nameAR: formState.nameAR.value,
-            descriptionEN: formState.descriptionEN.value,
-            descriptionAR: formState.descriptionAR.value,
-            price: formState.price.value,
-          },
+          requestId: order.id,
+          nameAR: formState.nameAR.value,
+          nameEN: formState.nameEN.value,
+          descriptionAR: formState.descriptionAR.value,
+          descriptionEN: formState.descriptionEN.value,
+          // since backend expects a number
+          categoryId: parseInt(formState.categoryId.value),
+          price: formState.price.value,
+          notes: formState.notes.value.trim() || "No Notes",
         },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
 
-      // await updateStatus(token, order.id, "FINISHED");
-      // if (typeof onFinished === "function") {
-        onFinished();
-      // }
+      onFinished();
       navigation.goBack();
     } catch (error) {
       console.log(error);
@@ -223,6 +233,15 @@ export default function SendFollowUpServiceScreen() {
         onUpdateValue={(value) => handleInputChange("price", value)}
         isInvalid={!formState.price.isValid}
         errorMessage="Price must be a number"
+      />
+      <Input
+        label="Notes"
+        placeholder="Enter any additional notes"
+        value={formState.notes.value}
+        onUpdateValue={(value) => handleInputChange("notes", value)}
+        isInvalid={!formState.notes.isValid}
+        multiline={true}
+        numberOfLines={3}
       />
 
       {backendError ? (

@@ -90,7 +90,6 @@ export class FollowupServiceService {
       }
     });
 
-    this.requestService.updateStatus(requestId, user, Status.FINISHED);
 
     return {
       followupService,
