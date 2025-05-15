@@ -65,7 +65,7 @@ export default function OrderDetailsScreen({ navigation, route }) {
     };
 
     getOrderDetails();
-  }, [id, token]);
+  }, [id, token, status]);
 
   useEffect(() => {
     socket.emit("joinOrderRoom", { orderId: id });

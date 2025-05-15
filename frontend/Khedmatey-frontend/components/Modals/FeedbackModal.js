@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -14,12 +14,14 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
+import { AuthContext } from '../../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 const FeedbackModal = ({ visible, onClose, orderId, onSuccess }) => {
+  const { token } = useContext(AuthContext);
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -40,10 +42,13 @@ const FeedbackModal = ({ visible, onClose, orderId, onSuccess }) => {
       setSubmitting(true);
       setError('');
       
-      const response = await axios.post(`${API_BASE_URL}/customer/request/feedback`, {
-        orderId,
-        rate: rating.toString(),
+      const response = await axios.post(`${API_BASE_URL}/request/${orderId}/feedback`, {
+        rating,
         review
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       });
       
       // If successful

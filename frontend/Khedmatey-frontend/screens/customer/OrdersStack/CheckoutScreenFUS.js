@@ -23,7 +23,8 @@ import { AuthContext } from "../../../context/AuthContext";
 import Toast from "react-native-toast-message";
 import Price from "../../../components/Price";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function CheckoutScreenFUS({ navigation, route }) {
   const { order, date } = route.params;
@@ -46,9 +47,7 @@ export default function CheckoutScreenFUS({ navigation, route }) {
       const response = await axios.patch(
         `${API_BASE_URL}/request/${order.id}/schedule-followup`,
         {
-          orderId: order.id,
           date,
-          notes,
         },
         {
           headers: {

@@ -37,7 +37,7 @@ export const fetchOrderDetails = async (token, requestId) => {
     });
     return response.data.data;
   } catch (err) {
-    console.error("Failed to fetch order details:", err);
+    console.error(`Failed to fetch order details: ${err.response?.data?.message}`);
     throw err;
   }
 };
@@ -58,7 +58,7 @@ export const updateStatus = async (token, orderId, newStatus) => {
     );
     return response.data.data;
   } catch (err) {
-    console.error("Failed to update order status:", err);
+    console.error(`Failed to update order status: ${err.response?.data?.message}`);
     throw err;
   }
 };

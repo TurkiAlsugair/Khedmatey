@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -15,11 +15,13 @@ import {
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import { Ionicons } from '@expo/vector-icons';
+import { AuthContext } from '../../context/AuthContext';
 import axios from 'axios';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 const ComplaintModal = ({ visible, onClose, orderId, onSuccess }) => {
+  const { token } = useContext(AuthContext);
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -34,9 +36,12 @@ const ComplaintModal = ({ visible, onClose, orderId, onSuccess }) => {
       setSubmitting(true);
       setError('');
       
-      const response = await axios.post(`${API_BASE_URL}/customer/request/complaint`, {
-        orderId,
+      const response = await axios.post(`${API_BASE_URL}/request/${orderId}/complaint`, {
         description
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       });
       
       // If successful

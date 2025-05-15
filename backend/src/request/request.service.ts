@@ -499,6 +499,10 @@ export class RequestService {
               username: (req as any).service?.serviceProvider?.username || '',
               usernameAR: (req as any).service?.serviceProvider?.usernameAR || ''
             },
+            customer: {
+              username: (req as any).customer?.username || '',
+              phoneNumber: (req as any).customer?.phoneNumber || ''
+            },
             invoice,
             status,
             notes,
@@ -640,11 +644,14 @@ export class RequestService {
 
       //validate role
       if (user.role !== Role.SERVICE_PROVIDER) {
+        console.log("user role", user.role);
         throw new ForbiddenException('Only service providers may accept requests');
       }
 
       //validate ownership
       if (serviceProviderId !== user.id) {
+        console.log("service provider id", serviceProviderId);
+        console.log("user id", user.id);
         throw new ForbiddenException(
           'You can only accept requests assigned to your services',
         );

@@ -33,8 +33,7 @@ export default function InProgressContent({
   const [invoice, setInvoice] = useState(null);
   const [isFollowUp, setIsFollowUp] = useState(false);
 
-  console.log(`${JSON.stringify({ ...invoice })} kk`);
-
+  console.log(`${JSON.stringify({ ...invoice })}`);
   const renderPreviousDetailsBox = () => {
     const details = order.invoice?.details || [];
     const total = details.reduce(
@@ -83,21 +82,21 @@ export default function InProgressContent({
           text: "Yes",
           onPress: async () => {
             try {
-              // 1. Send invoice (POST for normal, PATCH for follow-up)
-              if (!isFollowUpOrder) {
-                await axios.post(
-                  `${API_BASE_URL}/generateInvoice`,
-                  { orderId: order.id, ...invoice },
-                  { headers: { Authorization: `Bearer ${token}` } }
-                );
-              } else {
-                await axios.patch(
-                  `${API_BASE_URL}/generateInvoice`,
-                  { orderId: order.id, ...invoice },
-                  { headers: { Authorization: `Bearer ${token}` } }
-                );
-              }
-              console.log(...invoice);
+              // 1. Send invoice 
+              console.log(`${JSON.stringify({ ...invoice })}`);
+              await axios.patch(
+                `${API_BASE_URL}/request/${order.id}/invoice`,
+                { 
+                  // since the backend expects it items rather than details
+                  items: invoice.details.map(item => ({
+                    nameAR: item.nameAR,
+                    nameEN: item.nameEN,
+                    // expects it to be a number
+                    price: parseFloat(item.price)
+                })) },
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+              
               // 2. Update order status to INVOICED using shared method
               await updateStatus(token, order.id, "INVOICED");
               changeStatus("INVOICED");

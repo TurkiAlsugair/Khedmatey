@@ -31,6 +31,9 @@ export default function PickAppointment({ navigation, route }) {
 
   const order = route.params.order;
   const followUpService = order.followUpService;
+  
+  console.log(followUpService.id);
+
 
   const todayISO = moment().format("YYYY-MM-DD");
   const maxDateISO = moment().add(1, "month").format("YYYY-MM-DD");
@@ -51,7 +54,7 @@ export default function PickAppointment({ navigation, route }) {
       setLoading(true);
       try {
         const res = await axios.get(
-          `${API_BASE_URL}/service/${order.followUpService.id}/schedule`,
+          `${API_BASE_URL}/service/${followUpService.id}/schedule`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

@@ -20,7 +20,6 @@ import OrdersList from "../../../components/Orders/W-Orders/OrdersList";
 import { AuthContext } from "../../../context/AuthContext";
 import { fetchAllOrders } from "../../../utility/order";
 
-const BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
 
 const GROUPS = {
   ASSIGNED: ["ACCEPTED", "PENDING"],
@@ -67,10 +66,7 @@ export default function OrdersScreen() {
   const flatten = (statuses) =>
     rawData
       .filter((g) => statuses.includes(g.status))
-      .flatMap((g) =>
-        g.requests
-          ? g.requests.map((r) => ({ ...r, status: g.status }))
-          : [{ ...g.request, status: g.status }]
+      .flatMap((g) =>  g.requests.map((r) => ({ ...r, status: g.status }))
       );
 
   const dataMap = {

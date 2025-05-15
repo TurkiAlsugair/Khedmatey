@@ -285,7 +285,7 @@ export class ServiceController {
   @Get(':serviceId/schedule')
   async getServiceSchedule(@Param('serviceId') serviceId: string, @Query('city') city?: string,): Promise<BaseResponseDto> {
 
-    const busyDates = await this.serviceService.getServiceSchedule(serviceId, city);
+    const busyDates = await this.serviceService.getSchedule(serviceId, city);
     return {
       message: 'Service schedule fetched',
       data: { busyDates },
