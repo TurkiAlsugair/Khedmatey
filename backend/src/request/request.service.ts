@@ -1521,7 +1521,7 @@ export class RequestService {
         throw new ForbiddenException('You can only provide feedback for your own requests');
       }
 
-      const allowedStatuses = ['PAID'];
+      const allowedStatuses = ['PAID', 'INVOICED'];
       if (!allowedStatuses.includes(request.status)) {
         throw new BadRequestException('Feedback can only be provided for completed requests');
       }
