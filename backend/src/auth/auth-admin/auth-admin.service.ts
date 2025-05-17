@@ -12,7 +12,7 @@ constructor(private prisma: DatabaseService,private twilio: TwilioService, priva
 
 async signupAdmin({ phoneNumber, username, otpCode }: CreateAdminDto) {
 
-  // Check if the phoneNumber already exists in the system
+  //check if the phoneNumber already exists in the system
   const existingUser = await this.authService.findUser({ phoneNumber });
 
   if (existingUser) {
@@ -25,14 +25,14 @@ async signupAdmin({ phoneNumber, username, otpCode }: CreateAdminDto) {
       throw new BadRequestException("Wrong OTP");
   }
 
-  // Create the new admin with role ADMIN
+  //create the new admin with role ADMIN
   const role = Role.ADMIN;
 
   const newAdmin = await this.prisma.admin.create({
     data: { username, phoneNumber, role },
   });
 
-  // Generate token
+  //generate token
   const token = this.authService.generateToken(newAdmin);
   return { token, newAdmin };
 }
