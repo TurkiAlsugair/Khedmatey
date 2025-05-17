@@ -160,7 +160,7 @@ export class ServiceProviderService {
           date: true, 
           isClosed: true, 
           isBusy: true,
-          // Include worker days if filtering by city
+          //include worker days if filtering by city
           ...(cityFilter && {
             WorkerDays: {
               where: {
@@ -347,5 +347,121 @@ export class ServiceProviderService {
       });
 
       return complaints;
+    }
+
+    async getProviderStats(serviceProviderId: string) {
+      //check if provider exists
+      const serviceProvider = await this.prisma.serviceProvider.findUnique({
+        where: { id: serviceProviderId },
+        select: {
+          avgRating: true
+        }
+      });
+
+      if (!serviceProvider) {
+        throw new NotFoundException('Service provider not found');
+      }
+
+      //total workers count
+      const totalWorkers = await this.prisma.worker.count({
+        where: { serviceProviderId }
+      });
+
+      //total services count
+      const totalServices = await this.prisma.service.count({
+        where: { serviceProviderId }
+      });
+
+      //get all request status for this provider
+      const requests = await this.prisma.request.findMany({
+        where: {
+          service: {
+            serviceProviderId
+          }
+        },
+        select: {
+          status: true
+        }
+      });
+
+      //group requests by status
+      const statusCounts = {};
+      const allStatuses = Object.values(Status);
+      
+      //initialize all statuses with 0 count
+      allStatuses.forEach(status => {
+        statusCounts[status] = 0;
+      });
+      
+      //count requests by status
+      requests.forEach(request => {
+        statusCounts[request.status]++;
+      });
+
+      return {
+        totalWorkers,
+        totalServices,
+        totalRequests: requests.length,
+        requestsByStatus: statusCounts,
+        avgRating: serviceProvider.avgRating
+      };
+    }
+
+    async getWorkerStats(workerId: string) {
+      //check if worker exists
+      const worker = await this.prisma.worker.findUnique({
+        where: { id: workerId },
+        include: {
+          city: true
+        }
+      });
+
+      if (!worker) {
+        throw new NotFoundException('Worker not found');
+      }
+
+      const workerDays = await this.prisma.workerDay.findMany({
+        where: { workerId },
+        include: {
+          requests: {
+            select: {
+              id: true,
+              status: true
+            }
+          },
+          followUpRequests: {
+            select: {
+              id: true,
+              status: true
+            }
+          }
+        }
+      });
+
+      let allRequests: { id: string; status: Status }[] = [];
+      workerDays.forEach(day => {
+        allRequests = [...allRequests, ...day.requests, ...day.followUpRequests];
+      });
+
+      const statusCounts = {};
+      const allStatuses = Object.values(Status);
+      
+      //initialize all statuses with 0 count
+      allStatuses.forEach(status => {
+        statusCounts[status] = 0;
+      });
+      
+      allRequests.forEach(request => {
+        statusCounts[request.status]++;
+      });
+
+      return {
+        workerId: worker.id,
+        username: worker.username,
+        phoneNumber: worker.phoneNumber,
+        city: worker.city.name,
+        totalRequests: allRequests.length,
+        requestsByStatus: statusCounts
+      };
     }
 }

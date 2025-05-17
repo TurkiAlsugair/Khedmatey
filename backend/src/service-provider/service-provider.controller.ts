@@ -288,4 +288,122 @@ export class ServiceProviderController {
       throw error;
     }
   }
+
+  @ApiOperation({ summary: 'Get provider statistics', description: 'Retrieve statistics for a service provider' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Statistics retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Provider statistics retrieved'
+        },
+        data: {
+          type: 'object',
+          properties: {
+            totalWorkers: { type: 'number', example: 5 },
+            totalServices: { type: 'number', example: 8 },
+            totalRequests: { type: 'number', example: 125 },
+            requestsByStatus: { 
+              type: 'object',
+              properties: {
+                PENDING: { type: 'number', example: 10 },
+                ACCEPTED: { type: 'number', example: 20 },
+                DECLINED: { type: 'number', example: 5 },
+                CANCELED: { type: 'number', example: 15 },
+                COMING: { type: 'number', example: 25 },
+                IN_PROGRESS: { type: 'number', example: 30 },
+                FINISHED: { type: 'number', example: 10 },
+                INVOICED: { type: 'number', example: 5 },
+                PAID: { type: 'number', example: 5 }
+              }
+            },
+            avgRating: { type: 'number', example: 4.5 }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Not a service provider' })
+  @ApiResponse({ status: 404, description: 'Service provider not found' })
+  @ApiBearerAuth('JWT-auth')
+  @Roles(Role.SERVICE_PROVIDER)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('stats')
+  async getStats(@CurrentUser() user: GenerateTokenDto): Promise<BaseResponseDto> {
+    try {
+      if (user.role !== Role.SERVICE_PROVIDER) {
+        throw new ForbiddenException('Only service providers can access their statistics');
+      }
+
+      const stats = await this.serviceProviderService.getProviderStats(user.id);
+      return {
+        message: 'Provider statistics retrieved',
+        data: stats,
+      };
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  @ApiOperation({ summary: 'Get worker statistics', description: 'Retrieve statistics for the current worker' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Worker statistics retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Worker statistics retrieved'
+        },
+        data: {
+          type: 'object',
+          properties: {
+            workerId: { type: 'string', example: 'worker-uuid' },
+            username: { type: 'string', example: 'workerName' },
+            phoneNumber: { type: 'string', example: '+123456789' },
+            city: { type: 'string', example: 'Riyadh' },
+            totalRequests: { type: 'number', example: 50 },
+            requestsByStatus: { 
+              type: 'object',
+              properties: {
+                PENDING: { type: 'number', example: 5 },
+                ACCEPTED: { type: 'number', example: 10 },
+                DECLINED: { type: 'number', example: 2 },
+                CANCELED: { type: 'number', example: 3 },
+                COMING: { type: 'number', example: 15 },
+                IN_PROGRESS: { type: 'number', example: 5 },
+                FINISHED: { type: 'number', example: 5 },
+                INVOICED: { type: 'number', example: 3 },
+                PAID: { type: 'number', example: 2 }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Not a worker' })
+  @ApiResponse({ status: 404, description: 'Worker not found' })
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.WORKER)
+  @Get('workers/stats')
+  async getWorkerStats(@CurrentUser() user: GenerateTokenDto): Promise<BaseResponseDto> {
+    try {
+      const stats = await this.serviceProviderService.getWorkerStats(user.id);
+      
+      return {
+        message: 'Worker statistics retrieved',
+        data: stats,
+      };
+    } catch (err) {
+      throw err;
+    }
+  }
 }
