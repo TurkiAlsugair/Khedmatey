@@ -1,6 +1,7 @@
-import { IsNotEmpty, IsPhoneNumber, IsString, IsOptional, IsBoolean } from "class-validator";
+import { IsNotEmpty, IsPhoneNumber, IsString, IsOptional, IsBoolean, IsEnum } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
+import { Role, Status } from "@prisma/client";
 
 export class LookupUserDto {
   @ApiProperty({
@@ -29,4 +30,15 @@ export class LookupUserDto {
     return value;
   })
   blacklisted?: boolean;
+
+  @ApiProperty({
+    description: 'Role of the user (CUSTOMER or SERVICE_PROVIDER)',
+    enum: Role,
+    example: 'CUSTOMER',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  @IsEnum(Role)
+  role: Role;
 } 

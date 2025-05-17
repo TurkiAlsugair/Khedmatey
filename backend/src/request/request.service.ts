@@ -892,7 +892,7 @@ export class RequestService {
       //valdiate date's time is after current time and not after 30 days
       const requestDate = this.toDDMMYYYY(date).date //returns date object
       if(isBefore(requestDate, startOfDay(new Date()))) { //compare from start of day so that booking in the same day works
-        throw new BadRequestException(`Cant edit schedule or make request in the past: ${date}`);
+        throw new BadRequestException(`Can't edit schedule or make request in the past: ${date}`);
       }
       if(isAfter(requestDate, addDays(new Date(), 30))) {
         throw new BadRequestException(`Too far in the future: ${date}`);
