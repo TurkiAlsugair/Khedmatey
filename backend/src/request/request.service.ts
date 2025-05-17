@@ -621,7 +621,7 @@ export class RequestService {
       const tenMinutesMs = 10 * 60 * 1000;
       const age = nowMs - request.createdAt.getTime();
 
-      if(request.status !== Status.PENDING){
+      if(request.status !== Status.PENDING || request.followupService){ //temp solution until adding a time limit for follow-up services: if request has a follow-up service, it cannot be cancelled
         return false;
       }
 
@@ -644,14 +644,11 @@ export class RequestService {
 
       //validate role
       if (user.role !== Role.SERVICE_PROVIDER) {
-        console.log("user role", user.role);
         throw new ForbiddenException('Only service providers may accept requests');
       }
 
       //validate ownership
       if (serviceProviderId !== user.id) {
-        console.log("service provider id", serviceProviderId);
-        console.log("user id", user.id);
         throw new ForbiddenException(
           'You can only accept requests assigned to your services',
         );

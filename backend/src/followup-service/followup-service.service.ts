@@ -90,7 +90,6 @@ export class FollowupServiceService {
       }
     });
 
-
     return {
       followupService,
     };
