@@ -6,7 +6,7 @@ import { Role } from '@prisma/client';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { BaseResponseDto } from 'src/dtos/base-reposnse.dto';
-import { BlacklistCustomerDto } from './dto/blacklist-customer.dto';
+import { BlacklistDto } from './dto/blacklist.dto';
 import { LookupUserDto } from './dto/lookup-user.dto';
 import { DashboardStatsDto } from './dto/dashboard-stats.dto';
 
@@ -17,12 +17,15 @@ export class AdminController {
 
   @ApiOperation({
     summary: 'Look up users',
-    description: 'Find users by phone number or get all blacklisted/non-blacklisted customers:\n\
+    description: 'Find users by phone number or get blacklisted/non-blacklisted users:\n\
     - If phoneNumber is provided: Returns that specific user (blacklisted parameter is ignored)\n\
-    - If phoneNumber is not provided: Returns all customers with the specified blacklist status'
+    - If phoneNumber is not provided and blacklisted is set: \n\
+      - If role is also set: Returns all blacklisted/non-blacklisted users of that specific role\n\
+      - If role is not set: Returns all blacklisted/non-blacklisted users regardless of role'
   })
   @ApiQuery({ name: 'phoneNumber', description: 'User phone number', type: 'string', required: false })
-  @ApiQuery({ name: 'blacklisted', description: 'Filter customers by blacklist status', type: 'boolean', required: false })
+  @ApiQuery({ name: 'blacklisted', description: 'Filter users by blacklist status', type: 'boolean', required: false })
+  @ApiQuery({ name: 'role', description: 'Filter users by role (CUSTOMER or SERVICE_PROVIDER)', enum: Role, required: false })
   @ApiResponse({
     status: 200,
     description: 'User(s) information retrieved successfully',
@@ -71,7 +74,7 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('users/lookup')
   async lookupUser(@Query() query: LookupUserDto) {
-    const result = await this.adminService.lookUpUsers(query.phoneNumber, query.blacklisted);
+    const result = await this.adminService.lookUpUsers(query.phoneNumber, query.blacklisted, query.role);
     
     if (query.phoneNumber) {
       const userRole = result.role;
@@ -118,7 +121,7 @@ export class AdminController {
   @Roles(Role.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch('users/blacklist')
-  async blacklistCustomer(@Body() blacklistDto: BlacklistCustomerDto): Promise<BaseResponseDto> {
+  async blacklistUser(@Body() blacklistDto: BlacklistDto): Promise<BaseResponseDto> {
     const result = await this.adminService.blacklistUser(
       blacklistDto.userId,
       blacklistDto.isBlacklisted,
