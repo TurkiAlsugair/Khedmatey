@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 import { Role } from '@prisma/client';
 
-export class BlacklistCustomerDto {
+export class BlacklistDto {
   @ApiProperty({
     description: 'ID of the user to blacklist or unblacklist',
     example: '123e4567-e89b-12d3-a456-426614174000',
@@ -29,6 +29,7 @@ export class BlacklistCustomerDto {
     required: false
   })
   @IsOptional()
+  @IsString()
   @IsEnum(Role)
   role: Role;
 } 

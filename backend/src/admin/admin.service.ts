@@ -90,7 +90,7 @@ export class AdminService {
     return result;
   }
 
-  async lookUpUsers(phoneNumber?: string, blacklisted?: boolean) {
+  async lookUpUsers(phoneNumber?: string, blacklisted?: boolean, role?: Role) {
     //if phoneNumber is provided, find that specific user
     if (phoneNumber) {
       const user = await this.authService.findUser({ phoneNumber });
@@ -119,7 +119,7 @@ export class AdminService {
           throw new NotFoundException(`Customer with phone number ${phoneNumber} not found`);
         }
 
-        // Format requests using the helper function
+        //Format requests using the helper function
         const requests = customer.Requests.map(request => this.formatRequest(request));
 
         return {
@@ -137,7 +137,11 @@ export class AdminService {
               include: {
                 Requests: {
                   include: {
-                    service: true,
+                    service: {
+                      include: {
+                        serviceProvider: true
+                      }
+                    },
                     location: true,
                     followupService: true,
                     invoiceItems: true,
@@ -155,26 +159,14 @@ export class AdminService {
           throw new NotFoundException(`Service provider with phone number ${phoneNumber} not found`);
         }
 
-        //extract all requests from all services
-        const allRequests = serviceProvider.services.flatMap(service => service.Requests);
-        
-        //format the requests using our helper function
-        const formattedRequests = allRequests.map(request => this.formatRequest(request));
-        
-        const citiesArray = serviceProvider.cities.map(city => city.name);
-        
-        const workersArray = serviceProvider.workers.map(worker => ({
-          username: worker.username,
-          phoneNumber: worker.phoneNumber
-        }));
-        
         return {
           id: serviceProvider.id,
           username: serviceProvider.username,
           phoneNumber: serviceProvider.phoneNumber,
           email: serviceProvider.email,
           role: Role.SERVICE_PROVIDER,
-          cities: citiesArray,
+          cities: serviceProvider.cities.map(city => city.name),
+          isBlacklisted: serviceProvider.isBlacklisted,
           services: serviceProvider.services.map(service => ({
             id: service.id,
             nameAR: service.nameAR,
@@ -185,105 +177,255 @@ export class AdminService {
             status: service.status,
             serviceProviderId: service.serviceProviderId
           })),
-          workers: workersArray,
+          workers: serviceProvider.workers,
           providerDays: serviceProvider.ProviderDays,
-          requests: formattedRequests
+          requests: serviceProvider.services.flatMap(service => service.Requests).map(request => this.formatRequest(request))
         };
       }
       
       return user;
     }
     
-    //if phoneNumber is not provided but blacklisted is, return all customers with that blacklist value
+    //if phoneNumber is not provided but blacklisted is, return all customers or providers with that blacklist value
     if (blacklisted !== undefined) {
-      const customers = await this.prisma.customer.findMany({
-        where: { isBlacklisted: blacklisted },
-        include: {
-          Requests: {
+      //if role is specified, return blacklisted users of that specific role
+      if (role) {
+        if (role === Role.CUSTOMER) {
+          const customers = await this.prisma.customer.findMany({
+            where: { isBlacklisted: blacklisted },
             include: {
-              service: true,
-              location: true,
-              followupService: true,
-              invoiceItems: true
+              Requests: {
+                include: {
+                  service: true,
+                  location: true,
+                  followupService: true,
+                  invoiceItems: true
+                }
+              }
+            }
+          });
+
+          if (customers.length === 0) {
+            throw new NotFoundException(`No customers found with blacklist status: ${blacklisted}`);
+          }
+
+          //format requests for each customer using the helper function
+          customers.forEach(customer => {
+            customer.Requests = customer.Requests.map(request => this.formatRequest(request));
+          });
+
+          return customers.map(customer => {
+            return {
+              id: customer.id,
+              username: customer.username,
+              phoneNumber: customer.phoneNumber,
+              role: Role.CUSTOMER,
+              requests: customer.Requests,
+              isBlacklisted: customer.isBlacklisted
+            };
+          });
+        } else if (role === Role.SERVICE_PROVIDER) {
+          const serviceProviders = await this.prisma.serviceProvider.findMany({
+            where: { isBlacklisted: blacklisted },
+            include: {
+              cities: true,
+              services: {
+                include: {
+                  Requests: {
+                    include: {
+                      service: {
+                        include: {
+                          serviceProvider: true
+                        }
+                      },
+                      location: true,
+                      followupService: true,
+                      invoiceItems: true,
+                      customer: true
+                    }
+                  }
+                }
+              },
+              workers: true,
+              ProviderDays: true
+            }
+          });
+
+          if (serviceProviders.length === 0) {
+            throw new NotFoundException(`No service providers found with blacklist status: ${blacklisted}`);
+          }
+
+          return serviceProviders.map(provider => {
+            return {
+              id: provider.id,
+              username: provider.username,
+              phoneNumber: provider.phoneNumber,
+              email: provider.email,
+              role: Role.SERVICE_PROVIDER,
+              cities: provider.cities.map(city => city.name),
+              services: provider.services.map(service => ({
+                id: service.id,
+                nameAR: service.nameAR,
+                nameEN: service.nameEN,
+                categoryId: service.categoryId,
+                price: service.price,
+                requiredNbOfWorkers: service.requiredNbOfWorkers,
+                status: service.status,
+                serviceProviderId: service.serviceProviderId
+              })),
+              workers: provider.workers,
+              providerDays: provider.ProviderDays,
+              requests: provider.services.flatMap(service => service.Requests).map(request => this.formatRequest(request)),
+              isBlacklisted: provider.isBlacklisted
+            };
+          });
+        } else {
+          throw new BadRequestException(`Invalid role: ${role}. Only CUSTOMER and SERVICE_PROVIDER roles are accepted.`);
+        }
+      } else {
+        const customers = await this.prisma.customer.findMany({
+          where: { isBlacklisted: blacklisted },
+          include: {
+            Requests: {
+              include: {
+                service: true,
+                location: true,
+                followupService: true,
+                invoiceItems: true
+              }
             }
           }
+        });
+
+        const serviceProviders = await this.prisma.serviceProvider.findMany({
+          where: { isBlacklisted: blacklisted },
+          include: {
+            cities: true,
+            services: {
+              include: {
+                Requests: {
+                  include: {
+                    service: {
+                      include: {
+                        serviceProvider: true
+                      }
+                    },
+                    location: true,
+                    followupService: true,
+                    invoiceItems: true,
+                    customer: true
+                  }
+                }
+              }
+            },
+            workers: true,
+            ProviderDays: true
+          }
+        });
+
+        //format customer data
+        const formattedCustomers = customers.map(customer => {
+          return {
+            id: customer.id,
+            username: customer.username,
+            phoneNumber: customer.phoneNumber,
+            role: Role.CUSTOMER,
+            requests: customer.Requests.map(request => this.formatRequest(request)),
+            isBlacklisted: customer.isBlacklisted
+          };
+        });
+
+        //format service provider data
+        const formattedProviders = serviceProviders.map(provider => {
+          return {
+            id: provider.id,
+            username: provider.username,
+            phoneNumber: provider.phoneNumber,
+            email: provider.email,
+            role: Role.SERVICE_PROVIDER,
+            cities: provider.cities.map(city => city.name),
+            services: provider.services.map(service => ({
+              id: service.id,
+              nameAR: service.nameAR,
+              nameEN: service.nameEN,
+              categoryId: service.categoryId,
+              price: service.price,
+              requiredNbOfWorkers: service.requiredNbOfWorkers,
+              status: service.status,
+              serviceProviderId: service.serviceProviderId
+            })),
+            workers: provider.workers,
+            providerDays: provider.ProviderDays,
+            requests: provider.services.flatMap(service => service.Requests).map(request => this.formatRequest(request)),
+            isBlacklisted: provider.isBlacklisted
+          };
+        });
+
+        const allBlacklistedUsers = [...formattedCustomers, ...formattedProviders];
+
+        if (allBlacklistedUsers.length === 0) {
+          throw new NotFoundException(`No users found with blacklist status: ${blacklisted}`);
         }
-      });
 
-      if (customers.length === 0) {
-        throw new NotFoundException(`No customers found with blacklist status: ${blacklisted}`);
+        return allBlacklistedUsers;
       }
-
-      //format requests for each customer using the helper function
-      customers.forEach(customer => {
-        customer.Requests = customer.Requests.map(request => this.formatRequest(request));
-      });
-
-      return customers.map(customer => {
-        return {
-          id: customer.id,
-          username: customer.username,
-          phoneNumber: customer.phoneNumber,
-          role: Role.CUSTOMER,
-          requests: customer.Requests,
-          isBlacklisted: customer.isBlacklisted
-        };
-      });
     }
+    
+    throw new BadRequestException('Phone number or blacklisted parameter must be provided');
   }
 
   async blacklistUser(userId: string, isBlacklisted: boolean, role: Role) {
-
-    //check if user is a customer
+    
     if (role === Role.CUSTOMER) {
       const customer = await this.prisma.customer.findUnique({
         where: { id: userId },
         include: { Requests: true }
       });
 
-      if (customer) {
+      if (!customer) {
+        throw new NotFoundException(`Customer with ID ${userId} not found`);
+      }
 
+      //only update requests if blacklisting the user
+      if (isBlacklisted === true) {
+        //process each request according to its status
+        for (const request of customer.Requests) {
+          //don't change status if it's INVOICED, PAID, or DECLINED
+          if (request.status === Status.INVOICED || request.status === Status.PAID || request.status === Status.DECLINED) {
+            continue;
+          }
 
-        //only update requests if blacklisting the user
-        if (isBlacklisted === true) {
-          //process each request according to its status
-          for (const request of customer.Requests) {
-            //don't change status if it's INVOICED, PAID, or DECLINED
-            if (request.status === Status.INVOICED || request.status === Status.PAID || request.status === Status.DECLINED) {
-              continue;
-            }
+          //set FINISHED requests to INVOICED
+          if (request.status === Status.FINISHED) {
+            await this.prisma.request.update({
+              where: { id: request.id },
+              data: { status: Status.INVOICED }
+            });
+          }
 
-            //set FINISHED requests to INVOICED
-            if (request.status === Status.FINISHED) {
-              await this.prisma.request.update({
-                where: { id: request.id },
-                data: { status: Status.INVOICED }
-              });
-            }
-
-            //cancel requests in PENDING, ACCEPTED, COMING, or IN_PROGRESS status
-            if (request.status === Status.PENDING || request.status === Status.ACCEPTED ||
-              request.status === Status.COMING || request.status === Status.IN_PROGRESS) {
-              await this.prisma.request.update({
-                where: { id: request.id },
-                data: { status: Status.CANCELED }
-              });
-            }
+          //cancel requests in PENDING, ACCEPTED, COMING, or IN_PROGRESS status
+          if (request.status === Status.PENDING || request.status === Status.ACCEPTED ||
+            request.status === Status.COMING || request.status === Status.IN_PROGRESS) {
+            await this.prisma.request.update({
+              where: { id: request.id },
+              data: { status: Status.CANCELED }
+            });
           }
         }
-
-        //update the customer's blacklist status
-        await this.prisma.customer.update({
-          where: { id: userId },
-          data: { isBlacklisted }
-        });
-
-        return;
       }
-    }
 
-    //if not found as customer or explicitly looking for a service provider
-    if (role === Role.SERVICE_PROVIDER) {
+      await this.prisma.customer.update({
+        where: { id: userId },
+        data: { isBlacklisted }
+      });
+
+      return {
+        message: `Customer ${isBlacklisted ? 'blacklisted' : 'unblacklisted'} successfully`,
+        role: Role.CUSTOMER,
+        id: userId
+      };
+    }
+    else if (role === Role.SERVICE_PROVIDER) {
       const serviceProvider = await this.prisma.serviceProvider.findUnique({
         where: { id: userId },
         include: {
@@ -296,7 +438,7 @@ export class AdminService {
       });
 
       if (!serviceProvider) {
-        throw new NotFoundException(`User with ID ${userId} not found`);
+        throw new NotFoundException(`Service provider with ID ${userId} not found`);
       }
 
       //only update requests if blacklisting the service provider
@@ -304,7 +446,7 @@ export class AdminService {
         //collect all requests from all services of this provider
         const allRequests = serviceProvider.services.flatMap(service => service.Requests);
 
-        //process each request according to its status
+        //handle each request according to its status
         for (const request of allRequests) {
           if (request.status === Status.INVOICED || request.status === Status.PAID || request.status === Status.DECLINED) {
             continue;
@@ -325,8 +467,6 @@ export class AdminService {
         }
       }
 
-      // Update the service provider's blacklist status
-      // Using raw query to bypass potential Prisma client type issues
       await this.prisma.serviceProvider.update({
         where: { id: userId },
         data: { isBlacklisted: isBlacklisted}
@@ -338,7 +478,14 @@ export class AdminService {
         data: { status: isBlacklisted ? Status.PENDING : Status.ACCEPTED }
       });
 
-      return;
+      return {
+        message: `Service provider ${isBlacklisted ? 'blacklisted' : 'unblacklisted'} successfully`,
+        role: Role.SERVICE_PROVIDER,
+        id: userId
+      };
+    }
+    else {
+      throw new BadRequestException(`Invalid role`);
     }
   }
   
