@@ -85,7 +85,7 @@ export default function SignupCustomerScreen({ navigation }) {
           <Text>Logo !!</Text>
         </View>
         <View style={styles.cont1}>
-          <Text style={[styles.title, { textAlign: isArabic && "right" }]}>
+          <Text style={[styles.title, { textAlign: isArabic ? "right" : "left" }]}>
             {t("signupTitle")}
           </Text>
 

@@ -144,7 +144,7 @@ export default function ServiceProviderScreen({ navigation, route }) {
         </View>
         <View style={styles.infoSection}>
           <Text style={styles.name}>{username}</Text>
-          <Text style={styles.rating}>Rating: 2.7</Text>
+          <Text style={styles.rating}>Rating: {provider.avgRating}</Text>
         </View>
       </View>
 

@@ -64,7 +64,7 @@ export default function LoginScreen({ navigation }) {
         <Text>Logo !!</Text>
       </View>
       <View style={styles.contentCont}>
-        <Text style={[styles.title, { textAlign: isArabic && "right" }]}>
+        <Text style={[styles.title, { textAlign: isArabic ? "right" : "left" }]}>
           {t("loginTitle")}
         </Text>
 

@@ -72,6 +72,7 @@ export class AuthService {
       userWithCities = {
         ...user,
         cities: cityNames,
+        usernameAR: serviceProvider.usernameAR,
       };
     }
 

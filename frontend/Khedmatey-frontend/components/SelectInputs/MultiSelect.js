@@ -31,7 +31,7 @@ const MultiSelectInput = ({
   return (
     <View style={{ marginBottom: 10 }}>
       {label && (
-        <Text style={[styles.label, { textAlign: isArabic && "right" }]}>
+        <Text style={[styles.label, { textAlign: isArabic ? "right" : "left" }]}>
           {label}
         </Text>
       )}
@@ -44,16 +44,16 @@ const MultiSelectInput = ({
         style={[
           styles.dropdown,
           isInvalid && styles.invalidDropdown,
-          { textAlign: isArabic && "right" },
+          { textAlign: isArabic ? "right" : "left" },
         ]}
         placeholderStyle={[
           styles.placeholderStyle,
-          { textAlign: isArabic && "right" },
+          { textAlign: isArabic ? "right" : "left" },
         ]}
         selectedTextStyle={styles.selectedTextStyle}
         inputSearchStyle={[
           styles.inputSearchStyle,
-          { textAlign: isArabic && "right" },
+          { textAlign: isArabic ? "right" : "left" },
         ]}
         iconStyle={styles.iconStyle}
         data={data}
