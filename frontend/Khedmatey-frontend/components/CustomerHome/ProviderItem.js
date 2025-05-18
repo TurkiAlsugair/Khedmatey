@@ -27,7 +27,7 @@ export default function ProviderItem({ provider }) {
         <Text style={styles.name}>{username}</Text>
 
         {/* placeholder rating */}
-        <Text style={styles.rating}>Rating: 2.7</Text>
+        <Text style={styles.rating}>Rating: {provider.avgRating}</Text>
       </View>
     </TouchableOpacity>
   );

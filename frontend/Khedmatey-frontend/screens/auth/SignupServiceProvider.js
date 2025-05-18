@@ -96,7 +96,7 @@ export default function SignupServiceProviderScreen({ navigation }) {
     >
       <View style={styles.mainCont}>
         <View
-          style={[styles.backButtonCont, { alignSelf: isArabic && "flex-end" }]}
+          style={[styles.backButtonCont, { alignSelf: isArabic ? "flex-end" : "flex-start" }]}
         >
           <IconButton
             color={"black"}
@@ -107,7 +107,7 @@ export default function SignupServiceProviderScreen({ navigation }) {
         </View>
 
         <View style={styles.contentContainer}>
-          <Text style={[styles.title, { textAlign: isArabic && "right" }]}>
+          <Text style={[styles.title, { textAlign: isArabic ? "right" : "left" }]}>
             {t("SP registration title")}
           </Text>
 

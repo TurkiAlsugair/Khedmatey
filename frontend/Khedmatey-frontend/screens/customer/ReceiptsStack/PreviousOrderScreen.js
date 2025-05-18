@@ -231,7 +231,13 @@ export default function PreviousOrderScreen({ navigation, route }) {
                   <Text style={styles.feedbackLabel}>Review:</Text>
                   <Text style={styles.reviewText}>{order.feedback.review || "No review provided"}</Text>
                 </View>
-                <Text style={styles.feedbackDate}>Submitted on: {new Date(order.feedback.createdAt).toLocaleDateString()}</Text>
+                <Text style={styles.feedbackDate}>Submitted on: {
+                  new Date(order.feedback.createdAt).toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                  }).replace(/\//g, '/')
+                }</Text>
               </View>
             </>
           )}
@@ -245,7 +251,13 @@ export default function PreviousOrderScreen({ navigation, route }) {
                 <View style={styles.complaintContent}>
                   <Text style={styles.complaintText}>{order.complaint.description}</Text>
                 </View>
-                <Text style={styles.complaintDate}>Submitted on: {new Date(order.complaint.createdAt).toLocaleDateString()}</Text>
+                <Text style={styles.complaintDate}>Submitted on: {
+                  new Date(order.complaint.createdAt).toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                  }).replace(/\//g, '/')
+                }</Text>
               </View>
             </>
           )}

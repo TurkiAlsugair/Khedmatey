@@ -12,7 +12,7 @@ export const ORDER_STATUS_STYLES = {
   COMING: { text: "#8a2be2", bg: "#f0e6ff" },
   "IN_PROGRESS": { text: "#ff8c00", bg: "#fff1e0" },
   FINISHED: { text: "#1e90ff", bg: "#e6f3ff" },
-  INVOICED: { text: "#ff4500", bg: "#ffece6" },
+  INVOICED: { text: "#23a6b7", bg: "#dcf8fc" },
   PAID: { text: "#228b57", bg: "#e4f7ef" },
   CANCELED: { text: "#777", bg: "#ededed" },
   DECLINED: { text: "#b22222", bg: "#fdeaea" },

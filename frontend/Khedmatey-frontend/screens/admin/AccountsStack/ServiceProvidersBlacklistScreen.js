@@ -97,7 +97,7 @@ export default function ServiceProvidersBlacklistScreen({ navigation }) {
 
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/admin/users/lookup?blacklisted=${blacklistStatus}`, 
+        `${API_BASE_URL}/admin/users/lookup?blacklisted=${blacklistStatus}&role=SERVICE_PROVIDER`, 
         {
           headers: { Authorization: `Bearer ${token}` }
         }

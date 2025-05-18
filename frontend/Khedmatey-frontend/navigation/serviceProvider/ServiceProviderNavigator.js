@@ -2,6 +2,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import ServiceProviderMainTabs from "./ServiceProviderMainTabs";
 import CompanyAccount from "../../screens/serviceProvider/MoreStack/CompanyAccount";
 import AddWorkerScreen from "../../screens/serviceProvider/WorkersStack/AddWorkerScreen";
+import EditWorkerScreen from "../../screens/serviceProvider/WorkersStack/EditWorkerScreen";
 import AddServiceScreen from "../../screens/serviceProvider/ServicesStack/AddServiceScreen";
 import UpdateServiceScreen from "../../screens/serviceProvider/ServicesStack/UpdateServiceScreen";
 import { ServicesProvider } from "../../context/ServicesContext";
@@ -139,6 +140,25 @@ export default function ServiceProviderNavigator() {
           name="Add Worker"
           component={AddWorkerScreen}
           // options={{ title: "" }}
+        />
+
+        <Stack.Screen
+          name="Edit Worker"
+          component={EditWorkerScreen}
+          options={{
+            title: "Edit Worker",
+            headerStyle: { backgroundColor: Colors.primary },
+            headerTintColor: "#fff",
+            headerLeft: (props) => (
+              <Ionicons
+                name="arrow-back"
+                size={24}
+                color="white"
+                style={{ marginLeft: 15 }}
+                onPress={() => navigation.goBack()}
+              />
+            ),
+          }}
         />
 
         {/* More... Stack */}
