@@ -40,6 +40,8 @@ async function bootstrap() {
     whitelist: true,// strips unknown properties
   }));
 
-  await app.listen(8000);
+  app.enableCors();
+  
+  await app.listen(process.env.PORT || 8000);
 }
 bootstrap();

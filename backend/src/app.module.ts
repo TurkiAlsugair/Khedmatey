@@ -18,7 +18,10 @@ import { FollowupServiceModule } from './followup-service/followup-service.modul
 
 @Module({
   imports: [
-    ConfigModule.forRoot({isGlobal:true}), 
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: process.env.NODE_ENV === 'production' ? '.env.production' : '.env',
+    }),
     AuthModule, 
     CustomerModule, 
     AuthCustomerModule, 

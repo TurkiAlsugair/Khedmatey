@@ -641,6 +641,7 @@ export class RequestService {
         default:
           throw new BadRequestException("Unknown status transition");
       }
+
       this.orderStatusSocket.emitOrderStatusUpdate(result.id, result.status)
       return result;
     }
@@ -706,6 +707,18 @@ export class RequestService {
           'You can only decline requests assigned to your services',
         );
       }
+
+      //check if the request has invoice items
+      const invoiceItems = await this.prisma.invoiceItem.findMany({
+        where: { requestId: request.id }
+      });
+
+      const newStatus = invoiceItems.length > 0 ? Status.INVOICED : Status.CANCELED;
+      
+      const updatedRequest = await this.prisma.request.update({
+        where: { id: request.id },
+        data: { status: newStatus },
+      });
   
       return this.prisma.request.update({
         where: { id: request.id },
@@ -775,9 +788,10 @@ export class RequestService {
         data: { status: newStatus },
       });
 
-      if (newStatus === Status.INVOICED) {
+      if(newStatus === Status.INVOICED) {
         this.orderStatusSocket.emitOrderStatusUpdate(updatedRequest.id, Status.INVOICED);
-      } else {
+      } 
+      else {
         this.orderStatusSocket.emitOrderStatusUpdate(updatedRequest.id, Status.CANCELED);
       }
 
