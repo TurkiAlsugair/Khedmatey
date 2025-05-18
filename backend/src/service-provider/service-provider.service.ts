@@ -587,4 +587,56 @@ export class ServiceProviderService {
         city: city.name,
       };
     }
+
+    async deleteWorker(workerId: string, serviceProviderId: string) {
+      
+      //check if worker exists and belongs to the service provider
+      const worker = await this.prisma.worker.findUnique({
+        where: { 
+          id: workerId,
+          serviceProviderId
+        }
+      });
+
+      if (!worker) {
+        throw new NotFoundException(`Worker not found or doesn't belong to this service provider`);
+      }
+
+      //check if worker has any assigned requests
+      const workerDays = await this.prisma.workerDay.findMany({
+        where: { workerId },
+        include: {
+          requests: {
+            where: {
+              status: {
+                in: [Status.PENDING, Status.ACCEPTED, Status.COMING, Status.IN_PROGRESS]
+              }
+            }
+          },
+          followUpRequests: {
+            where: {
+              status: {
+                in: [Status.PENDING, Status.ACCEPTED, Status.COMING, Status.IN_PROGRESS]
+              }
+            }
+          }
+        }
+      });
+
+      //check if worker has any active requests
+      const hasActiveRequests = workerDays.some(day => 
+        day.requests.length > 0 || day.followUpRequests.length > 0
+      );
+
+      if (hasActiveRequests) {
+        throw new BadRequestException('Cannot delete worker with active requests');
+      }
+
+      //delete the worker
+      await this.prisma.worker.delete({
+        where: { id: workerId }
+      });
+
+      return { id: workerId };
+    }
 }

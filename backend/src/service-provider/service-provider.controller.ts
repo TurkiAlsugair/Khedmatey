@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards, ForbiddenException, Patch } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards, ForbiddenException, Patch, Delete } from '@nestjs/common';
 import { ServiceProviderService } from './service-provider.service';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
@@ -538,6 +538,50 @@ export class ServiceProviderController {
       return {
         message: 'Worker updated successfully',
         data: updatedWorker,
+      };
+    } 
+    catch (err) {
+      throw err;
+    }
+  }
+
+  @ApiOperation({ summary: 'Delete worker', description: 'Delete a worker account' })
+  @ApiParam({ name: 'id', description: 'Service Provider ID', type: 'string' })
+  @ApiParam({ name: 'workerId', description: 'Worker ID', type: 'string' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Worker deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Worker deleted successfully'
+        },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: 'worker-uuid' }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - Worker has active requests' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Not authorized' })
+  @ApiResponse({ status: 404, description: 'Worker or service provider not found' })
+  @ApiBearerAuth('JWT-auth')
+  @Roles(Role.SERVICE_PROVIDER)
+  @UseGuards(JwtAuthGuard, RolesGuard, OwnerGuard)
+  @Delete(':id/workers/:workerId')
+  async deleteWorker(@Param('id') providerId: string, @Param('workerId') workerId: string): Promise<BaseResponseDto> {
+    try {
+      const result = await this.serviceProviderService.deleteWorker(workerId, providerId);
+      
+      return {
+        message: 'Worker deleted successfully',
+        data: result
       };
     } 
     catch (err) {
