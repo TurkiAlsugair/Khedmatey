@@ -406,4 +406,63 @@ export class ServiceProviderController {
       throw err;
     }
   }
+
+  @ApiOperation({ summary: 'Get workers by city', description: 'Retrieve all workers for a service provider, categorized by city' })
+  @ApiParam({ name: 'id', description: 'Service Provider ID', type: 'string' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Workers retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Workers retrieved successfully'
+        },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              city: { type: 'string', example: 'RIYADH' },
+              workers: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string', example: 'worker-uuid' },
+                    username: { type: 'string', example: 'workerName' },
+                    phoneNumber: { type: 'string', example: '+123456789' },
+                    role: { type: 'string', example: 'WORKER' },
+                    city: { type: 'string', example: 'RIYADH' },
+                    serviceProviderId: { type: 'string', example: 'provider-uuid' }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 404, description: 'Service provider not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Not authorized' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiBearerAuth('JWT-auth')
+  @Roles(Role.SERVICE_PROVIDER)
+  @UseGuards(JwtAuthGuard, RolesGuard, OwnerGuard)
+  @Get(':id/workers')
+  async getWorkersByCity(@Param('id') providerId: string): Promise<BaseResponseDto> {
+    try {
+      const workersByCity = await this.serviceProviderService.getWorkersByCity(providerId);
+      
+      return {
+        message: 'Workers retrieved successfully',
+        data: workersByCity
+      };
+    } 
+    catch (err) {
+      throw err;
+    }
+  }
 }

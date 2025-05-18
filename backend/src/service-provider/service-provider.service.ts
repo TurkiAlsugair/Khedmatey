@@ -464,4 +464,48 @@ export class ServiceProviderService {
         requestsByStatus: statusCounts
       };
     }
+
+    async getWorkersByCity(providerId: string) {
+      //check if provider exists
+      const provider = await this.prisma.serviceProvider.findUnique({
+        where: { id: providerId },
+      });
+      if (!provider) {
+        throw new NotFoundException(`Service provider not found`);
+      }
+
+      //get all provider's workers with their cities
+      const workers = await this.prisma.worker.findMany({
+        where: { serviceProviderId: providerId },
+        include: {
+          city: true
+        }
+      });
+
+      //transform workers to include city name directly
+      const formattedWorkers = workers.map(worker => {
+        const { city, ...workerWithoutCity } = worker;
+        return {
+          ...workerWithoutCity,
+          city: city.name
+        };
+      });
+
+      //group workers by city
+      const groupingKey = (worker: any) => worker.city;
+      const groupingsSet = new Set(formattedWorkers.map(groupingKey));
+      
+      const result = Array.from(groupingsSet).map(grouping => {
+        const filteredWorkers = formattedWorkers.filter(worker => 
+          groupingKey(worker) === grouping
+        );
+        
+        return {
+          city: grouping,
+          workers: filteredWorkers
+        };
+      });
+      
+      return result;
+    }
 }
