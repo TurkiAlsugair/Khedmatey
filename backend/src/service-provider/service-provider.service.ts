@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Inject, Injectable, NotFoundExc
 import { DatabaseService } from 'src/database/database.service';
 import { TwilioService } from 'src/twilio/twilio.service';
 import { CreateWorkerDto } from './dtos/create-worker.dto'
+import { UpdateWorkerDto } from './dtos/update-worker.dto'
 import { CityName, Status } from '@prisma/client';
 import { addDays, eachDayOfInterval, format, formatISO, startOfDay } from 'date-fns';
 import { RequestService } from 'src/request/request.service';
@@ -463,5 +464,179 @@ export class ServiceProviderService {
         totalRequests: allRequests.length,
         requestsByStatus: statusCounts
       };
+    }
+
+    async getWorkersByCity(providerId: string) {
+      //check if provider exists
+      const provider = await this.prisma.serviceProvider.findUnique({
+        where: { id: providerId },
+      });
+      if (!provider) {
+        throw new NotFoundException(`Service provider not found`);
+      }
+
+      //get all provider's workers with their cities
+      const workers = await this.prisma.worker.findMany({
+        where: { serviceProviderId: providerId },
+        include: {
+          city: true
+        }
+      });
+
+      //transform workers to include city name directly
+      const formattedWorkers = workers.map(worker => {
+        const { city, ...workerWithoutCity } = worker;
+        return {
+          ...workerWithoutCity,
+          city: city.name
+        };
+      });
+
+      //group workers by city
+      const groupingKey = (worker: any) => worker.city;
+      const groupingsSet = new Set(formattedWorkers.map(groupingKey));
+      
+      const result = Array.from(groupingsSet).map(grouping => {
+        const filteredWorkers = formattedWorkers.filter(worker => 
+          groupingKey(worker) === grouping
+        );
+        
+        return {
+          city: grouping,
+          workers: filteredWorkers
+        };
+      });
+      
+      return result;
+    }
+
+    async updateWorker(workerId: string, serviceProviderId: string, dto: UpdateWorkerDto) {
+      
+      //check if worker exists and belongs to the service provider
+      const worker = await this.prisma.worker.findUnique({
+        where: { 
+          id: workerId,
+          serviceProviderId
+        },
+        include: {
+          city: true
+        }
+      });
+
+      if (!worker) {
+        throw new NotFoundException(`Worker not found or doesn't belong to this service provider`);
+      }
+
+      const updateData: any = {};
+
+      updateData.username = dto.username;
+      
+
+      if (dto.phoneNumber) {
+        const existingUser = await this.authService.findUser({ phoneNumber: dto.phoneNumber });
+        if (existingUser && existingUser.id !== workerId) {
+          throw new ConflictException('Phone number already used by another user');
+        }
+      }
+      updateData.phoneNumber = dto.phoneNumber;
+
+
+      if (dto.city) {
+        const cityName = await this.serviceService.parseCity(dto.city);
+        
+        const city = await this.prisma.city.findUnique({
+          where: { name: cityName }, 
+        });
+        if (!city) {
+          throw new NotFoundException(`City '${dto.city}' not found`);
+        }
+
+        //check if city is supported by the service provider
+        const provider = await this.prisma.serviceProvider.findUnique({
+          where: { id: serviceProviderId },
+          include: { cities: true },
+        });
+        
+        if (!provider) {
+          throw new NotFoundException(`Service provider not found`);
+        }
+        
+        const providerCityIds = provider.cities.map((c) => c.id);
+        if (!providerCityIds.includes(city.id)) {
+          throw new BadRequestException(
+            `City '${city.name}' is not supported by worker's service provider`
+          );
+        }
+        updateData.city = {
+          connect: { id: city.id }
+        };
+      }
+
+      //update the worker
+      const updatedWorker = await this.prisma.worker.update({
+        where: { id: workerId },
+        data: updateData,
+        include: {
+          city: true
+        }
+      });
+
+      const { city, cityId, ...rest } = updatedWorker;
+      return {
+        ...rest,
+        city: city.name,
+      };
+    }
+
+    async deleteWorker(workerId: string, serviceProviderId: string) {
+      
+      //check if worker exists and belongs to the service provider
+      const worker = await this.prisma.worker.findUnique({
+        where: { 
+          id: workerId,
+          serviceProviderId
+        }
+      });
+
+      if (!worker) {
+        throw new NotFoundException(`Worker not found or doesn't belong to this service provider`);
+      }
+
+      //check if worker has any assigned requests
+      const workerDays = await this.prisma.workerDay.findMany({
+        where: { workerId },
+        include: {
+          requests: {
+            where: {
+              status: {
+                in: [Status.PENDING, Status.ACCEPTED, Status.COMING, Status.IN_PROGRESS]
+              }
+            }
+          },
+          followUpRequests: {
+            where: {
+              status: {
+                in: [Status.PENDING, Status.ACCEPTED, Status.COMING, Status.IN_PROGRESS]
+              }
+            }
+          }
+        }
+      });
+
+      //check if worker has any active requests
+      const hasActiveRequests = workerDays.some(day => 
+        day.requests.length > 0 || day.followUpRequests.length > 0
+      );
+
+      if (hasActiveRequests) {
+        throw new BadRequestException('Cannot delete worker with active requests');
+      }
+
+      //delete the worker
+      await this.prisma.worker.delete({
+        where: { id: workerId }
+      });
+
+      return { id: workerId };
     }
 }

@@ -69,12 +69,41 @@ export class RequestService {
         if (!custmoer) {
             throw new NotFoundException('Customer not found');
         }
+        
+        //check if customer has any INVOICED requests (prevent new requests if there are unpaid invoices)
+        const invoicedRequests = await this.prisma.request.findFirst({
+            where: {
+                customerId,
+                status: Status.INVOICED
+            }
+        });
+        
+        if (invoicedRequests) {
+            throw new BadRequestException('You have unpaid invoices. Please pay them before creating a new request.');
+        }
 
         //get provider
         const providerId = service.serviceProviderId;
 
         //validate date
         const requestDate = this.validateDate(date)
+        
+        //check if customer already has a request on the same day
+        const existingRequestsOnSameDay = await this.prisma.request.findFirst({
+            where: {
+                customerId,
+                providerDay: {
+                    date: {
+                        gte: startOfDay(requestDate),
+                        lt: addDays(startOfDay(requestDate), 1)
+                    }
+                }
+            }
+        });
+        
+        if (existingRequestsOnSameDay) {
+            throw new BadRequestException('You already have a request scheduled for this day. Please choose a different day.');
+        }
 
         //validate location is within provider's cities
         const providerCities = await this.prisma.city.findMany({
@@ -813,6 +842,10 @@ export class RequestService {
         throw new BadRequestException(`Can only set to FINISHED from IN_PROGRESS status (current: ${request.status})`);
       }
 
+      if(request.followupService){
+        throw new BadRequestException('This request has a follow-up service, only request without follow-up can be set to FINISHED');
+      }
+
       //validate role
       if (user.role !== Role.WORKER) {
         throw new ForbiddenException('Only workers can mark a request as finished');
@@ -820,11 +853,7 @@ export class RequestService {
       
       //check if this worker is authorized to change this request
       if (!this.isWorkerAssignedToRequest(request, user.id)) {
-        if (request.followupService) {
-          throw new ForbiddenException('This request has a follow-up service. Only follow-up workers can change its status.');
-        } else {
           throw new ForbiddenException('You are not assigned to this request');
-        }
       }
       
       return this.prisma.request.update({

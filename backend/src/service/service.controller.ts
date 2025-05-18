@@ -181,31 +181,85 @@ export class ServiceController {
       properties: {
         message: {
           type: 'string',
-          example: 'List of all services'
+          example: 'List of all services',
+          description: 'Success message'
         },
         data: {
           type: 'array',
           items: {
             type: 'object',
             properties: {
-              id: { type: 'string', example: 'service-uuid' },
-              nameAR: { type: 'string', example: 'خدمة السباكة' },
-              nameEN: { type: 'string', example: 'Plumbing Service' },
-              price: { type: 'string', example: '100' },
-              status: { type: 'string', example: 'ACCEPTED' },
+              id: { 
+                type: 'string', 
+                example: 'service-uuid',
+                description: 'Service ID'
+              },
+              nameAR: { 
+                type: 'string', 
+                example: 'خدمة السباكة',
+                description: 'Service name in Arabic' 
+              },
+              nameEN: { 
+                type: 'string', 
+                example: 'Plumbing Service',
+                description: 'Service name in English'
+              },
+              descriptionAR: { 
+                type: 'string', 
+                example: 'خدمة سباكة منزلية كاملة',
+                description: 'Service description in Arabic'
+              },
+              descriptionEN: { 
+                type: 'string', 
+                example: 'Complete home plumbing service',
+                description: 'Service description in English'
+              },
+              price: { 
+                type: 'string', 
+                example: '100',
+                description: 'Service base price' 
+              },
+              status: { 
+                type: 'string', 
+                example: 'ACCEPTED',
+                description: 'Current service status' 
+              },
               serviceProvider: {
                 type: 'object',
                 properties: {
-                  id: { type: 'string', example: 'provider-uuid' },
-                  username: { type: 'string', example: 'serviceCompany' }
-                }
+                  id: { 
+                    type: 'string', 
+                    example: 'provider-uuid',
+                    description: 'Service provider ID'
+                  },
+                  username: { 
+                    type: 'string', 
+                    example: 'serviceCompany',
+                    description: 'Service provider username'
+                  },
+                  usernameAR: { 
+                    type: 'string', 
+                    example: 'شركة الخدمات',
+                    description: 'Service provider username in Arabic'
+                  }
+                },
+                description: 'Service provider details'
               },
               category: {
                 type: 'object',
                 properties: {
-                  id: { type: 'number', example: 1 },
-                  name: { type: 'string', example: 'Plumbing' }
-                }
+                  id: { 
+                    type: 'number', 
+                    example: 1,
+                    description: 'Category ID'
+                  },
+                  name: { 
+                    type: 'string', 
+                    example: 'Plumbing',
+                    description: 'Category name'
+                  }
+                },
+                description: 'Service category information'
               }
             }
           }
@@ -215,7 +269,7 @@ export class ServiceController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiBearerAuth('JWT-auth')
-  @UseGuards(JwtAuthGuard)//only require a valid token regardless of role
+  @UseGuards(JwtAuthGuard)
   @Get()
   async getAllServices(@Query('spId') spIdString?: string, @Query('city') cityName?: string): Promise<BaseResponseDto> {
 

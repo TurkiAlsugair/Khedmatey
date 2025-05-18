@@ -50,11 +50,6 @@ export class FollowupServiceService {
       throw new BadRequestException('This request already has a follow-up service');
     }
 
-    //verify the request is in FINISHED state
-    if (originalRequest.status !== Status.FINISHED) {
-      throw new BadRequestException('Cannot create follow-up for a request that is not in FINISHED state');
-    }
-
     //validate the category exists
     const category = await this.prisma.category.findUnique({
       where: { id: categoryId },
@@ -62,6 +57,11 @@ export class FollowupServiceService {
     if (!category) {
       throw new NotFoundException('Category not found');
     }
+
+    //the 2 operations under should be wrapped in a transaction 
+
+    //FINISHED status should indicate that a request has a follow up service
+    await this.requestService.updateStatus(requestId, user, Status.FINISHED);
 
     //create the follow-up service
     const followupService = await this.prisma.followupService.create({
@@ -89,7 +89,7 @@ export class FollowupServiceService {
         }
       }
     });
-
+    
     return {
       followupService,
     };
