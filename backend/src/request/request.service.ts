@@ -451,7 +451,7 @@ export class RequestService {
       }) as unknown as Request[];
 
       //4- Special handling for workers: mark requests as FINISHED if they were original workers
-      //and the request has a followup service
+      //and the request has a followup service when the status is not PAID or INVOICED
       if (user.role === Role.WORKER) {
         requests.forEach((req: any) => {
           //check if this worker was assigned to the original request
@@ -463,7 +463,8 @@ export class RequestService {
           );
           
           //if worker was original worker and request has a follow-up service, show as FINISHED
-          if (isOriginalWorker && req.followupService && !isFollowupWorker ) {
+          if (isOriginalWorker && req.followupService && !isFollowupWorker 
+            && (req.status !== Status.PAID || req.status !== Status.INVOICED)) {
             req.status = Status.FINISHED;
           }
         });
