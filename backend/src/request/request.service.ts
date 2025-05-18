@@ -842,6 +842,10 @@ export class RequestService {
         throw new BadRequestException(`Can only set to FINISHED from IN_PROGRESS status (current: ${request.status})`);
       }
 
+      if(request.followupService){
+        throw new BadRequestException('This request has a follow-up service, only request without follow-up can be set to FINISHED');
+      }
+
       //validate role
       if (user.role !== Role.WORKER) {
         throw new ForbiddenException('Only workers can mark a request as finished');
@@ -849,11 +853,7 @@ export class RequestService {
       
       //check if this worker is authorized to change this request
       if (!this.isWorkerAssignedToRequest(request, user.id)) {
-        if (request.followupService) {
-          throw new ForbiddenException('This request has a follow-up service. Only follow-up workers can change its status.');
-        } else {
           throw new ForbiddenException('You are not assigned to this request');
-        }
       }
       
       return this.prisma.request.update({

@@ -58,6 +58,11 @@ export class FollowupServiceService {
       throw new NotFoundException('Category not found');
     }
 
+    //the 2 operations under should be wrapped in a transaction 
+
+    //FINISHED status should indicate that a request has a follow up service
+    await this.requestService.updateStatus(requestId, user, Status.FINISHED);
+
     //create the follow-up service
     const followupService = await this.prisma.followupService.create({
       data: {
@@ -84,10 +89,7 @@ export class FollowupServiceService {
         }
       }
     });
-
-    //IN_PROGRESS -> FINISHED means has a followup service
-    this.requestService.updateStatus(requestId, user, Status.FINISHED);
-
+    
     return {
       followupService,
     };
