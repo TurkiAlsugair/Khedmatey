@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards, ForbiddenException } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards, ForbiddenException, Patch } from '@nestjs/common';
 import { ServiceProviderService } from './service-provider.service';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
@@ -11,6 +11,7 @@ import { BaseResponseDto } from 'src/dtos/base-reposnse.dto';
 import { UpdateScheduleDto } from './dtos/update-schedule.dto';
 import { OwnerGuard } from 'src/auth/guards/owner.guard';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { UpdateWorkerDto } from './dtos/update-worker.dto';
 
 @ApiTags('service-provider')
 @Controller('service-provider')
@@ -424,18 +425,46 @@ export class ServiceProviderController {
           items: {
             type: 'object',
             properties: {
-              city: { type: 'string', example: 'RIYADH' },
+              city: { 
+                type: 'string', 
+                example: 'Riyadh',
+                description: 'City name'
+              },
               workers: {
                 type: 'array',
                 items: {
                   type: 'object',
                   properties: {
-                    id: { type: 'string', example: 'worker-uuid' },
-                    username: { type: 'string', example: 'workerName' },
-                    phoneNumber: { type: 'string', example: '+123456789' },
-                    role: { type: 'string', example: 'WORKER' },
-                    city: { type: 'string', example: 'RIYADH' },
-                    serviceProviderId: { type: 'string', example: 'provider-uuid' }
+                    id: { 
+                      type: 'string', 
+                      example: 'worker-uuid',
+                      description: 'Worker ID'
+                    },
+                    username: { 
+                      type: 'string', 
+                      example: 'workerName',
+                      description: 'Worker username'
+                    },
+                    phoneNumber: { 
+                      type: 'string', 
+                      example: '+123456789',
+                      description: 'Worker phone number'
+                    },
+                    role: { 
+                      type: 'string', 
+                      example: 'WORKER',
+                      description: 'User role'
+                    },
+                    serviceProviderId: { 
+                      type: 'string', 
+                      example: 'provider-uuid',
+                      description: 'ID of the service provider this worker belongs to'
+                    },
+                    city: { 
+                      type: 'string', 
+                      example: 'Riyadh',
+                      description: 'City where worker operates' 
+                    }
                   }
                 }
               }
@@ -459,6 +488,56 @@ export class ServiceProviderController {
       return {
         message: 'Workers retrieved successfully',
         data: workersByCity
+      };
+    } 
+    catch (err) {
+      throw err;
+    }
+  }
+
+  @ApiOperation({ summary: 'Update worker account', description: 'Update worker information including username, phone number, and city' })
+  @ApiParam({ name: 'providerId', description: 'Service Provider ID', type: 'string' })
+  @ApiParam({ name: 'workerId', description: 'Worker ID', type: 'string' })
+  @ApiBody({ type: UpdateWorkerDto })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Worker updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Worker updated successfully'
+        },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: 'worker-uuid' },
+            username: { type: 'string', example: 'updatedWorkerName' },
+            phoneNumber: { type: 'string', example: '+123456789' },
+            role: { type: 'string', example: 'WORKER' },
+            city: { type: 'string', example: 'RIYADH' }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Not authorized' })
+  @ApiResponse({ status: 404, description: 'Worker or service provider not found' })
+  @ApiBearerAuth('JWT-auth')
+  @Roles(Role.SERVICE_PROVIDER)
+  @UseGuards(JwtAuthGuard, RolesGuard, OwnerGuard)
+  @Patch(':id/workers/:workerId/account')
+  async updateWorker(@Param('id') providerId: string, @Param('workerId') workerId: string, @Body() dto: UpdateWorkerDto): Promise<BaseResponseDto> {
+    try 
+    {
+      const updatedWorker = await this.serviceProviderService.updateWorker(workerId, providerId, dto);
+      
+      return {
+        message: 'Worker updated successfully',
+        data: updatedWorker,
       };
     } 
     catch (err) {
