@@ -30,7 +30,7 @@ function Input({
           styles.label,
           { fontSize: labelFontSize, color: labelColor },
           ,
-          { textAlign: isArabic && "right" },
+          { textAlign: isArabic ? "right" : "left" },
         ]}
       >
         {label}
@@ -41,7 +41,7 @@ function Input({
           isFocused && styles.focusedInput,
           isInvalid && styles.invalidInput,
           isReadOnly && styles.readOnly,
-          { textAlign: isArabic && "right" },
+          { textAlign: isArabic ? "right" : "left" },
         ]}
         placeholder={placeholder}
         placeholderTextColor={placeholderTextColor}
@@ -53,7 +53,7 @@ function Input({
         readOnly={isReadOnly}
       />
       {isInvalid && (
-        <Text style={[styles.errorText, { textAlign: isArabic && "right" }]}>
+        <Text style={[styles.errorText, { textAlign: isArabic ? "right" : "left" }]}>
           {errorMessage}
         </Text>
       )}

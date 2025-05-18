@@ -88,22 +88,22 @@ export class RequestService {
         //validate date
         const requestDate = this.validateDate(date)
         
-        //check if customer already has a request on the same day
-        const existingRequestsOnSameDay = await this.prisma.request.findFirst({
-            where: {
-                customerId,
-                providerDay: {
-                    date: {
-                        gte: startOfDay(requestDate),
-                        lt: addDays(startOfDay(requestDate), 1)
-                    }
-                }
-            }
-        });
+        // //check if customer already has a request on the same day
+        // const existingRequestsOnSameDay = await this.prisma.request.findFirst({
+        //     where: {
+        //         customerId,
+        //         providerDay: {
+        //             date: {
+        //                 gte: startOfDay(requestDate),
+        //                 lt: addDays(startOfDay(requestDate), 1)
+        //             }
+        //         }
+        //     }
+        // });
         
-        if (existingRequestsOnSameDay) {
-            throw new BadRequestException('You already have a request scheduled for this day. Please choose a different day.');
-        }
+        // if (existingRequestsOnSameDay) {
+        //     throw new BadRequestException('You already have a request scheduled for this day. Please choose a different day.');
+        // }
 
         //validate location is within provider's cities
         const providerCities = await this.prisma.city.findMany({
@@ -1564,7 +1564,7 @@ export class RequestService {
         throw new ForbiddenException('You can only provide feedback for your own requests');
       }
 
-      const allowedStatuses = ['PAID'];
+      const allowedStatuses = ['PAID', 'INVOICED'];
       if (!allowedStatuses.includes(request.status)) {
         throw new BadRequestException('Feedback can only be provided for completed requests');
       }

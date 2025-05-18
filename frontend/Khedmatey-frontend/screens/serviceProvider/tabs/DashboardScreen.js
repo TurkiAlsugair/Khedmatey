@@ -1,16 +1,56 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, ActivityIndicator } from "react-native";
 import { Colors, ORDER_STATUS_STYLES } from "../.././../constants/styles";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
-import { useContext } from "react";
+import { useContext, useState, useEffect } from "react";
 import { AuthContext } from "../../../context/AuthContext";
+import axios from "axios";
+import { Ionicons } from '@expo/vector-icons';
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function DashboardScreen({ navigation }) {
-  const { userInfo } = useContext(AuthContext);
+  const { userInfo, token } = useContext(AuthContext);
   const insets = useSafeAreaInsets();
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  
+  useEffect(() => {
+    fetchStatistics();
+  }, []);
+  
+  const fetchStatistics = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `${API_BASE_URL}/service-provider/stats`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setStats(response.data.data);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error("Error fetching statistics:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Format last updated time as "HH:MM:SS"
+  const formatLastUpdated = () => {
+    if (!lastUpdated) return "";
+    
+    const hours = lastUpdated.getHours().toString().padStart(2, '0');
+    const minutes = lastUpdated.getMinutes().toString().padStart(2, '0');
+    const seconds = lastUpdated.getSeconds().toString().padStart(2, '0');
+    
+    return `${hours}:${minutes}:${seconds}`;
+  };
   
   const navigateToOrders = (status) => {
     navigation.navigate("OrdersScreen", { status });
@@ -28,161 +68,207 @@ export default function DashboardScreen({ navigation }) {
       
       <ScrollView style={[styles.scrollContainer]} showsVerticalScrollIndicator={false}>
         <View style={[styles.contentCont, { paddingBottom: insets.top + hp(6.5) }]}>
+          
+          {/* Last Updated */}
+          {lastUpdated && (
+            <View style={styles.lastUpdatedContainer}>
+              <Text style={styles.lastUpdatedText}>
+                Last updated at: {formatLastUpdated()}
+              </Text>
+              <TouchableOpacity 
+                style={styles.refreshButton} 
+                onPress={fetchStatistics}
+                disabled={loading}
+              >
+                <Ionicons 
+                  name="refresh" 
+                  size={wp(5)} 
+                  color={Colors.primary} 
+                />
+              </TouchableOpacity>
+            </View>
+          )}
+          
           <Text style={styles.title}>Statistics</Text>
           <View style={styles.statsCont}>
-            <View>
-              <Text
-                style={{ textAlign: "center", padding: 10, fontWeight: "bold", fontSize: wp(4.5) }}
-              >
-                Orders
-              </Text>
-            </View>
-            <View style={styles.statsInnerCont}>
-              <View 
-                style={styles.statCard}
-              >
-                <Text
-                  style={[
-                    styles.gridText,
-                    {
-                      backgroundColor: ORDER_STATUS_STYLES.PENDING.bg,
-                      color: ORDER_STATUS_STYLES.PENDING.text,
-                    },
-                  ]}
-                >
-                  PENDING: 27
-                </Text>
-              </View>
-              
-              <View 
-                style={styles.statCard}
-              >
-                <Text
-                  style={[
-                    styles.gridText,
-                    {
-                      backgroundColor: ORDER_STATUS_STYLES.ACCEPTED.bg,
-                      color: ORDER_STATUS_STYLES.ACCEPTED.text,
-                    },
-                  ]}
-                >
-                  ACCEPTED: 33
-                </Text>
-              </View>
-              
-              <View 
-                style={styles.statCard}
-              >
-                <Text
-                  style={[
-                    styles.gridText,
-                    {
-                      backgroundColor: ORDER_STATUS_STYLES.COMING.bg,
-                      color: ORDER_STATUS_STYLES.COMING.text,
-                    },
-                  ]}
-                >
-                  COMING: 12
-                </Text>
-              </View>
-              
-              <View 
-                style={styles.statCard}
-              >
-                <Text
-                  style={[
-                    styles.gridText,
-                    {
-                      backgroundColor: ORDER_STATUS_STYLES["IN_PROGRESS"].bg,
-                      color: ORDER_STATUS_STYLES["IN_PROGRESS"].text,
-                    },
-                  ]}
-                >
-                  IN_PROGRESS: 8
-                </Text>
-              </View>
-              
-              <View 
-                style={styles.statCard}
-              >
-                <Text
-                  style={[
-                    styles.gridText,
-                    {
-                      backgroundColor: ORDER_STATUS_STYLES.FINISHED.bg,
-                      color: ORDER_STATUS_STYLES.FINISHED.text,
-                    },
-                  ]}
-                >
-                  FINISHED: 15
-                </Text>
-              </View>
-              
-              <View 
-                style={styles.statCard}
-              >
-                <Text
-                  style={[
-                    styles.gridText,
-                    {
-                      backgroundColor: ORDER_STATUS_STYLES.INVOICED.bg,
-                      color: ORDER_STATUS_STYLES.INVOICED.text,
-                    },
-                  ]}
-                >
-                  INVOICED: 10
-                </Text>
-              </View>
-              
-              <View 
-                style={styles.statCard}
-              >
-                <Text
-                  style={[
-                    styles.gridText,
-                    {
-                      backgroundColor: ORDER_STATUS_STYLES.CANCELED.bg,
-                      color: ORDER_STATUS_STYLES.CANCELED.text,
-                    },
-                  ]}
-                >
-                  CANCELED: 5
-                </Text>
-              </View>
-              
-              <View 
-                style={styles.statCard}
-              >
-                <Text
-                  style={[
-                    styles.gridText,
-                    {
-                      backgroundColor: ORDER_STATUS_STYLES.DECLINED.bg,
-                      color: ORDER_STATUS_STYLES.DECLINED.text,
-                    },
-                  ]}
-                >
-                  DECLINED: 3
-                </Text>
-              </View>
-              
-              <View 
-                style={[styles.statCard, { width: '100%' }]}
-              >
-                <Text
-                  style={[
-                    styles.gridText,
-                    {
-                      backgroundColor: ORDER_STATUS_STYLES.PAID.bg,
-                      color: ORDER_STATUS_STYLES.PAID.text,
-                      width: '100%',
-                    },
-                  ]}
-                >
-                  PAID: 20
-                </Text>
-              </View>
-            </View>
+            {loading ? (
+              <ActivityIndicator size="large" color={Colors.primary} style={{ padding: 20 }} />
+            ) : (
+              <>
+                <View style={styles.summaryStats}>
+                  <View style={styles.summaryStatItem}>
+                    <Text style={styles.summaryStatValue}>{stats?.totalWorkers || 0}</Text>
+                    <Text style={styles.summaryStatLabel}>Workers</Text>
+                  </View>
+                  <View style={styles.summaryStatItem}>
+                    <Text style={styles.summaryStatValue}>{stats?.totalServices || 0}</Text>
+                    <Text style={styles.summaryStatLabel}>Services</Text>
+                  </View>
+                  <View style={styles.summaryStatItem}>
+                    <Text style={styles.summaryStatValue}>{stats?.totalRequests || 0}</Text>
+                    <Text style={styles.summaryStatLabel}>Orders</Text>
+                  </View>
+                  <View style={styles.summaryStatItem}>
+                    <Text style={styles.summaryStatValue}>{stats?.avgRating?.toFixed(1) || 0}</Text>
+                    <Text style={styles.summaryStatLabel}>Rating</Text>
+                  </View>
+                </View>
+                
+                <View>
+                  <Text
+                    style={{ textAlign: "center", padding: 10, fontWeight: "bold", fontSize: wp(4.5) }}
+                  >
+                    Orders
+                  </Text>
+                </View>
+                <View style={styles.statsInnerCont}>
+                  <View 
+                    style={styles.statCard}
+                  >
+                    <Text
+                      style={[
+                        styles.gridText,
+                        {
+                          backgroundColor: ORDER_STATUS_STYLES.PENDING.bg,
+                          color: ORDER_STATUS_STYLES.PENDING.text,
+                        },
+                      ]}
+                    >
+                      PENDING: {stats?.requestsByStatus?.PENDING || 0}
+                    </Text>
+                  </View>
+                  
+                  <View 
+                    style={styles.statCard}
+                  >
+                    <Text
+                      style={[
+                        styles.gridText,
+                        {
+                          backgroundColor: ORDER_STATUS_STYLES.ACCEPTED.bg,
+                          color: ORDER_STATUS_STYLES.ACCEPTED.text,
+                        },
+                      ]}
+                    >
+                      ACCEPTED: {stats?.requestsByStatus?.ACCEPTED || 0}
+                    </Text>
+                  </View>
+                  
+                  <View 
+                    style={styles.statCard}
+                  >
+                    <Text
+                      style={[
+                        styles.gridText,
+                        {
+                          backgroundColor: ORDER_STATUS_STYLES.COMING.bg,
+                          color: ORDER_STATUS_STYLES.COMING.text,
+                        },
+                      ]}
+                    >
+                      COMING: {stats?.requestsByStatus?.COMING || 0}
+                    </Text>
+                  </View>
+                  
+                  <View 
+                    style={styles.statCard}
+                  >
+                    <Text
+                      style={[
+                        styles.gridText,
+                        {
+                          backgroundColor: ORDER_STATUS_STYLES["IN_PROGRESS"].bg,
+                          color: ORDER_STATUS_STYLES["IN_PROGRESS"].text,
+                        },
+                      ]}
+                    >
+                      IN_PROGRESS: {stats?.requestsByStatus?.IN_PROGRESS || 0}
+                    </Text>
+                  </View>
+                  
+                  <View 
+                    style={styles.statCard}
+                  >
+                    <Text
+                      style={[
+                        styles.gridText,
+                        {
+                          backgroundColor: ORDER_STATUS_STYLES.FINISHED.bg,
+                          color: ORDER_STATUS_STYLES.FINISHED.text,
+                        },
+                      ]}
+                    >
+                      FINISHED: {stats?.requestsByStatus?.FINISHED || 0}
+                    </Text>
+                  </View>
+                  
+                  <View 
+                    style={styles.statCard}
+                  >
+                    <Text
+                      style={[
+                        styles.gridText,
+                        {
+                          backgroundColor: ORDER_STATUS_STYLES.INVOICED.bg,
+                          color: ORDER_STATUS_STYLES.INVOICED.text,
+                        },
+                      ]}
+                    >
+                      INVOICED: {stats?.requestsByStatus?.INVOICED || 0}
+                    </Text>
+                  </View>
+                  
+                  <View 
+                    style={styles.statCard}
+                  >
+                    <Text
+                      style={[
+                        styles.gridText,
+                        {
+                          backgroundColor: ORDER_STATUS_STYLES.CANCELED.bg,
+                          color: ORDER_STATUS_STYLES.CANCELED.text,
+                        },
+                      ]}
+                    >
+                      CANCELED: {stats?.requestsByStatus?.CANCELED || 0}
+                    </Text>
+                  </View>
+                  
+                  <View 
+                    style={styles.statCard}
+                  >
+                    <Text
+                      style={[
+                        styles.gridText,
+                        {
+                          backgroundColor: ORDER_STATUS_STYLES.DECLINED.bg,
+                          color: ORDER_STATUS_STYLES.DECLINED.text,
+                        },
+                      ]}
+                    >
+                      DECLINED: {stats?.requestsByStatus?.DECLINED || 0}
+                    </Text>
+                  </View>
+                  
+                  <View 
+                    style={[styles.statCard, { width: '100%' }]}
+                  >
+                    <Text
+                      style={[
+                        styles.gridText,
+                        {
+                          backgroundColor: ORDER_STATUS_STYLES.PAID.bg,
+                          color: ORDER_STATUS_STYLES.PAID.text,
+                          width: '100%',
+                        },
+                      ]}
+                    >
+                      PAID: {stats?.requestsByStatus?.PAID || 0}
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
           </View>
           <Text style={styles.title}>Options</Text>
           <View style={styles.optionsCont}>
@@ -355,5 +441,45 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     fontWeight: "bold",
     color: "black",
+  },
+  summaryStats: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+    marginBottom: 10,
+  },
+  summaryStatItem: {
+    width: "25%",
+    alignItems: "center",
+  },
+  summaryStatValue: {
+    fontSize: wp(5),
+    fontWeight: "bold",
+    color: Colors.primary,
+  },
+  summaryStatLabel: {
+    fontSize: wp(3),
+    color: "#666",
+    marginTop: 4,
+  },
+  lastUpdatedContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  lastUpdatedText: {
+    fontSize: wp(3.5),
+    color: '#666',
+  },
+  refreshButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
