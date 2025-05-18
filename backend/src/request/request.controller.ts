@@ -76,7 +76,7 @@ export class RequestController {
         }
       }
     })
-    @ApiResponse({ status: 400, description: 'Bad request - Invalid input data' })
+    @ApiResponse({ status: 400, description: 'Bad request - Invalid input data, customer has unpaid invoices, or customer already has a request scheduled for the same day' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     @ApiResponse({ status: 403, description: 'Forbidden - Not a customer' })
     @ApiResponse({ status: 404, description: 'Service not found' })

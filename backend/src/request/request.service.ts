@@ -69,12 +69,41 @@ export class RequestService {
         if (!custmoer) {
             throw new NotFoundException('Customer not found');
         }
+        
+        //check if customer has any INVOICED requests (prevent new requests if there are unpaid invoices)
+        const invoicedRequests = await this.prisma.request.findFirst({
+            where: {
+                customerId,
+                status: Status.INVOICED
+            }
+        });
+        
+        if (invoicedRequests) {
+            throw new BadRequestException('You have unpaid invoices. Please pay them before creating a new request.');
+        }
 
         //get provider
         const providerId = service.serviceProviderId;
 
         //validate date
         const requestDate = this.validateDate(date)
+        
+        //check if customer already has a request on the same day
+        const existingRequestsOnSameDay = await this.prisma.request.findFirst({
+            where: {
+                customerId,
+                providerDay: {
+                    date: {
+                        gte: startOfDay(requestDate),
+                        lt: addDays(startOfDay(requestDate), 1)
+                    }
+                }
+            }
+        });
+        
+        if (existingRequestsOnSameDay) {
+            throw new BadRequestException('You already have a request scheduled for this day. Please choose a different day.');
+        }
 
         //validate location is within provider's cities
         const providerCities = await this.prisma.city.findMany({
