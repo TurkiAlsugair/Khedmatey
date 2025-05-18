@@ -376,7 +376,10 @@ export class RequestService {
           where.customerId = user.id;
           break;
         case Role.WORKER:
-          where.dailyWorkers = { some: { workerId: user.id } };
+          where.OR = [
+            { dailyWorkers: { some: { workerId: user.id } } },
+            { followupDailyWorkers: { some: { workerId: user.id } } }
+          ];
           break;
         default:
           throw new ForbiddenException('Invalid role');
@@ -403,6 +406,11 @@ export class RequestService {
             } 
           },
           dailyWorkers: { 
+            include: { 
+              worker: true 
+            } 
+          },
+          followupDailyWorkers: { 
             include: { 
               worker: true 
             } 
@@ -441,6 +449,25 @@ export class RequestService {
         },
         orderBy: { createdAt: 'desc' },
       }) as unknown as Request[];
+
+      //4- Special handling for workers: mark requests as FINISHED if they were original workers
+      //and the request has a followup service
+      if (user.role === Role.WORKER) {
+        requests.forEach((req: any) => {
+          //check if this worker was assigned to the original request
+          const isOriginalWorker = req.dailyWorkers.some(
+            (dw: any) => dw.worker.id === user.id
+          );
+          const isFollowupWorker = req.followupDailyWorkers.some(
+            (dw: any) => dw.worker.id === user.id
+          );
+          
+          //if worker was original worker and request has a follow-up service, show as FINISHED
+          if (isOriginalWorker && req.followupService && !isFollowupWorker ) {
+            req.status = Status.FINISHED;
+          }
+        });
+      }
 
       //5- group and restructure the requests
 
