@@ -5,13 +5,16 @@ import { CustomerService } from 'src/customer/customer.service';
 import { AuthService } from 'src/auth/auth.service';
 import { format } from 'date-fns';
 import { DashboardStatsDto } from './dto/dashboard-stats.dto';
+import { RequestService } from 'src/request/request.service';
+import { GenerateTokenDto } from 'src/auth/dtos/generate-token.dto';
 
 @Injectable()
 export class AdminService {
   constructor(
     private prisma: DatabaseService,
     private customerService: CustomerService,
-    private authService: AuthService
+    private authService: AuthService,
+    private requestService: RequestService
   ) {}
 
   // Helper function to format a request with date and invoice
@@ -374,7 +377,7 @@ export class AdminService {
     throw new BadRequestException('Phone number or blacklisted parameter must be provided');
   }
 
-  async blacklistUser(userId: string, isBlacklisted: boolean, role: Role) {
+  async blacklistUser(userId: string, isBlacklisted: boolean, role: Role, adminToken: GenerateTokenDto) {
     
     if (role === Role.CUSTOMER) {
       const customer = await this.prisma.customer.findUnique({
@@ -397,19 +400,13 @@ export class AdminService {
 
           //set FINISHED requests to INVOICED
           if (request.status === Status.FINISHED) {
-            await this.prisma.request.update({
-              where: { id: request.id },
-              data: { status: Status.INVOICED }
-            });
+            await this.requestService.updateStatus(request.id, adminToken, Status.INVOICED);
           }
 
           //cancel requests in PENDING, ACCEPTED, COMING, or IN_PROGRESS status
           if (request.status === Status.PENDING || request.status === Status.ACCEPTED ||
             request.status === Status.COMING || request.status === Status.IN_PROGRESS) {
-            await this.prisma.request.update({
-              where: { id: request.id },
-              data: { status: Status.CANCELED }
-            });
+            await this.requestService.updateStatus(request.id, adminToken, Status.CANCELED);
           }
         }
       }
@@ -452,17 +449,11 @@ export class AdminService {
             continue;
           }
           if (request.status === Status.FINISHED) {
-            await this.prisma.request.update({
-              where: { id: request.id },
-              data: { status: Status.INVOICED }
-            });
+            await this.requestService.updateStatus(request.id, adminToken, Status.INVOICED);
           }
           if (request.status === Status.PENDING || request.status === Status.ACCEPTED ||
             request.status === Status.COMING || request.status === Status.IN_PROGRESS) {
-            await this.prisma.request.update({
-              where: { id: request.id },
-              data: { status: Status.CANCELED }
-            });
+            await this.requestService.updateStatus(request.id, adminToken, Status.CANCELED);
           }
         }
       }

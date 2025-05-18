@@ -8,7 +8,8 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { BaseResponseDto } from 'src/dtos/base-reposnse.dto';
 import { BlacklistDto } from './dto/blacklist.dto';
 import { LookupUserDto } from './dto/lookup-user.dto';
-import { DashboardStatsDto } from './dto/dashboard-stats.dto';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { GenerateTokenDto } from 'src/auth/dtos/generate-token.dto';
 
 @ApiTags('admin')
 @Controller('admin')
@@ -121,11 +122,12 @@ export class AdminController {
   @Roles(Role.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch('users/blacklist')
-  async blacklistUser(@Body() blacklistDto: BlacklistDto): Promise<BaseResponseDto> {
+  async blacklistUser(@Body() blacklistDto: BlacklistDto, @CurrentUser() admin: GenerateTokenDto): Promise<BaseResponseDto> {
     const result = await this.adminService.blacklistUser(
       blacklistDto.userId,
       blacklistDto.isBlacklisted,
-      blacklistDto.role
+      blacklistDto.role,
+      admin
     );
     try{
       return {
