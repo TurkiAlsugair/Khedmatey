@@ -29,6 +29,8 @@ export default function PickAppointment({ navigation, route }) {
   const [loading, setLoading] = useState(false);
 
   const service = route.params.service;
+  const serviceId = service.serviceId || service.id;
+  console.log("serviceId", serviceId);
 
   const todayISO = moment().format("YYYY-MM-DD");
   const maxDateISO = moment().add(1, "month").format("YYYY-MM-DD");
@@ -52,7 +54,7 @@ export default function PickAppointment({ navigation, route }) {
       setLoading(true);
       try {
         const res = await axios.get(
-          `${API_BASE_URL}/service/${service.id}/schedule`,
+          `${API_BASE_URL}/service/${serviceId}/schedule`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
