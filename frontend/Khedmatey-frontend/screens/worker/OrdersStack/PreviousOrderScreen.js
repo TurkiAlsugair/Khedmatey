@@ -15,6 +15,12 @@ export default function PreviousOrderScreen({ navigation, route }) {
   const { token } = useContext(AuthContext);
 
   useEffect(() => {
+    navigation.setOptions({
+      title: `#${orderId.substring(0, 7)}`,
+    });
+  }, [orderId, navigation]);
+
+  useEffect(() => {
     const fetchDetails = async () => {
       try {
         setLoading(true);
@@ -73,16 +79,12 @@ export default function PreviousOrderScreen({ navigation, route }) {
           <View>
             <Text style={styles.serviceProvider}>{order.serviceProvider?.username} - {order.serviceProvider?.usernameAR}</Text>
           </View>
-          <View style={styles.metaRowMain}>
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>Order ID: </Text>
-              <Text style={styles.metaValue}>#{orderId}</Text>
-            </View>
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>Invoice ID: </Text>
-              <Text style={styles.metaValue}>#{order.id}</Text>
-            </View>
+          
+          <View style={styles.centeredIdContainer}>
+            <Text style={styles.metaLabel}>Order ID: </Text>
+            <Text style={styles.metaValue}>#{orderId.substring(0, 7)}</Text>
           </View>
+          
           <View style={styles.seperator}></View>
 
           <View style={styles.metaRow}>
@@ -286,5 +288,11 @@ const styles = StyleSheet.create({
     fontSize: wp(4),
     color: "#666",
     marginLeft: 10,
+  },
+  centeredIdContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginVertical: hp(1),
   },
 });

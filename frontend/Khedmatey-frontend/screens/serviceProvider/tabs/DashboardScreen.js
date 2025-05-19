@@ -109,7 +109,7 @@ export default function DashboardScreen({ navigation }) {
                     <Text style={styles.summaryStatLabel}>Orders</Text>
                   </View>
                   <View style={styles.summaryStatItem}>
-                    <Text style={styles.summaryStatValue}>{stats?.avgRating?.toFixed(1) || 0}</Text>
+                    <Text style={styles.summaryStatValue}>{stats?.avgRating?.toFixed(2) || 0}</Text>
                     <Text style={styles.summaryStatLabel}>Rating</Text>
                   </View>
                 </View>

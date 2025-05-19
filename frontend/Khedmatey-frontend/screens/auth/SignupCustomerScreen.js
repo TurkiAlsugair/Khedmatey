@@ -14,6 +14,7 @@ import { AuthContext } from "../../context/AuthContext";
 import { Colors } from "../../constants/styles";
 import IconButton from "../../components/UI/IconButton";
 import i18n from "../../locales/i18n";
+import { Image } from "expo-image";
 
 // Using the mock API for now, till Twilio is ready.
 const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
@@ -64,9 +65,9 @@ export default function SignupCustomerScreen({ navigation }) {
       return;
     }
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/sendOTP`, {
-        phoneNumber: formState.phoneNumber.value,
-      });
+      // const response = await axios.post(`${API_BASE_URL}/auth/sendOTP`, {
+      //   phoneNumber: formState.phoneNumber.value,
+      // });
 
       setOtpVisible(true);
     } catch (error) {
@@ -82,7 +83,13 @@ export default function SignupCustomerScreen({ navigation }) {
     >
       <View style={styles.mainContainer}>
         <View style={styles.logoCont}>
-          <Text>Logo !!</Text>
+        <Image
+          style={[styles.appLogo]}
+          source={require("../../assets/images/AppLogo.svg")}
+          // placeholder={""}
+          contentFit="contain"
+          // transition={1000}
+        />
         </View>
         <View style={styles.cont1}>
           <Text style={[styles.title, { textAlign: isArabic ? "right" : "left" }]}>
@@ -194,9 +201,9 @@ const styles = StyleSheet.create({
     marginTop: hp(12),
   },
   cont1: {
-    height: hp(40),
+    // height: hp(40),
     gap: hp(3),
-    marginTop: hp(7),
+    // marginTop: hp(7),
   },
   loginCont: {
     alignItems: "center",
@@ -211,4 +218,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   serviceProviderCont: {},
+  appLogo:{
+    width: wp(30),
+    height: hp(30),
+    // marginBottom: hp(4),
+  }
 });

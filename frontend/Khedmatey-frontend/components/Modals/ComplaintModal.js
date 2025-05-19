@@ -44,26 +44,26 @@ const ComplaintModal = ({ visible, onClose, orderId, onSuccess }) => {
         }
       });
       
-      // If successful
+      // If successful - pass the complete response data
       onSuccess({
         id: response.data.data?.id || '0',
-        date: new Date().toLocaleDateString('en-GB'),
+        createdAt: response.data.data?.createdAt,
         description
       });
       
-      // Reset form
-      setDescription('');
-      onClose();
+      // Don't reset the form here - we'll do it when the modal closes
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to submit complaint. Please try again.');
-    } finally {
       setSubmitting(false);
     }
   };
 
   const resetAndClose = () => {
+    // Reset all form state
     setDescription('');
     setError('');
+    setSubmitting(false);
+    // Close the modal
     onClose();
   };
 

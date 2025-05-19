@@ -25,7 +25,13 @@ export default function ServiceItem({ service, showProvider = true }) {
     >
       {/* Placeholder or real image */}
       <View style={styles.imagePlaceholder}>
-        <Text style={styles.imageText}>IMG</Text>
+      <Image
+          style={[styles.image]}
+          source={require("../../assets/images/service.svg")}
+          // placeholder={""}
+          contentFit="contain"
+          // transition={1000}
+        />
       </View>
       <View style={styles.infoCont}>
         <Text style={styles.name}>{nameEN}</Text>
@@ -116,5 +122,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 2,
     color: "#666",
+  },
+  image: {
+    width: wp(15),
+    height: hp(15),
   },
 });

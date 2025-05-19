@@ -34,7 +34,7 @@ export default function CurrentItem({ order }) {
         }
       >
         <Text style={[styles.title, { marginBottom: 6 }]}>
-          Current Order #{order.id}
+          Current Order #{order.id.substring(0, 7)}
         </Text>
 
         {/* service */}

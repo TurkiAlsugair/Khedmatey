@@ -1,6 +1,6 @@
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView } from "react-native";
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Alert } from "react-native";
 import { useEffect, useState, useContext } from "react";
-import { fetchOrderDetails } from "../../../utility/order";
+import { fetchOrderDetails, updateStatus } from "../../../utility/order";
 import Price from "../../../components/Price";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import { Colors, ORDER_STATUS_STYLES } from "../../../constants/styles";
@@ -10,6 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 import FeedbackModal from "../../../components/Modals/FeedbackModal";
 import ComplaintModal from "../../../components/Modals/ComplaintModal";
 import { AuthContext } from "../../../context/AuthContext";
+import Toast from "react-native-toast-message";
 
 export default function PreviousOrderScreen({ navigation, route }) {
   const { orderId } = route.params;
@@ -19,43 +20,63 @@ export default function PreviousOrderScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
   const [complaintModalVisible, setComplaintModalVisible] = useState(false);
+  const [isPaymentLoading, setIsPaymentLoading] = useState(false);
   const { token } = useContext(AuthContext);
 
   useEffect(() => {
     navigation.setOptions({
-      title: `#${orderId}`,
+      title: `#${orderId.substring(0, 7)}`,
     });
   }, [orderId, navigation]);
 
+  const fetchDetails = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchOrderDetails(token, orderId);
+      setOrder(data);
+      setError("");
+    } catch (err) {
+      setError("Failed to fetch invoice details.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchDetails = async () => {
-      try {
-        setLoading(true);
-        const data = await fetchOrderDetails(token, orderId);
-        setOrder(data);
-        setError("");
-      } catch (err) {
-        setError("Failed to fetch invoice details.");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchDetails();
   }, [orderId, token]);
 
   const handleFeedbackSuccess = (feedback) => {
+    // First update locally for immediate UI response
     setOrder(prev => ({
       ...prev,
-      feedback: feedback
+      feedback: {
+        ...feedback,
+        // Ensure we have all required fields including createdAt
+        createdAt: feedback.createdAt || new Date().toISOString(),
+        // Handle possibly inconsistent naming of rating field in the API
+        rating: feedback.rating || feedback.rate || "0"
+      }
     }));
+    
+    // Then refresh data from API to ensure everything is in sync
+    fetchDetails();
   };
 
   const handleComplaintSuccess = (complaint) => {
+    // First update locally for immediate UI response
     setOrder(prev => ({
       ...prev,
-      complaint: complaint
+      complaint: {
+        ...complaint,
+        // Ensure we have all required fields including createdAt
+        createdAt: complaint.createdAt || new Date().toISOString()
+      }
     }));
+    
+    // Then refresh data from API to ensure everything is in sync
+    fetchDetails();
   };
 
   // Check if bottom container should be shown
@@ -67,6 +88,35 @@ export default function PreviousOrderScreen({ navigation, route }) {
     
     // If status is PAID, only show if feedback or complaint options are available
     return (!order.feedback || !order.complaint);
+  };
+
+  // Handle Pay Now button press
+  const handlePayNow = async () => {
+    try {
+      setIsPaymentLoading(true);
+      // Update order status to PAID
+      await updateStatus(token, orderId, "PAID");
+      
+      // Show success message
+      Toast.show({
+        type: "success",
+        text1: "Payment successful",
+        text2: "Your order has been marked as paid",
+        visibilityTime: 2000,
+        topOffset: hp(7),
+      });
+      
+      // Refresh the order data
+      fetchDetails();
+    } catch (error) {
+      console.error("Payment failed:", error);
+      Alert.alert(
+        "Payment Failed", 
+        error.response?.data?.message || "Failed to process payment. Please try again."
+      );
+    } finally {
+      setIsPaymentLoading(false);
+    }
   };
 
   if (loading) {
@@ -111,15 +161,9 @@ export default function PreviousOrderScreen({ navigation, route }) {
           <View>
             <Text style={styles.serviceProvider}>{order.serviceProvider?.username} - {order.serviceProvider?.usernameAR}</Text>
           </View>
-          <View style={styles.metaRowMain}>
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>Order ID: </Text>
-              <Text style={styles.metaValue}>#{orderId}</Text>
-            </View>
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>Invoice ID: </Text>
-              <Text style={styles.metaValue}>#{order.id}</Text>
-            </View>
+          <View style={styles.centeredIdContainer}>
+            <Text style={styles.metaLabel}>Order ID: </Text>
+            <Text style={styles.metaValue}>#{orderId.substring(0, 7)}</Text>
           </View>
           <View style={styles.seperator}></View>
 
@@ -232,11 +276,13 @@ export default function PreviousOrderScreen({ navigation, route }) {
                   <Text style={styles.reviewText}>{order.feedback.review || "No review provided"}</Text>
                 </View>
                 <Text style={styles.feedbackDate}>Submitted on: {
+                  order.feedback.createdAt ? 
                   new Date(order.feedback.createdAt).toLocaleDateString('en-GB', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric'
-                  }).replace(/\//g, '/')
+                  }).replace(/\//g, '/') : 
+                  'N/A'
                 }</Text>
               </View>
             </>
@@ -252,11 +298,13 @@ export default function PreviousOrderScreen({ navigation, route }) {
                   <Text style={styles.complaintText}>{order.complaint.description}</Text>
                 </View>
                 <Text style={styles.complaintDate}>Submitted on: {
+                  order.complaint.createdAt ? 
                   new Date(order.complaint.createdAt).toLocaleDateString('en-GB', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric'
-                  }).replace(/\//g, '/')
+                  }).replace(/\//g, '/') : 
+                  'N/A'
                 }</Text>
               </View>
             </>
@@ -270,8 +318,12 @@ export default function PreviousOrderScreen({ navigation, route }) {
          {status !== "PAID" && (
             <View style={styles.bottomActionRow}>
               <Price price={total.toFixed(2)} size={wp(5)} header="Total" cusStyles={styles.bottomPrice} />
-              <Button cusStyles={styles.payNowBtn} onPress={() => {/* handle pay now */}}>
-                Pay Now
+              <Button 
+                cusStyles={styles.payNowBtn} 
+                onPress={handlePayNow}
+                disabled={isPaymentLoading}
+              >
+                {isPaymentLoading ? "Processing..." : "Pay Now"}
               </Button>
             </View>
           )}
@@ -324,14 +376,28 @@ export default function PreviousOrderScreen({ navigation, route }) {
         visible={feedbackModalVisible}
         onClose={() => setFeedbackModalVisible(false)}
         orderId={orderId}
-        onSuccess={handleFeedbackSuccess}
+        onSuccess={(feedback) => {
+          // First close the modal
+          setFeedbackModalVisible(false);
+          // Short delay to allow modal transition
+          setTimeout(() => {
+            handleFeedbackSuccess(feedback);
+          }, 300);
+        }}
       />
       
       <ComplaintModal 
         visible={complaintModalVisible}
         onClose={() => setComplaintModalVisible(false)}
         orderId={orderId}
-        onSuccess={handleComplaintSuccess}
+        onSuccess={(complaint) => {
+          // First close the modal
+          setComplaintModalVisible(false);
+          // Short delay to allow modal transition
+          setTimeout(() => {
+            handleComplaintSuccess(complaint);
+          }, 300);
+        }}
       />
     </View>
   );
@@ -564,5 +630,11 @@ const styles = StyleSheet.create({
   bottomActionRow: {
     width: '100%',
     marginBottom: hp(1),
+  },
+  centeredIdContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginVertical: hp(1),
   },
 });

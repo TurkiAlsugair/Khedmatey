@@ -78,9 +78,9 @@ export default function SignupServiceProviderScreen({ navigation }) {
     }
 
     try {
-      await axios.post(`${API_BASE_URL}/auth/sendOTP`, {
-        phoneNumber: formState.phoneNumber.value,
-      });
+      // await axios.post(`${API_BASE_URL}/auth/sendOTP`, {
+      //   phoneNumber: formState.phoneNumber.value,
+      // });
 
       setOtpVisible(true);
     } catch (error) {

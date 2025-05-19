@@ -75,7 +75,7 @@ export default function CancelledContent({ order, isFollowUpOrder = false }) {
         )}
 
         <Text style={styles.sectionText}>
-          <Text style={styles.bold}>Order ID:</Text> #{order.id}
+          <Text style={styles.bold}>Order ID:</Text> #{order.id.substring(0, 7)}
         </Text>
 
         <Text style={styles.sectionText}>

@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
-    color: 'red',
+    // color: 'red',
     marginBottom: 20,
     textAlign: 'center',
   },

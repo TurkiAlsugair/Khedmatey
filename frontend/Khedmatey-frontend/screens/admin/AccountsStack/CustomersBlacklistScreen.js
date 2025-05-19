@@ -83,7 +83,7 @@ export default function CustomersBlacklistScreen({ navigation }) {
     
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/admin/users/lookup?blacklisted=${blacklistStatus}`, 
+        `${API_BASE_URL}/admin/users/lookup?blacklisted=${blacklistStatus}&role=CUSTOMER`, 
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
-    color: 'red',
+    // color: 'red',
     marginBottom: 20,
     textAlign: 'center',
   },

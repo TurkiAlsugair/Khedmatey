@@ -1,11 +1,12 @@
 import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "../../constants/styles";
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from "react-native-responsive-screen";
 import { useNavigation } from "@react-navigation/native";
+import { Image } from "expo-image";
 
 export default function ProviderItem({ provider }) {
   // example fields from the sample
@@ -20,7 +21,13 @@ export default function ProviderItem({ provider }) {
     >
       {/* Placeholder or real image */}
       <View style={styles.imagePlaceholder}>
-        <Text style={styles.imageText}>IMG</Text>
+      <Image
+          style={[styles.image]}
+          source={require("../../assets/images/serviceProvider.svg")}
+          // placeholder={""}
+          contentFit="contain"
+          // transition={1000}
+        />
       </View>
 
       <View style={styles.infoSection}>
@@ -72,5 +79,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
     color: Colors.secondary,
     fontSize: 13,
+  },
+  image: {
+    width: wp(15),
+    height: hp(15),
   },
 });
