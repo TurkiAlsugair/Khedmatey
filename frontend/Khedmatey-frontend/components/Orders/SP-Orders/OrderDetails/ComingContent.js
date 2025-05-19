@@ -95,7 +95,7 @@ export default function ComingContent({ order, isFollowUpOrder = false }) {
         </Text>
         <View style={styles.phoneRow}>
           <Text style={styles.sectionText}>
-            <Text style={styles.bold}>Worker Phone:</Text> {order.worker?.phoneNumber}
+            <Text style={styles.bold}>Worker Phone:</Text> {order.worker?.phonenumber}
           </Text>
           <TouchableOpacity onPress={handleCall}>
             <Ionicons name="call" size={17} color={Colors.secondary} />
