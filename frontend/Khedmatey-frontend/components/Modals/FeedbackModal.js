@@ -51,21 +51,17 @@ const FeedbackModal = ({ visible, onClose, orderId, onSuccess }) => {
         }
       });
       
-      // If successful
+      // If successful - pass the complete response data
       onSuccess({
         id: response.data.data?.id || '0',
-        date: new Date().toLocaleDateString('en-GB'),
-        rate: rating.toString(),
+        createdAt: response.data.data?.createdAt,
+        rating: rating.toString(),
         review
       });
       
-      // Reset form
-      setRating(0);
-      setReview('');
-      onClose();
+      // Don't reset the form here - we'll do it when the modal closes
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to submit feedback. Please try again.');
-    } finally {
       setSubmitting(false);
     }
   };
@@ -91,9 +87,12 @@ const FeedbackModal = ({ visible, onClose, orderId, onSuccess }) => {
   };
 
   const resetAndClose = () => {
+    // Reset all form state
     setRating(0);
     setReview('');
     setError('');
+    setSubmitting(false);
+    // Close the modal
     onClose();
   };
 

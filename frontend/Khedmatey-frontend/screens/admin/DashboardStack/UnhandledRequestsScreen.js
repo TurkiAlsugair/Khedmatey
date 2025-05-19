@@ -63,6 +63,10 @@ const UnhandledRequestsScreen = ({ navigation }) => {
   };
 
   const applyFilter = (filter, requestsData = requests) => {
+    // Update the active filter state
+    setActiveFilter(filter);
+    
+    // Filter the requests based on the selected filter
     switch (filter) {
       case "PENDING":
         setFilteredRequests(requestsData.filter(request => request.status === "PENDING"));
@@ -112,7 +116,7 @@ const UnhandledRequestsScreen = ({ navigation }) => {
         <View style={styles.cardHeader}>
           <View style={styles.headerLeft}>
             <Text style={styles.serviceTitle}>
-              Order #{item.id}
+              Order #{item.id.substring(0, 7)}
             </Text>
           </View>
           <View style={styles.headerRight}>

@@ -88,22 +88,22 @@ export class RequestService {
         //validate date
         const requestDate = this.validateDate(date)
         
-        // //check if customer already has a request on the same day
-        // const existingRequestsOnSameDay = await this.prisma.request.findFirst({
-        //     where: {
-        //         customerId,
-        //         providerDay: {
-        //             date: {
-        //                 gte: startOfDay(requestDate),
-        //                 lt: addDays(startOfDay(requestDate), 1)
-        //             }
-        //         }
-        //     }
-        // });
+        //check if customer already has a request on the same day
+        const existingRequestsOnSameDay = await this.prisma.request.findFirst({
+            where: {
+                customerId,
+                providerDay: {
+                    date: {
+                        gte: startOfDay(requestDate),
+                        lt: addDays(startOfDay(requestDate), 1)
+                    }
+                }
+            }
+        });
         
-        // if (existingRequestsOnSameDay) {
-        //     throw new BadRequestException('You already have a request scheduled for this day. Please choose a different day.');
-        // }
+        if (existingRequestsOnSameDay) {
+            throw new BadRequestException('You already have a request scheduled for this day. Please choose a different day.');
+        }
 
         //validate location is within provider's cities
         const providerCities = await this.prisma.city.findMany({
@@ -376,10 +376,7 @@ export class RequestService {
           where.customerId = user.id;
           break;
         case Role.WORKER:
-          where.OR = [
-            { dailyWorkers: { some: { workerId: user.id } } },
-            { followupDailyWorkers: { some: { workerId: user.id } } }
-          ];
+          where.dailyWorkers = { some: { workerId: user.id } };
           break;
         default:
           throw new ForbiddenException('Invalid role');
@@ -406,11 +403,6 @@ export class RequestService {
             } 
           },
           dailyWorkers: { 
-            include: { 
-              worker: true 
-            } 
-          },
-          followupDailyWorkers: { 
             include: { 
               worker: true 
             } 
@@ -449,26 +441,6 @@ export class RequestService {
         },
         orderBy: { createdAt: 'desc' },
       }) as unknown as Request[];
-
-      //4- Special handling for workers: mark requests as FINISHED if they were original workers
-      //and the request has a followup service when the status is not PAID or INVOICED
-      if (user.role === Role.WORKER) {
-        requests.forEach((req: any) => {
-          //check if this worker was assigned to the original request
-          const isOriginalWorker = req.dailyWorkers.some(
-            (dw: any) => dw.worker.id === user.id
-          );
-          const isFollowupWorker = req.followupDailyWorkers.some(
-            (dw: any) => dw.worker.id === user.id
-          );
-          
-          //if worker was original worker and request has a follow-up service, show as FINISHED
-          if (isOriginalWorker && req.followupService && !isFollowupWorker 
-            && (req.status !== Status.PAID || req.status !== Status.INVOICED)) {
-            req.status = Status.FINISHED;
-          }
-        });
-      }
 
       //5- group and restructure the requests
 
@@ -669,7 +641,6 @@ export class RequestService {
         default:
           throw new BadRequestException("Unknown status transition");
       }
-
       this.orderStatusSocket.emitOrderStatusUpdate(result.id, result.status)
       return result;
     }
@@ -735,18 +706,6 @@ export class RequestService {
           'You can only decline requests assigned to your services',
         );
       }
-
-      //check if the request has invoice items
-      const invoiceItems = await this.prisma.invoiceItem.findMany({
-        where: { requestId: request.id }
-      });
-
-      const newStatus = invoiceItems.length > 0 ? Status.INVOICED : Status.CANCELED;
-      
-      const updatedRequest = await this.prisma.request.update({
-        where: { id: request.id },
-        data: { status: newStatus },
-      });
   
       return this.prisma.request.update({
         where: { id: request.id },
@@ -816,10 +775,9 @@ export class RequestService {
         data: { status: newStatus },
       });
 
-      if(newStatus === Status.INVOICED) {
+      if (newStatus === Status.INVOICED) {
         this.orderStatusSocket.emitOrderStatusUpdate(updatedRequest.id, Status.INVOICED);
-      } 
-      else {
+      } else {
         this.orderStatusSocket.emitOrderStatusUpdate(updatedRequest.id, Status.CANCELED);
       }
 

@@ -5,6 +5,8 @@ import { Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import WorkerAccount from "../../screens/worker/MoreStack/WorkerAccount";
+import AboutKhedmateyScreen from "../../screens/worker/MoreStack/AboutKhedmateyScreen";
+import PrivacyAndTermsScreen from "../../screens/worker/MoreStack/PrivacyAndTermsScreen";
 import WorkerMainTabs from "./WorkerMainTabs";
 import OrderDetailsScreen from "../../screens/worker/OrdersStack/W-OrderDetailsScreen";
 import SendFollowUpServiceScreen from "../../screens/worker/OrdersStack/SendFollowUpServiceScreen";
@@ -104,6 +106,44 @@ export default function WorkerNavigator() {
           headerStyle: { backgroundColor: Colors.primary },
           headerTintColor: "#fff",
 
+          headerLeft: (headerProps) => (
+            <Ionicons
+              name={"arrow-back"}
+              size={24}
+              color={"white"}
+              style={{ marginLeft: 15 }}
+              onPress={() => navigation.goBack()}
+            />
+          ),
+        })}
+      />
+
+      <Stack.Screen
+        name="About Khedmatey"
+        component={AboutKhedmateyScreen}
+        options={({ navigation /*, route */ }) => ({
+          title: "About Khedmatey",
+          headerStyle: { backgroundColor: Colors.primary },
+          headerTintColor: "#fff",
+          headerLeft: (headerProps) => (
+            <Ionicons
+              name={"arrow-back"}
+              size={24}
+              color={"white"}
+              style={{ marginLeft: 15 }}
+              onPress={() => navigation.goBack()}
+            />
+          ),
+        })}
+      />
+
+      <Stack.Screen
+        name="Privacy & Terms"
+        component={PrivacyAndTermsScreen}
+        options={({ navigation /*, route */ }) => ({
+          title: "Privacy & Terms",
+          headerStyle: { backgroundColor: Colors.primary },
+          headerTintColor: "#fff",
           headerLeft: (headerProps) => (
             <Ionicons
               name={"arrow-back"}

@@ -13,6 +13,7 @@ import { Colors } from "../../constants/styles";
 import OtpModal from "../../components/Modals/OtpModal";
 import { AuthContext } from "../../context/AuthContext";
 import i18n from "../../locales/i18n";
+import { Image } from "expo-image";
 
 // Using the mock API for now, till Twilio is ready.
 const API_BASE_URL = process.env.EXPO_PUBLIC_MOCK_API_BASE_URL;
@@ -48,9 +49,9 @@ export default function LoginScreen({ navigation }) {
     }
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/sendOTP`, {
-        phoneNumber: formState.phoneNumber.value,
-      });
+      // const response = await axios.post(`${API_BASE_URL}/auth/sendOTP`, {
+      //   phoneNumber: formState.phoneNumber.value,
+      // });
 
       setOtpVisible(true);
     } catch (error) {
@@ -61,7 +62,13 @@ export default function LoginScreen({ navigation }) {
   return (
     <View style={styles.mainContainer}>
       <View style={styles.logoCont}>
-        <Text>Logo !!</Text>
+      <Image
+          style={[styles.appLogo]}
+          source={require("../../assets/images/AppLogo.svg")}
+          // placeholder={""}
+          contentFit="contain"
+          // transition={1000}
+        />
       </View>
       <View style={styles.contentCont}>
         <Text style={[styles.title, { textAlign: isArabic ? "right" : "left" }]}>
@@ -164,4 +171,9 @@ const styles = StyleSheet.create({
     fontSize: wp(4),
     marginTop: 8,
   },
+  appLogo:{
+    width: wp(30),
+    height: hp(30),
+    marginBottom: hp(4),
+  }
 });

@@ -90,8 +90,8 @@ export default function SendFollowUpServiceScreen() {
     try {
       setLoading(true);
 
-      // // update the request status to FINISHED, use updateStatus utility
-      // await updateStatus(token, order.id, "FINISHED");
+      // update the request status to FINISHED, use updateStatus utility
+      await updateStatus(token, order.id, "FINISHED");
      
       await axios.patch(
         `${API_BASE_URL}/request/${order.id}/invoice`,

@@ -3,6 +3,8 @@ import { createStackNavigator } from "@react-navigation/stack";
 
 import CustomerMainTabs from "./CustomerMainTabs";
 import MyAccountScreen from "../../screens/customer/MoreStack/MyAccountScreen";
+import AboutKhedmateyScreen from "../../screens/customer/MoreStack/AboutKhedmateyScreen";
+import PrivacyAndTermsScreen from "../../screens/customer/MoreStack/PrivacyAndTermsScreen";
 import { LocationProvider } from "../../context/LocationContext";
 import PickFromMap from "../../screens/customer/HomeStack/PickFromMap";
 import SearchScreen from "../../screens/customer/HomeStack/SearchScreen";
@@ -95,7 +97,6 @@ export default function CustomerNavigation() {
           component={PickAppointment}
           options={({ navigation /*, route */ }) => ({
             title: "Appointment Pick",
-
             headerStyle: { backgroundColor: Colors.primary },
             headerTintColor: "#fff",
 
@@ -222,9 +223,63 @@ export default function CustomerNavigation() {
         <Stack.Screen
           name="My Account"
           component={MyAccountScreen}
-          // options={{ title: "" }}
+          options={({ navigation /*, route */ }) => ({
+            title: "My Account",
+            headerStyle: { backgroundColor: Colors.primary },
+            headerTintColor: "#fff",
+
+            headerLeft: (headerProps) => (
+              <Ionicons
+                name={"arrow-back"}
+                size={24}
+                color={"white"}
+                style={{ marginLeft: 15 }}
+                onPress={() => navigation.goBack()}
+              />
+            ),
+          })}
         />
+
+          <Stack.Screen
+          name="About Khedmatey"
+          component={AboutKhedmateyScreen}
+          options={({ navigation /*, route */ }) => ({
+            title: "About Khedmatey",
+            headerStyle: { backgroundColor: Colors.primary },
+            headerTintColor: "#fff",
+            headerLeft: (headerProps) => (
+              <Ionicons
+                name={"arrow-back"}
+                size={24}
+                color={"white"}
+                style={{ marginLeft: 15 }}
+                onPress={() => navigation.goBack()}
+              />
+            ),
+          })}
+        />
+
+          <Stack.Screen
+          name="Privacy & Terms"
+          component={PrivacyAndTermsScreen}
+          options={({ navigation /*, route */ }) => ({
+            title: "Privacy & Terms",
+            headerStyle: { backgroundColor: Colors.primary },
+            headerTintColor: "#fff",
+            headerLeft: (headerProps) => (
+              <Ionicons
+                name={"arrow-back"}
+                size={24}
+                color={"white"}
+                style={{ marginLeft: 15 }}
+                onPress={() => navigation.goBack()}
+              />
+            ),
+          })}
+        />
+
       </Stack.Navigator>
     </LocationProvider>
   );
 }
+

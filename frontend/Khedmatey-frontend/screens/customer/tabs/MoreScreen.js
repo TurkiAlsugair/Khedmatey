@@ -51,13 +51,13 @@ export default function MoreScreen({ navigation }) {
             optionText="About Khedmatey"
             optionIcon="ellipse"
             otherIcon="chevron-forward-outline"
-            onPress={() => console.log("go to about screen")}
+            onPress={() => navigation.navigate("About Khedmatey")}
           />
           <Option
             optionText="Privacy & Terms"
             optionIcon="newspaper"
             otherIcon="chevron-forward-outline"
-            onPress={() => console.log("go to terms screen")}
+            onPress={() => navigation.navigate("Privacy & Terms")}
           />
 
           <Option

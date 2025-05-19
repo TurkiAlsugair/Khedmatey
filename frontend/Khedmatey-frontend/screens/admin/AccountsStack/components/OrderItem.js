@@ -28,7 +28,7 @@ export default function OrderItem({ order }) {
         activeOpacity={0.7}
       >
         <View style={styles.orderInfo}>
-          <Text style={styles.orderId}>Order #{order.id}</Text>
+          <Text style={styles.orderId}>Order #{order.id.substring(0, 7)}</Text>
           <Text style={styles.orderDate}>{order.date}</Text>
         </View>
         

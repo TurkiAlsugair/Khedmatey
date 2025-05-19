@@ -88,7 +88,8 @@ export default function AdminNavigator() {
           ),
         }}
       />
-      <Drawer.Screen
+
+      {/* <Drawer.Screen
         name="Communication"
         component={CommunicationStack}
         options={{
@@ -101,7 +102,8 @@ export default function AdminNavigator() {
             />
           ),
         }}
-      />
+      /> */}
+
       <Drawer.Screen
         name="More"
         component={MoreStack}

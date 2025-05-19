@@ -140,7 +140,7 @@ export default function PickAppointment({ navigation, route }) {
                 </View>
                 <View style={styles.row}>
                   <Text style={styles.label}>Order ID: </Text>
-                  <Text style={styles.value}>#{order.id}</Text>
+                  <Text style={styles.value}>#{order.id.substring(0, 7)}</Text>
                 </View>
                 <View style={styles.row}>
                   <Price price={order.followUpService.price} header="Estimated Price" size={wp(3.5)} />

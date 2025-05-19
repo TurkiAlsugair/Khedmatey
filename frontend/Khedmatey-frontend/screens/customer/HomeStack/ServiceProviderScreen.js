@@ -18,6 +18,7 @@ import {
 import CategoriesRow from "../../../components/CustomerHome/CategoriesRow";
 import ServiceItem from "../../../components/CustomerHome/ServiceItem";
 import { AuthContext } from "../../../context/AuthContext";
+import { Image } from "expo-image";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
@@ -140,11 +141,17 @@ export default function ServiceProviderScreen({ navigation, route }) {
       {/* simple provider header */}
       <View style={styles.infoCont}>
         <View style={styles.imagePlaceholder}>
-          <Text style={styles.imageText}>IMG</Text>
+        <Image
+          style={[styles.image]}
+          source={require("../../../assets/images/serviceProvider.svg")}
+          // placeholder={""}
+          contentFit="contain"
+          // transition={1000}
+        />
         </View>
         <View style={styles.infoSection}>
           <Text style={styles.name}>{username}</Text>
-          <Text style={styles.rating}>Rating: {provider.avgRating}</Text>
+          <Text style={styles.rating}>Rating: {provider.avgRating?.toFixed(2) || "0.00"}</Text>
         </View>
       </View>
 
@@ -210,4 +217,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   errorText: { color: "red", fontSize: 16, textAlign: "center" },
+  image: {
+    width: wp(20),
+    height: hp(20),
+  },
 });
