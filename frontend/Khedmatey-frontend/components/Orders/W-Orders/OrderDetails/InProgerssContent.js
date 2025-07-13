@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
     width: wp(45) 
   },
   cancelButton: {
-    backgroundColor: "#ff4d4d",
+    backgroundColor: "rgba(224, 1, 1, 0.71)",
     marginTop: hp(3),
   },
   fuoLabel: {

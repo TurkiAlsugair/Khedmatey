@@ -38,6 +38,7 @@ export default function AdminNavigator() {
         },
         drawerStyle: {
           backgroundColor: Colors.primary,
+          width: '50%',
         },
         overlayColor: "rgba(124, 124, 124, 0.56)",
         drawerType: "front",
