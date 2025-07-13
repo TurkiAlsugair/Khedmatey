@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     gap: hp(1),
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
   },
   infoCont: {
     gap: hp(1),

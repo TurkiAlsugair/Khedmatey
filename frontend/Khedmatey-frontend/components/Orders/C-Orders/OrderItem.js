@@ -32,7 +32,7 @@ export default function OrderItem({ order }) {
       </View>}
       <View style={{ flex: 1, gap: 4 }}>
       
-        <Text style={styles.title}>{serviceProvider?.username}</Text>
+        <Text style={styles.title}>{serviceProvider?.username} - {serviceProvider?.usernameAR}</Text>
         <Text style={styles.date}>{date}</Text>
 
         {status === "FINISHED" && (
